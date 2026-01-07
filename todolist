@@ -1,0 +1,35 @@
+to do list:
+
+-add payement stripe
+-add "next" button steps in the config page for gallery from step one to 3
+-logo
+-less peotic words
+-change color (make it more like cosmos)
+-gallerie issue (not connected with photographer side)
+-link broken
+
+
+
+
+✅ Garder Supabase pour :
+Auth (users, sessions, JWT)
+Database PostgreSQL (galleries, photos metadata, subscriptions)
+Row Level Security pour sécuriser les galeries par owner
+✅ Migrer vers AWS S3 pour :
+Stockage des photos uniquement
+CloudFront CDN pour la diffusion mondiale
+
+
+5/1/26
+
+-select all
+-stay signed in
+-make folders to organise
+-making gallery page is dark
+-Database error saving new user
+
+
+6/1/26
+
+-page login, signup when click on prices before going to checkout
+-when click on pricing and then come back the price buttons are off needs a reload to work
