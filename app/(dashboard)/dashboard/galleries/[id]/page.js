@@ -14,6 +14,10 @@ import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import bcrypt from 'bcryptjs'
+
+
+import { generateVideoThumbnail } from '@/lib/videoThumbnail';
+
 import {
   ArrowLeft, Loader2, Upload, Trash2, Copy, Check, Link as LinkIcon,
   Lock, Calendar, Download, Eye, X, Images, Camera, FileText, Share2,
@@ -22,6 +26,50 @@ import {
 import { format, formatDistanceToNow } from 'date-fns'
 import { v4 as uuidv4 } from 'uuid'
 import { useAuth } from '@/app/providers'
+
+import { supabaseAdmin } from '@/lib/supabase'
+import { NextResponse } from 'next/server'
+
+export async function GET(request, { params }) {
+  const { token } = await params
+
+  try {
+    // 🔍 Chercher gallerylink d'abord
+    const { data: linkData } = await supabaseAdmin
+      .from('gallerylinks')
+      .select('gallery_id, passwordhash, expires_at, allowdownload')
+      .eq('token', token)
+      .single()
+
+    if (!linkData) {
+      return NextResponse.json({ error: 'Gallery not found' }, { status: 404 })
+    }
+
+    // Récupérer gallery
+    const { data: galleryData } = await supabaseAdmin
+      .from('galleries')
+      .select('title, client_name, event_date')
+      .eq('id', linkData.gallery_id)
+      .single()
+
+    if (!galleryData) {
+      return NextResponse.json({ error: 'Gallery not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({
+      gallery: {
+        title: galleryData.title || 'Client Gallery',
+        client_name: galleryData.client_name,
+        event_date: galleryData.event_date
+      },
+      requires_password: !!linkData.passwordhash,
+      allow_download: linkData.allowdownload !== false
+    })
+  } catch (error) {
+    console.error('Gallery error:', error)
+    return NextResponse.json({ error: 'Server error' }, { status: 500 })
+  }
+}
 
 export default function GalleryDetailPage() {
   const router = useRouter()
@@ -128,6 +176,8 @@ export default function GalleryDetailPage() {
     }
   }
 
+
+  
   const handleSave = async () => {
     setIsSaving(true)
     try {
@@ -265,63 +315,89 @@ const generateVideoThumbnail = (file) => {
             const filePath = `${user.id}/${galleryId}/${fileName}`
 
             try {
-               // ✅ Définir isVideo ICI (AVANT l'upload)
   const isVideo = file.type.startsWith('video/')
-              const { data: uploadData, error: uploadError } = await supabase.storage
-  .from('photos')
-  .upload(filePath, file, {
-    cacheControl: '3600',
-    upsert: false,
-    contentType: file.type  // ✅ Force le bon Content-Type
-  })
 
+  // ✅ NOUVEAU: Génère thumbnail pour vidéos
+  let thumbnailUrl = null
+  if (isVideo) {
+    try {
+      const thumbnailBlob = await generateVideoThumbnail(file)
+      const thumbnailPath = `${user.id}/${galleryId}/thumbnails/${uuidv4()}.jpg`
+      
+      const { error: thumbError } = await supabase.storage
+        .from('photos')
+        .upload(thumbnailPath, thumbnailBlob, {
+          cacheControl: '3600',
+          contentType: 'image/jpeg'
+        })
 
-              if (uploadError) {
-                console.error('Upload error:', uploadError)
-                toast.error(`Failed to upload ${file.name}`)
-                return null
-              }
+      if (!thumbError) {
+        const { data: { publicUrl: thumbUrl } } = supabase.storage
+          .from('photos')
+          .getPublicUrl(thumbnailPath)
+        thumbnailUrl = thumbUrl
+      }
+    } catch (thumbErr) {
+      console.warn('⚠️ Thumbnail generation failed:', thumbErr)
+    }
+  }
 
-              const { data: { publicUrl } } = supabase.storage
-                .from('photos')
-                .getPublicUrl(filePath)
+  // Upload vidéo/photo principale
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('photos')
+    .upload(filePath, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type
+    })
 
-              const photoId = uuidv4()
-              const { error: dbError } = await supabase
-                .from('photos')
-                .insert({
-                  id: photoId,
-                  gallery_id: galleryId,
-                  image_url: isVideo ? null : publicUrl,
-                  video_url: isVideo ? publicUrl : null,
-                  storage_path: filePath,
-                  file_name: file.name,
-                  file_size: file.size,
-                  media_type: isVideo ? 'video' : 'image',
-                  sort_order: photos.length + globalIndex
-                })
+  if (uploadError) {
+    console.error('Upload error:', uploadError)
+    toast.error(`Failed to upload ${file.name}`)
+    return null
+  }
 
-              if (dbError) {
-                console.error('DB error:', dbError)
-                toast.error(`Failed to save ${file.name} to database`)
-                return null
-              }
+  const { data: { publicUrl } } = supabase.storage
+    .from('photos')
+    .getPublicUrl(filePath)
 
-              return {
-                id: photoId,
-                gallery_id: galleryId,
-                image_url: isVideo ? null : publicUrl,
-                video_url: isVideo ? publicUrl : null,
-                storage_path: filePath,
-                file_name: file.name,
-                file_size: file.size,
-                media_type: isVideo ? 'video' : 'image',
-                sort_order: photos.length + globalIndex
-              }
-            } catch (error) {
-              console.error('Error processing file:', error)
-              return null
-            }
+  // Save to database
+  const photoId = uuidv4()
+  const { error: dbError } = await supabase
+    .from('photos')
+    .insert({
+      id: photoId,
+      gallery_id: galleryId,
+      image_url: isVideo ? thumbnailUrl : publicUrl,  // ✅ Thumbnail pour vidéos
+      video_url: isVideo ? publicUrl : null,
+      storage_path: filePath,
+      file_name: file.name,
+      file_size: file.size,
+      media_type: isVideo ? 'video' : 'image',
+      sort_order: photos.length + globalIndex
+    })
+
+  if (dbError) {
+    console.error('DB error:', dbError)
+    toast.error(`Failed to save ${file.name} to database`)
+    return null
+  }
+
+  return {
+    id: photoId,
+    gallery_id: galleryId,
+    image_url: isVideo ? thumbnailUrl : publicUrl,  // ✅ Thumbnail pour vidéos
+    video_url: isVideo ? publicUrl : null,
+    storage_path: filePath,
+    file_name: file.name,
+    file_size: file.size,
+    media_type: isVideo ? 'video' : 'image',
+    sort_order: photos.length + globalIndex
+  }
+} catch (error) {
+  console.error('Error processing file:', error)
+  return null
+} 
           })
         )
 
@@ -489,7 +565,8 @@ const generateVideoThumbnail = (file) => {
   const copyShareLink = () => {
     if (galleryLink && typeof window !== 'undefined') {
       const baseUrl = window.location.origin
-      navigator.clipboard.writeText(`${baseUrl}/g/${galleryLink.token}`)
+      navigator.clipboard.writeText(`${baseUrl}/g/${gallery.id}`
+)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
       toast.success('Link copied to clipboard!')
