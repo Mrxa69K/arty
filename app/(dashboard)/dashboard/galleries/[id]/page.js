@@ -89,6 +89,11 @@ export default function GalleryDetailPage() {
   const [activeTab, setActiveTab] = useState('photos')
   const [isDragging, setIsDragging] = useState(false)
   const [selectedPhotos, setSelectedPhotos] = useState(new Set())
+  const [folders, setFolders] = useState([])
+  const [showCreateFolder, setShowCreateFolder] = useState(false)
+  const [newFolderName, setNewFolderName] = useState('') 
+  const [selectedFolder, setSelectedFolder] = useState(null) 
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false)
 
   const [formData, setFormData] = useState({
     title: '',
@@ -125,56 +130,59 @@ export default function GalleryDetailPage() {
     fetchGallery()
   }, [galleryId])
 
-  const fetchGallery = async () => {
-    try {
-      const { data: gallery, error: galleryError } = await supabase
-        .from('galleries')
-        .select('*')
-        .eq('id', galleryId)
-        .single()
+const fetchGallery = async () => {
+  try {
+    const { data: gallery, error: galleryError } = await supabase
+      .from('galleries')
+      .select('*')
+      .eq('id', galleryId)
+      .single()
 
-      if (galleryError) throw galleryError
+    if (galleryError) throw galleryError
 
-      setGallery(gallery)
-      setFormData({
-        title: gallery.title,
-        client_name: gallery.client_name || '',
-        event_date: gallery.event_date || '',
-        notes: gallery.notes || '',
-        status: gallery.status
+    setGallery(gallery)
+    setFormData({
+      title: gallery.title,
+      client_name: gallery.client_name || '',
+      event_date: gallery.event_date || '',
+      notes: gallery.notes || '',
+      status: gallery.status
+    })
+
+    const { data: photos } = await supabase
+      .from('photos')
+      .select('*')
+      .eq('gallery_id', galleryId)
+      .order('sort_order', { ascending: true })
+
+    setPhotos(photos || [])
+
+    // ✅ Fetch folders
+    await fetchFolders()
+
+    const { data: links } = await supabase
+      .from('gallery_links')
+      .select('*')
+      .eq('gallery_id', galleryId)
+      .limit(1)
+
+    if (links && links.length > 0) {
+      setGalleryLink(links[0])
+      setLinkSettings({
+        password: '',
+        hasPassword: !!links[0].password_hash,
+        expires_at: links[0].expires_at ? format(new Date(links[0].expires_at), 'yyyy-MM-dd') : '',
+        allow_download: links[0].allow_download
       })
-
-      const { data: photos } = await supabase
-        .from('photos')
-        .select('*')
-        .eq('gallery_id', galleryId)
-        .order('sort_order', { ascending: true })
-
-      setPhotos(photos || [])
-
-      const { data: links } = await supabase
-        .from('gallery_links')
-        .select('*')
-        .eq('gallery_id', galleryId)
-        .limit(1)
-
-      if (links && links.length > 0) {
-        setGalleryLink(links[0])
-        setLinkSettings({
-          password: '',
-          hasPassword: !!links[0].password_hash,
-          expires_at: links[0].expires_at ? format(new Date(links[0].expires_at), 'yyyy-MM-dd') : '',
-          allow_download: links[0].allow_download
-        })
-      }
-    } catch (error) {
-      console.error('Error fetching gallery:', error)
-      toast.error('Gallery not found')
-      router.push('/dashboard/galleries')
-    } finally {
-      setIsLoading(false)
     }
+  } catch (error) {
+    console.error('Error fetching gallery:', error)
+    toast.error('Gallery not found')
+    router.push('/dashboard/galleries')
+  } finally {
+    setIsLoading(false)
   }
+}
 
 
   
@@ -500,17 +508,134 @@ const generateVideoThumbnail = (file) => {
     setSelectedPhotos(new Set())
   }
 
-  const togglePhotoSelection = (photoId) => {
-    setSelectedPhotos(prev => {
-      const newSet = new Set(prev)
-      if (newSet.has(photoId)) {
-        newSet.delete(photoId)
-      } else {
-        newSet.add(photoId)
-      }
-      return newSet
-    })
+ const togglePhotoSelection = (photoId) => {
+  setSelectedPhotos(prev => {
+    const newSet = new Set(prev)
+    if (newSet.has(photoId)) {
+      newSet.delete(photoId)
+    } else {
+      newSet.add(photoId)
+    }
+    return newSet
+  })
+}
+
+// ✅ NEW: Select All / Deselect All
+const handleSelectAll = () => {
+  if (selectedPhotos.size === photos.length) {
+    // Deselect all
+    setSelectedPhotos(new Set())
+  } else {
+    // Select all
+    setSelectedPhotos(new Set(photos.map(p => p.id)))
   }
+}
+
+
+
+// Fetch folders
+const fetchFolders = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('folders')
+      .select('*')
+      .eq('gallery_id', galleryId)
+      .order('sort_order', { ascending: true })
+    
+    if (error) throw error
+    setFolders(data || [])
+  } catch (error) {
+    console.error('Error fetching folders:', error)
+  }
+}
+
+// Create folder
+const handleCreateFolder = async () => {
+  if (!newFolderName.trim()) {
+    toast.error('Please enter a folder name')
+    return
+  }
+
+  setIsCreatingFolder(true)
+  try {
+    const { data, error } = await supabase
+      .from('folders')
+      .insert({
+        id: uuidv4(),
+        gallery_id: galleryId,
+        name: newFolderName.trim(),
+        sort_order: folders.length
+      })
+      .select()
+      .single()
+
+    if (error) throw error
+
+    setFolders([...folders, data])
+    setNewFolderName('')
+    setShowCreateFolder(false)
+    toast.success('Folder created!')
+  } catch (error) {
+    console.error('Error creating folder:', error)
+    toast.error('Failed to create folder')
+  } finally {
+    setIsCreatingFolder(false)
+  }
+}
+
+// Move selected photos to folder
+const handleMoveToFolder = async (folderId) => {
+  if (selectedPhotos.size === 0) {
+    toast.error('No photos selected')
+    return
+  }
+
+  try {
+    const { error } = await supabase
+      .from('photos')
+      .update({ folder_id: folderId })
+      .in('id', Array.from(selectedPhotos))
+
+    if (error) throw error
+
+    // Update local state
+    setPhotos(photos.map(p => 
+      selectedPhotos.has(p.id) ? { ...p, folder_id: folderId } : p
+    ))
+    setSelectedPhotos(new Set())
+    
+    const folderName = folderId 
+      ? folders.find(f => f.id === folderId)?.name 
+      : 'All Photos'
+    toast.success(`Moved ${selectedPhotos.size} photos to ${folderName}`)
+  } catch (error) {
+    console.error('Error moving photos:', error)
+    toast.error('Failed to move photos')
+  }
+}
+
+// Delete folder
+const handleDeleteFolder = async (folderId) => {
+  if (!confirm('Delete this folder? Photos will be moved to "All Photos".')) return
+
+  try {
+    const { error } = await supabase
+      .from('folders')
+      .delete()
+      .eq('id', folderId)
+
+    if (error) throw error
+
+    setFolders(folders.filter(f => f.id !== folderId))
+    if (selectedFolder === folderId) setSelectedFolder(null)
+    toast.success('Folder deleted')
+  } catch (error) {
+    console.error('Error deleting folder:', error)
+    toast.error('Failed to delete folder')
+  }
+}
+
+  
 
   const handleGenerateLink = async () => {
     try {
@@ -767,23 +892,61 @@ const generateVideoThumbnail = (file) => {
           <div className="rounded-3xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-6">
             {activeTab === 'photos' && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between flex-wrap gap-3">
-                  <div>
-                    <h2 className="text-lg font-semibold text-black/80">Photos & Videos</h2>
-                    <p className="text-xs text-black/60 mt-1">Upload and manage your gallery content</p>
-                  </div>
-                  
-                  {selectedPhotos.size > 0 && (
-                    <Button
-                      onClick={handleDeleteSelected}
-                      variant="destructive"
-                      className="h-9 px-4 rounded-full text-xs flex items-center gap-2"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Delete Selected ({selectedPhotos.size})
-                    </Button>
-                  )}
-                </div>
+    
+    <div className="flex items-center justify-between flex-wrap gap-3">
+      <div>
+        <h2 className="text-lg font-semibold text-black/80">Photos & Videos</h2>
+        <p className="text-xs text-black/60 mt-1">Upload and manage your gallery content</p>
+      </div>
+      
+      <div className="flex items-center gap-2 flex-wrap">
+  <Button
+    onClick={() => setShowCreateFolder(true)}
+    className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-white/60 border border-black/10 text-black hover:bg-white/80"
+  >
+    <FileText className="w-3 h-3" />
+    New Folder
+  </Button>
+  
+  {photos.length > 0 && (
+
+          <Button
+            onClick={() => {
+              if (selectedPhotos.size === photos.length) {
+                setSelectedPhotos(new Set())
+              } else {
+                setSelectedPhotos(new Set(photos.map(p => p.id)))
+              }
+            }}
+            className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-white/60 border border-black/10 text-black hover:bg-white/80"
+          >
+            {selectedPhotos.size === photos.length ? (
+              <>
+                <X className="w-3 h-3" />
+                Deselect All
+              </>
+            ) : (
+              <>
+                <CheckCircle2 className="w-3 h-3" />
+                Select All
+              </>
+            )}
+          </Button>
+        )}
+        
+        {selectedPhotos.size > 0 && (
+          <Button
+            onClick={handleDeleteSelected}
+            className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
+          >
+            <Trash2 className="w-3 h-3" />
+            Delete ({selectedPhotos.size})
+          </Button>
+        )}
+      </div>
+    </div>
+
+
 
                 {selectedPhotos.size > 0 && (
                   <div className="flex items-center justify-between p-3 rounded-xl bg-black/5 border border-black/10">
@@ -849,11 +1012,113 @@ const generateVideoThumbnail = (file) => {
                       </p>
                     </div>
                   )}
-                </div>
+                
 
-                {photos.length > 0 ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-                    {photos.map((photo) => (
+                
+      </div>
+
+      {/* Create Folder Modal */}
+      {showCreateFolder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateFolder(false)}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-black/80 mb-4">Create New Folder</h3>
+            <Input
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="e.g., Ceremony, Reception..."
+              className="h-10 rounded-lg mb-4"
+              onKeyDown={(e) => e.key === 'Enter' && handleCreateFolder()}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <Button
+                onClick={() => {
+                  setShowCreateFolder(false)
+                  setNewFolderName('')
+                }}
+                variant="outline"
+                className="flex-1 h-9 rounded-full"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleCreateFolder}
+                disabled={isCreatingFolder || !newFolderName.trim()}
+                className="flex-1 h-9 rounded-full bg-black text-white"
+              >
+                {isCreatingFolder ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Folder Filters */}
+      {folders.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={() => setSelectedFolder(null)}
+            className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+              selectedFolder === null
+                ? 'bg-black text-white'
+                : 'bg-white/60 text-black/60 hover:bg-white/80'
+            }`}
+          >
+            All Photos ({photos.length})
+          </button>
+          {folders.map(folder => {
+            const count = photos.filter(p => p.folder_id === folder.id).length
+            return (
+              <div key={folder.id} className="relative group">
+                <button
+                  onClick={() => setSelectedFolder(folder.id)}
+                  className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                    selectedFolder === folder.id
+                      ? 'bg-black text-white'
+                      : 'bg-white/60 text-black/60 hover:bg-white/80'
+                  }`}
+                >
+                  📁 {folder.name} ({count})
+                </button>
+                <button
+                  onClick={() => handleDeleteFolder(folder.id)}
+                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Move to Folder */}
+      {selectedPhotos.size > 0 && folders.length > 0 && (
+        <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <p className="text-xs text-amber-800">
+            <span className="font-semibold">{selectedPhotos.size}</span> selected
+          </p>
+          <select
+            onChange={(e) => handleMoveToFolder(e.target.value || null)}
+            className="h-8 px-3 rounded-lg text-xs border border-black/10 bg-white"
+            defaultValue=""
+          >
+            <option value="">Move to...</option>
+            <option value="">📁 All Photos</option>
+            {folders.map(folder => (
+              <option key={folder.id} value={folder.id}>
+                📁 {folder.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+         {photos.filter(p => selectedFolder === null || p.folder_id === selectedFolder).length > 0 ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+          {photos
+            .filter(p => selectedFolder === null || p.folder_id === selectedFolder)
+            .map((photo) => (
+
                       <div
                         key={photo.id}
                         className="group relative aspect-square rounded-xl overflow-hidden bg-black/5 cursor-pointer"
