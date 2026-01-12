@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label'
 
 
 import {
-  Camera, Lock, Loader2, Download, X, ChevronLeft, ChevronRight, 
-  Calendar, AlertCircle, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
+  Camera, Lock, Loader2, Download, X, 
+  Calendar, AlertCircle,ChevronLeft, ChevronRight, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
   ArrowLeft, FileText
 } from 'lucide-react'
 
@@ -39,6 +39,8 @@ export default function PublicGalleryPage() {
   const [folders, setFolders] = useState([])           
   const [selectedFolder, setSelectedFolder] = useState(null)  
 
+
+  const [loading, setLoading] = useState(true)
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -86,13 +88,14 @@ export default function PublicGalleryPage() {
   }
 
 const fetchPhotos = async (session) => {
+  setLoading(true)  // ✅ START LOADING
   try {
     const sessionParam = session || sessionToken
     const url = sessionParam
       ? `/api/gallery/${token}/photos?session=${encodeURIComponent(sessionParam)}`
       : `/api/gallery/${token}/photos`
-
-    const response = await fetch(url)
+    
+    const response = await fetch(url)  // ✅ UNE SEULE FOIS
     const data = await response.json()
 
     if (!response.ok) {
@@ -102,10 +105,12 @@ const fetchPhotos = async (session) => {
     }
 
     setPhotos(data.photos || [])
-    setFolders(data.folders || [])  // ✅ NEW
+    setFolders(data.folders || [])
     setAllowDownload(data.allow_download)
   } catch (err) {
     console.error('Error fetching photos:', err)
+  } finally {
+    setLoading(false)  // ✅ STOP LOADING
   }
 }
 
@@ -677,34 +682,100 @@ const fetchPhotos = async (session) => {
           </div>
 
           {/* Folder Browser */}
+{/* Folder Browser */}
 {folders.length > 0 && (
-  <div className="mb-6">
+  <div className="mb-8">
     {selectedFolder ? (
-      // Inside a folder - show back button
+      // Back button
       <button
         onClick={() => setSelectedFolder(null)}
-        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium bg-white/60 hover:bg-white/80 border border-black/10 text-black transition-all mb-4"
+        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group mb-6"
       >
-        <ArrowLeft className="w-3 h-3" />
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
         Back to Files
       </button>
     ) : (
-      // Root view - show folders as buttons
+      // Folder grid
       <div>
-        <h3 className="text-sm font-medium text-black/80 mb-3">📁 Folders</h3>
-        <div className="flex items-center gap-2 flex-wrap">
+        <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Your Folders
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {folders.map(folder => {
-            const count = photos.filter(p => p.folder_id === folder.id).length
-            if (count === 0) return null // Hide empty folders
+            const folderPhotos = photos.filter(p => p.folder_id === folder.id)
+            const count = folderPhotos.length
+            if (count === 0) return null
+            
+            // Get first 4 photos as preview
+            const previewPhotos = folderPhotos.slice(0, 4)
+            
             return (
               <button
                 key={folder.id}
                 onClick={() => setSelectedFolder(folder.id)}
-                className="px-4 py-3 rounded-xl text-xs font-medium bg-white/60 hover:bg-white/90 border border-black/10 text-black transition-all flex flex-col items-center gap-1"
+                className="group relative rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-black/10 hover:border-black/20 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02]"
               >
-                <FileText className="w-5 h-5 text-black/60" />
-                <span>{folder.name}</span>
-                <span className="text-[10px] text-black/50">{count} files</span>
+                {/* Preview Grid */}
+                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 mb-3">
+                  {previewPhotos.length === 1 ? (
+                    <img
+                      src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                  ) : previewPhotos.length === 2 ? (
+                    <div className="grid grid-cols-2 gap-1 h-full">
+                      {previewPhotos.map((photo, idx) => (
+                        <img
+                          key={idx}
+                          src={photo.thumbnail_url || photo.image_url}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ))}
+                    </div>
+                  ) : previewPhotos.length >= 3 ? (
+                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                      <img
+                        src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
+                        alt=""
+                        className="col-span-2 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      {previewPhotos.slice(1, 3).map((photo, idx) => (
+                        <img
+                          key={idx}
+                          src={photo.thumbnail_url || photo.image_url}
+                          alt=""
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <FileText className="w-12 h-12 text-black/20" />
+                    </div>
+                  )}
+                  
+                  {/* Overlay gradient */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+
+                {/* Folder info */}
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-black/90 truncate mb-0.5 group-hover:text-black transition-colors">
+                      {folder.name}
+                    </h4>
+                    <p className="text-xs text-black/50 flex items-center gap-1">
+                      <Images className="w-3 h-3" />
+                      {count} {count === 1 ? 'file' : 'files'}
+                    </p>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all ml-3">
+                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
               </button>
             )
           })}
@@ -713,14 +784,26 @@ const fetchPhotos = async (session) => {
     )}
   </div>
 )}
+
+{/* Photos Grid */}
 {(() => {
   // Filter logic
+ 
   const filteredPhotos = selectedFolder === null
-    ? photos.filter(p => p.folder_id === null)  // Root: only loose files
-    : photos.filter(p => p.folder_id === selectedFolder)  // Folder: files inside
+    ? photos.filter(p => p.folder_id === null)
+    : photos.filter(p => p.folder_id === selectedFolder)
+  
+  // ✅ SHOW LOADER WHILE LOADING
+  if (loading) {
+    return (
+      <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
+        <Loader2 className="w-12 h-12 text-black/20 animate-spin mx-auto mb-4" />
+        <p className="text-sm text-black/60">Loading your photos...</p>
+      </div>
+    )
+  }
   
   if (filteredPhotos.length === 0 && selectedFolder === null && folders.length > 0) {
-    // Root view with no loose files - don't show empty state if we have folders
     return null
   }
   
@@ -740,6 +823,8 @@ const fetchPhotos = async (session) => {
     )
   }
   
+
+  
   return (
     <div>
       {selectedFolder === null && filteredPhotos.length > 0 && (
@@ -750,7 +835,10 @@ const fetchPhotos = async (session) => {
           <div
             key={photo.id}
             className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-square hover:shadow-xl transition-all duration-300"
-            onClick={() => openLightbox(index)}
+            onClick={() => {
+           const realIndex = photos.findIndex(p => p.id === photo.id)
+            openLightbox(realIndex)
+}}
           >
             {photo.media_type === 'video' && !photo.thumbnail_url ? (
               <video
@@ -806,6 +894,7 @@ const fetchPhotos = async (session) => {
     </div>
   )
 })()}
+
         </div>
       </div>
     </div>
