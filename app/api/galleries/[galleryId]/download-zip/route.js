@@ -1,79 +1,101 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin } from '@/lib/supabase'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
   try {
-    const { token } = params
+    const { token } = await params
+    console.log('🟢 API: Received token:', token)
 
-    // Get gallery link and gallery info via token
-    const { data: link, error: linkError } = await supabase
-      .from('gallery_links')
-      .select('*, galleries(*)')
-      .eq('token', token)
-      .single()
+    let galleryId = null
+    let galleryTitle = 'gallery'
 
-    if (linkError || !link) {
-      return NextResponse.json({ error: 'Invalid link' }, { status: 403 })
+    // FIRST: Check if token is a direct gallery ID
+    const { data: gallery, error: galleryError } = await supabaseAdmin
+      .from('galleries')
+      .select('id, title')
+      .eq('id', token)
+      .maybeSingle()
+
+    if (gallery) {
+      console.log('✅ Found gallery by ID:', gallery.id)
+      galleryId = gallery.id
+      galleryTitle = gallery.title
+    } else {
+      // SECOND: Check if it's a gallery_links token
+      console.log('⚠️ Not a gallery ID, checking gallery_links...')
+      const { data: link, error: linkError } = await supabaseAdmin
+        .from('gallery_links')
+        .select('gallery_id, allow_download, expires_at, galleries(title)')
+        .eq('token', token)
+        .maybeSingle()
+
+      if (!link) {
+        console.log('❌ No gallery_links found either')
+        return NextResponse.json({ error: 'Invalid link' }, { status: 403 })
+      }
+
+      // Check permissions
+      if (!link.allow_download) {
+        return NextResponse.json({ error: 'Downloads not allowed' }, { status: 403 })
+      }
+
+      if (link.expires_at && new Date(link.expires_at) < new Date()) {
+        return NextResponse.json({ error: 'Link expired' }, { status: 403 })
+      }
+
+      galleryId = link.gallery_id
+      galleryTitle = link.galleries?.title || 'gallery'
     }
 
-    if (!link.allow_download) {
-      return NextResponse.json({ error: 'Downloads not allowed' }, { status: 403 })
-    }
+    console.log('📁 Fetching photos for gallery:', galleryId)
 
-    // Check if link is expired
-    if (link.expires_at && new Date(link.expires_at) < new Date()) {
-      return NextResponse.json({ error: 'Link expired' }, { status: 403 })
-    }
-
-    const galleryId = link.gallery_id
-
-    // Fetch all photos for this gallery
-    const { data: photos, error: photosError } = await supabase
+    // Fetch photos
+    const { data: photos, error: photosError } = await supabaseAdmin
       .from('photos')
-      .select('*')
+      .select('image_url, video_url, file_name, media_type')
       .eq('gallery_id', galleryId)
       .order('sort_order', { ascending: true })
 
     if (photosError || !photos || photos.length === 0) {
+      console.log('❌ No photos found:', photosError)
       return NextResponse.json({ error: 'No photos found' }, { status: 404 })
     }
 
-    // Create ZIP file
+    console.log(`✅ Found ${photos.length} photos, creating ZIP...`)
+
+    // Create ZIP
     const zip = new JSZip()
     
-    // Download all photos and add to ZIP
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i]
+      const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
+      
+      if (!url) continue
       
       try {
-        // Fetch the image
-        const response = await fetch(photo.image_url)
+        const response = await fetch(url)
         if (!response.ok) continue
         
         const blob = await response.blob()
         const arrayBuffer = await blob.arrayBuffer()
         
-        // Generate filename (preserve extension)
-        const ext = photo.file_name.split('.').pop() || 'jpg'
-        const filename = `${String(i + 1).padStart(3, '0')}_${photo.file_name}`
-        
+        const filename = photo.file_name || `${photo.media_type}-${String(i + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
         zip.file(filename, arrayBuffer)
       } catch (error) {
-        console.error(`Failed to add photo ${photo.id}:`, error)
-        // Continue with other photos
+        console.error(`Failed to add ${photo.file_name}:`, error)
       }
     }
 
-    // Generate ZIP buffer
+    // Generate ZIP
     const zipBuffer = await zip.generateAsync({ 
       type: 'nodebuffer',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
     })
 
-    // Return ZIP file
-    const galleryTitle = link.galleries?.title || 'gallery'
+    console.log(`✅ ZIP created: ${zipBuffer.length} bytes`)
+
     const filename = `${galleryTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`
 
     return new NextResponse(zipBuffer, {
@@ -85,7 +107,10 @@ export async function POST(request, { params }) {
       },
     })
   } catch (error) {
-    console.error('ZIP generation error:', error)
-    return NextResponse.json({ error: 'Failed to create ZIP' }, { status: 500 })
+    console.error('❌ ZIP generation error:', error)
+    return NextResponse.json({ 
+      error: 'Failed to create ZIP',
+      details: error.message 
+    }, { status: 500 })
   }
 }

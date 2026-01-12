@@ -9,21 +9,11 @@ import { Label } from '@/components/ui/label'
 
 
 import {
-  Camera,
-  Lock,
-  Loader2,
-  Download,
-  X,
-  ChevronLeft,
-  ChevronRight,
-  Calendar,
-  AlertCircle,
-  Images,
-  Eye,
-  EyeOff,
-  Sparkles,
-  CheckCircle as CheckCircleIcon,
+  Camera, Lock, Loader2, Download, X, ChevronLeft, ChevronRight, 
+  Calendar, AlertCircle, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
+  ArrowLeft, FileText
 } from 'lucide-react'
+
 import { Progress } from '@/components/ui/progress'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -45,6 +35,10 @@ export default function PublicGalleryPage() {
   const [error, setError] = useState(null)
   const [expired, setExpired] = useState(false)
   const [passwordError, setPasswordError] = useState('')
+
+  const [folders, setFolders] = useState([])           
+  const [selectedFolder, setSelectedFolder] = useState(null)  
+
 
   // Lightbox
   const [lightboxOpen, setLightboxOpen] = useState(false)
@@ -91,28 +85,30 @@ export default function PublicGalleryPage() {
     }
   }
 
-  const fetchPhotos = async (session) => {
-    try {
-      const sessionParam = session || sessionToken
-      const url = sessionParam
-        ? `/api/gallery/${token}/photos?session=${encodeURIComponent(sessionParam)}`
-        : `/api/gallery/${token}/photos`
+const fetchPhotos = async (session) => {
+  try {
+    const sessionParam = session || sessionToken
+    const url = sessionParam
+      ? `/api/gallery/${token}/photos?session=${encodeURIComponent(sessionParam)}`
+      : `/api/gallery/${token}/photos`
 
-      const response = await fetch(url)
-      const data = await response.json()
+    const response = await fetch(url)
+    const data = await response.json()
 
-      if (!response.ok) {
-        if (data.expired) setExpired(true)
-        console.error('Error fetching photos:', data.error)
-        return
-      }
-
-      setPhotos(data.photos || [])
-      setAllowDownload(data.allow_download)
-    } catch (err) {
-      console.error('Error fetching photos:', err)
+    if (!response.ok) {
+      if (data.expired) setExpired(true)
+      console.error('Error fetching photos:', data.error)
+      return
     }
+
+    setPhotos(data.photos || [])
+    setFolders(data.folders || [])  // ✅ NEW
+    setAllowDownload(data.allow_download)
+  } catch (err) {
+    console.error('Error fetching photos:', err)
   }
+}
+
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
@@ -680,76 +676,136 @@ export default function PublicGalleryPage() {
             )}
           </div>
 
-          {photos.length === 0 ? (
-            <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
-              <div className="w-16 h-16 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-4">
-                <Images className="w-8 h-8 text-black/30" />
-              </div>
-              <h3 className="text-lg font-semibold text-black/80 mb-2">No photos yet</h3>
-              <p className="text-sm text-black/60 max-w-sm mx-auto">
-                Your photographer may still be preparing your gallery. Check back soon!
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
-              {photos.map((photo, index) => (
-                <div
-                  key={photo.id}
-                  className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-square hover:shadow-xl transition-all duration-300"
-                  onClick={() => openLightbox(index)}
-                >
-                  {photo.media_type === 'video' && !photo.thumbnail_url ? (
-                    <video
-                      src={photo.video_url}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      muted
-                      playsInline
-                      preload="metadata"
-                    />
-                  ) : (
-                    <img
-                      src={photo.thumbnail_url || photo.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
-                      alt={photo.file_name || `Photo ${index + 1}`}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
-                        e.target.className += ' opacity-75 border-2 border-dashed border-slate-300'
-                      }}
-                    />
-                  )}
-                  
-                  {photo.media_type === 'video' && (
-                    <>
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 rounded-full bg-white/95 shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all">
-                          <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </div>
-                      </div>
-                      <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-500/95 text-white text-xs font-bold rounded-full shadow-lg">
-                        VIDEO
-                      </div>
-                    </>
-                  )}
-                  
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-xs text-white">
-                    {allowDownload && (
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-2 py-1 rounded-full">
-                        <Download className="w-3 h-3" />
-                      </div>
-                    )}
-                    <div className="bg-black/70 px-2 py-1 rounded-full">
-                      {index + 1}
-                    </div>
+          {/* Folder Browser */}
+{folders.length > 0 && (
+  <div className="mb-6">
+    {selectedFolder ? (
+      // Inside a folder - show back button
+      <button
+        onClick={() => setSelectedFolder(null)}
+        className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium bg-white/60 hover:bg-white/80 border border-black/10 text-black transition-all mb-4"
+      >
+        <ArrowLeft className="w-3 h-3" />
+        Back to Files
+      </button>
+    ) : (
+      // Root view - show folders as buttons
+      <div>
+        <h3 className="text-sm font-medium text-black/80 mb-3">📁 Folders</h3>
+        <div className="flex items-center gap-2 flex-wrap">
+          {folders.map(folder => {
+            const count = photos.filter(p => p.folder_id === folder.id).length
+            if (count === 0) return null // Hide empty folders
+            return (
+              <button
+                key={folder.id}
+                onClick={() => setSelectedFolder(folder.id)}
+                className="px-4 py-3 rounded-xl text-xs font-medium bg-white/60 hover:bg-white/90 border border-black/10 text-black transition-all flex flex-col items-center gap-1"
+              >
+                <FileText className="w-5 h-5 text-black/60" />
+                <span>{folder.name}</span>
+                <span className="text-[10px] text-black/50">{count} files</span>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+    )}
+  </div>
+)}
+{(() => {
+  // Filter logic
+  const filteredPhotos = selectedFolder === null
+    ? photos.filter(p => p.folder_id === null)  // Root: only loose files
+    : photos.filter(p => p.folder_id === selectedFolder)  // Folder: files inside
+  
+  if (filteredPhotos.length === 0 && selectedFolder === null && folders.length > 0) {
+    // Root view with no loose files - don't show empty state if we have folders
+    return null
+  }
+  
+  if (filteredPhotos.length === 0) {
+    return (
+      <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
+        <div className="w-16 h-16 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-4">
+          <Images className="w-8 h-8 text-black/30" />
+        </div>
+        <h3 className="text-lg font-semibold text-black/80 mb-2">
+          {selectedFolder ? 'No files in this folder' : 'No photos yet'}
+        </h3>
+        <p className="text-sm text-black/60 max-w-sm mx-auto">
+          {selectedFolder ? 'This folder is empty' : 'Your photographer is preparing your gallery'}
+        </p>
+      </div>
+    )
+  }
+  
+  return (
+    <div>
+      {selectedFolder === null && filteredPhotos.length > 0 && (
+        <h3 className="text-sm font-medium text-black/80 mb-3 mt-6">📄 Files</h3>
+      )}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
+        {filteredPhotos.map((photo, index) => (
+          <div
+            key={photo.id}
+            className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-square hover:shadow-xl transition-all duration-300"
+            onClick={() => openLightbox(index)}
+          >
+            {photo.media_type === 'video' && !photo.thumbnail_url ? (
+              <video
+                src={photo.video_url}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                muted
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <img
+                src={photo.thumbnail_url || photo.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                alt={photo.file_name || `Photo ${index + 1}`}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+                onError={(e) => {
+                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
+                  e.target.className += ' opacity-75 border-2 border-dashed border-slate-300'
+                }}
+              />
+            )}
+
+            {photo.media_type === 'video' && (
+              <>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-full bg-white/95 shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all">
+                    <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
                   </div>
                 </div>
-              ))}
+                <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-500/95 text-white text-xs font-bold rounded-full shadow-lg">
+                  VIDEO
+                </div>
+              </>
+            )}
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-xs text-white">
+              {allowDownload && (
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-2 py-1 rounded-full">
+                  <Download className="w-3 h-3" />
+                </div>
+              )}
+              <div className="bg-black/70 px-2 py-1 rounded-full">
+                {index + 1}
+              </div>
             </div>
-          )}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+})()}
         </div>
       </div>
     </div>
