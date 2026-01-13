@@ -637,55 +637,33 @@ const handleDeleteFolder = async (folderId) => {
 
   
 
-  const handleGenerateLink = async () => {
-    try {
-      let passwordHash = null
-      if (linkSettings.hasPassword && linkSettings.password) {
-        passwordHash = await bcrypt.hash(linkSettings.password, 10)
-      } else if (galleryLink?.password_hash && linkSettings.hasPassword) {
-        passwordHash = galleryLink.password_hash
-      }
-
-      const linkData = {
-        gallery_id: galleryId,
-        token: galleryLink?.token || uuidv4(),
-        password_hash: passwordHash,
-        expires_at: linkSettings.expires_at ? new Date(linkSettings.expires_at).toISOString() : null,
-        allow_download: linkSettings.allow_download
-      }
-
-      if (galleryLink) {
-        const { error } = await supabase
-          .from('gallery_links')
-          .update(linkData)
-          .eq('id', galleryLink.id)
-
-        if (error) throw error
-        setGalleryLink({ ...galleryLink, ...linkData })
-      } else {
-        const linkId = uuidv4()
-        const { error } = await supabase
-          .from('gallery_links')
-          .insert({ id: linkId, ...linkData })
-
-        if (error) throw error
-        setGalleryLink({ id: linkId, ...linkData })
-      }
-
-      if (formData.status === 'draft') {
-        await supabase
-          .from('galleries')
-          .update({ status: 'active' })
-          .eq('id', galleryId)
-        setFormData({ ...formData, status: 'active' })
-      }
-
-      toast.success(galleryLink ? 'Share link updated!' : 'Share link generated!')
-    } catch (error) {
-      console.error('Error generating link:', error)
-      toast.error('Failed to generate share link')
+const handleGenerateLink = async () => {
+  try {
+    let passwordHash = null
+    if (linkSettings.hasPassword && linkSettings.password) {
+      passwordHash = await bcrypt.hash(linkSettings.password, 10)
     }
+
+    const { error } = await supabase
+      .from('galleries')
+      .update({
+        passwordhash: passwordHash,
+        allow_download: linkSettings.allowdownload  
+      })
+      .eq('id', galleryId)
+
+    if (error) throw error
+
+    setGallery({ ...gallery, allow_download: linkSettings.allowdownload })
+    toast.success(galleryLink ? 'Settings updated!' : 'Share link generated!')
+    setGalleryLink({ token: galleryId })
+  } catch (error) {
+    console.error('Error updating gallery:', error)
+    toast.error('Failed to update settings')
   }
+}
+
+
 
   const copyShareLink = () => {
     if (galleryLink && typeof window !== 'undefined') {

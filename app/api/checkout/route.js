@@ -8,7 +8,7 @@ const PLAN_PRICE_MAP = {
 }
 
 export async function POST(request) {
-  let plan = null  // ← déclaré ici pour être accessible dans catch
+  let plan = null
   
   try {
     const body = await request.json()
@@ -22,17 +22,39 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
     }
 
-    const session = await stripe.checkout.sessions.create({
-      mode: 'payment',  // ou 'subscription' si Studio
+    // Define baseUrl
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http'
+    const host = request.headers.get('host') || 'localhost:3000'
+    const baseUrl = `${protocol}://${host}`
+
+    console.log('Base URL:', baseUrl)
+
+    // Determine mode based on plan
+    const mode = plan === 'studio' ? 'subscription' : 'payment'
+
+    // ✅ Configuration différente selon le mode
+    const sessionConfig = {
+      mode: mode,
       line_items: [
         {
           price: PLAN_PRICE_MAP[plan],
           quantity: 1,
         },
       ],
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/dashboard?checkout=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/?checkout=cancelled`,
-    })
+      success_url: `${baseUrl}/dashboard?success=true&plan=${plan}`,
+      cancel_url: `${baseUrl}/?canceled=true`,
+    }
+
+    // ✅ AJOUT: Si c'est une subscription, ajouter ces paramètres
+    if (mode === 'subscription') {
+      sessionConfig.payment_method_types = ['card']
+      sessionConfig.billing_address_collection = 'auto'
+      // Optionnel: ajouter customer email si user connecté
+    }
+
+    console.log('Session config:', sessionConfig) // Debug
+
+    const session = await stripe.checkout.sessions.create(sessionConfig)
 
     return NextResponse.json({ url: session.url })
   } catch (err) {
@@ -40,8 +62,9 @@ export async function POST(request) {
       message: err.message,
       type: err.type,
       code: err.code,
-      plan: plan,  // ← maintenant accessible
+      plan: plan,
       priceId: PLAN_PRICE_MAP?.[plan],
+      stack: err.stack, // ✅ Plus de détails
     })
     return NextResponse.json(
       { error: 'Unable to create checkout session', details: err.message },

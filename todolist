@@ -38,3 +38,27 @@ CloudFront CDN pour la diffusion mondiale
 -need to fix font color in dahshboard
 
 -need to add "welcome to your gallery 'name' click on start or maybe add a password"
+-🧰 OUTIL DE SUIVI (INTERNE) pour les payements (Bloquer les téléchargements quand crédits = 0, Expiration automatique des galeries, Historique d’usage téléchargeable (PDF/CSV))
+
+
+🎥 Option vidéo (important)
+
+Parce que la vidéo explose la bande passante :
+
+Vidéos HD → inclus
+
+Vidéos 4K → +3 € par galerie
+ou
+
+Limite dédiée (ex : 10 GB max)
+
+detecteur de HD & 4K (tres important)
+
+-link non permantnent, quand la gallerie doit expirer
+
+-need to compress photos, but once they're downloaded the client gets hr photos
+-need to add conditions and how to use, conserve galleries, durations, quakity etc
+
+
+
+

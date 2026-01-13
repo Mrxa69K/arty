@@ -40,6 +40,8 @@ export default function PublicGalleryPage() {
   const [selectedFolder, setSelectedFolder] = useState(null)  
 
 
+  
+
   const [loading, setLoading] = useState(true)
 
   // Lightbox
