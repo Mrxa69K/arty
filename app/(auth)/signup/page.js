@@ -1,222 +1,145 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
-import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { toast } from 'sonner'
+import { Loader2 } from 'lucide-react'
 
-export function PlanSelectionModal({ open, onClose, userEmail }) {
+export default function SignupPage() {
+  const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState(null)
-  const [currentWord, setCurrentWord] = useState(0)
-  
-  const words = ['clients', 'galleries', 'moments', 'stories', 'memories']
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentWord((prev) => (prev + 1) % words.length)
-    }, 2000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const handleSelectPlan = async (planType) => {
+  const handleSignup = async (e) => {
+    e.preventDefault()
     setIsLoading(true)
-    setSelectedPlan(planType)
 
     try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planType })
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+        }
       })
 
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Checkout failed')
-      }
+      if (error) throw error
 
-      const data = await res.json()
-      
-      if (data.url) {
-        window.location.href = data.url
-      }
+      toast.success('Account created! Please check your email to verify.')
+      router.push('/dashboard')
     } catch (error) {
-      console.error('Plan selection error:', error)
-      toast.error(error.message || 'Failed to process payment.')
+      console.error('Signup error:', error)
+      toast.error(error.message || 'Failed to create account')
+    } finally {
       setIsLoading(false)
-      setSelectedPlan(null)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0 bg-transparent shadow-none p-0">
-        {/* Background */}
-        <div className="relative rounded-3xl overflow-hidden">
-          {/* Your golden cover.webp */}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundImage: "url('/cover.webp')",
-              backgroundSize: 'cover',
-              backgroundPosition: 'center',
-            }}
-          />
-          <div className="absolute inset-0 bg-[#F5F0EA]/95 mix-blend-soft-light" />
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-multiply"
-            style={{
-              backgroundImage:
-                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-              backgroundSize: 'cover',
-            }}
-          />
+    <main className="min-h-screen relative overflow-hidden">
+      {/* Background */}
+      <div
+        className="fixed inset-0"
+        style={{
+          backgroundImage: "url('/cover.webp')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      <div className="fixed inset-0 bg-[#F5F0EA]/90" />
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.12] mix-blend-multiply"
+        style={{
+          backgroundImage:
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
+          backgroundSize: 'cover',
+        }}
+      />
 
-          <div className="relative px-6 sm:px-12 py-10 sm:py-12">
-            {/* Header - More compact */}
-            <div className="text-center mb-12">
-              <h1 className="text-3xl sm:text-5xl font-serif text-black/90 mb-4 leading-tight tracking-tight">
-                One place to deliver
+      <div className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4">
+        {/* Logo */}
+        <Link href="/" className="mb-12">
+          <span className="text-3xl font-serif text-black/90 tracking-tight">
+            Artydrop
+          </span>
+        </Link>
+
+        {/* Signup Form */}
+        <div className="w-full max-w-md">
+          <div className="bg-white/60 backdrop-blur-xl border border-black/10 rounded-2xl p-8 shadow-xl">
+            <div className="mb-8 text-center">
+              <h1 className="text-2xl font-serif text-black/90 mb-2">
+                Create account
               </h1>
-              
-              {/* Animated word cycling - smaller */}
-              <div className="h-12 sm:h-16 flex items-center justify-center overflow-hidden">
-                <div className="relative">
-                  {words.map((word, index) => (
-                    <div
-                      key={word}
-                      className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ${
-                        index === currentWord
-                          ? 'opacity-100 translate-y-0'
-                          : index === (currentWord - 1 + words.length) % words.length
-                          ? 'opacity-0 -translate-y-full'
-                          : 'opacity-0 translate-y-full'
-                      }`}
-                    >
-                      <span className="text-4xl sm:text-6xl font-serif text-black/20 tracking-tight">
-                        {word}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              <p className="text-sm text-black/60">
+                Start delivering beautiful galleries
+              </p>
+            </div>
+
+            <form onSubmit={handleSignup} className="space-y-4">
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-black/50 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border border-black/10 text-black/90 focus:outline-none focus:ring-2 focus:ring-black/20 transition-all"
+                  placeholder="your@email.com"
+                />
               </div>
-            </div>
 
-            {/* Plans - Compact cards */}
-            <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-4 mb-8">
-              {/* Test Plan */}
+              <div>
+                <label className="block text-xs uppercase tracking-[0.2em] text-black/50 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-3 rounded-xl bg-white/80 border border-black/10 text-black/90 focus:outline-none focus:ring-2 focus:ring-black/20 transition-all"
+                  placeholder="••••••••"
+                />
+              </div>
+
               <button
-                onClick={() => handleSelectPlan('test')}
+                type="submit"
                 disabled={isLoading}
-                className="group relative text-left"
+                className="w-full px-4 py-3 rounded-xl bg-black text-white font-medium hover:scale-[1.02] transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                <div className="relative bg-white/40 backdrop-blur-md border border-black/10 rounded-xl p-6 transition-all duration-500 hover:bg-white/60 hover:shadow-xl hover:-translate-y-0.5">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-black/40 mb-2">
-                        Test
-                      </p>
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl font-serif text-black/90">€1</span>
-                        <span className="text-xs text-black/50">one-time</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-xs text-black/60 border-t border-black/10 pt-4">
-                      <p>1 gallery</p>
-                      <p>10 photos</p>
-                      <p>3 days</p>
-                    </div>
-                  </div>
-
-                  {isLoading && selectedPlan === 'test' && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
-                    </div>
-                  )}
-                </div>
-                
-                <p className="text-[9px] text-center text-black/40 mt-2 tracking-wide">
-                  One-time only
-                </p>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Creating account...
+                  </>
+                ) : (
+                  'Sign up'
+                )}
               </button>
+            </form>
 
-              {/* Pay as you go */}
-              <button
-                onClick={() => handleSelectPlan('payg')}
-                disabled={isLoading}
-                className="group relative text-left"
-              >
-                <div className="relative bg-black text-white rounded-xl p-6 transition-all duration-500 hover:shadow-xl hover:-translate-y-0.5">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2">
-                        Flexible
-                      </p>
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl font-serif">€4.90</span>
-                        <span className="text-xs text-white/60">per gallery</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-xs text-white/70 border-t border-white/20 pt-4">
-                      <p>Unlimited galleries</p>
-                      <p>Unlimited photos</p>
-                      <p>No expiration</p>
-                    </div>
-                  </div>
-
-                  {isLoading && selectedPlan === 'payg' && (
-                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 animate-spin text-white/60" />
-                    </div>
-                  )}
-                </div>
-              </button>
-
-              {/* Studio */}
-              <button
-                onClick={() => handleSelectPlan('studio')}
-                disabled={isLoading}
-                className="group relative text-left"
-              >
-                <div className="relative bg-white/40 backdrop-blur-md border border-black/10 rounded-xl p-6 transition-all duration-500 hover:bg-white/60 hover:shadow-xl hover:-translate-y-0.5">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-[0.2em] text-black/40 mb-2">
-                        Professional
-                      </p>
-                      <div className="flex items-baseline gap-1.5 mb-1">
-                        <span className="text-3xl font-serif text-black/90">€19</span>
-                        <span className="text-xs text-black/50">/month</span>
-                      </div>
-                    </div>
-
-                    <div className="space-y-2 text-xs text-black/60 border-t border-black/10 pt-4">
-                      <p>Unlimited galleries</p>
-                      <p>Unlimited photos</p>
-                      <p>Priority support</p>
-                    </div>
-                  </div>
-
-                  {isLoading && selectedPlan === 'studio' && (
-                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
-                    </div>
-                  )}
-                </div>
-              </button>
-            </div>
-
-            {/* Footer */}
-            <div className="text-center">
-              <p className="text-xs text-black/50">
-                Fair pricing to help photographers 💙
+            <div className="mt-6 text-center">
+              <p className="text-sm text-black/60">
+                Already have an account?{' '}
+                <Link href="/login" className="text-black/90 hover:underline">
+                  Log in
+                </Link>
               </p>
             </div>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+
+        <p className="mt-8 text-xs text-black/40">
+          By signing up, you agree to our terms and conditions
+        </p>
+      </div>
+    </main>
   )
 }
