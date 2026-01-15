@@ -150,43 +150,50 @@ const fetchPhotos = async (session) => {
       setIsVerifying(false)
     }
   }
+const handleDownload = async (photo, showToast = true) => {
+  setDownloadingId(photo.id)
+  try {
+    // ✅ Use API route instead of direct URL
+    const response = await fetch(`/api/gallery/${token}/download-photo`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ photoId: photo.id })
+    })
 
-  const handleDownload = async (photo, showToast = true) => {
-    setDownloadingId(photo.id)
-    try {
-      const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
-      
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Failed to fetch file')
-
-      const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = photo.file_name || `${photo.media_type}-${photo.id}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-
-      setTimeout(() => {
-        document.body.removeChild(link)
-        window.URL.revokeObjectURL(blobUrl)
-      }, 100)
-
-      if (showToast) {
-        toast.success(`${photo.media_type === 'video' ? 'Video' : 'Photo'} downloaded`)
-      }
-      return true
-    } catch (err) {
-      console.error('Download error:', err)
-      if (showToast) {
-        toast.error('Failed to download. Please try again.')
-      }
-      return false
-    } finally {
-      setDownloadingId(null)
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Download failed')
     }
+
+    const blob = await response.blob()
+    const blobUrl = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = blobUrl
+    link.download = photo.file_name || `${photo.media_type}-${photo.id}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
+    link.style.display = 'none'
+    document.body.appendChild(link)
+    link.click()
+
+    setTimeout(() => {
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(blobUrl)
+    }, 100)
+
+    if (showToast) {
+      toast.success(`${photo.media_type === 'video' ? 'Video' : 'Photo'} downloaded`)
+    }
+    return true
+  } catch (err) {
+    console.error('Download error:', err)
+    if (showToast) {
+      toast.error(err.message || 'Failed to download. Please try again.')
+    }
+    return false
+  } finally {
+    setDownloadingId(null)
   }
+}
+
 
   const handleDownloadAllZip = async () => {
     if (photos.length === 0) {

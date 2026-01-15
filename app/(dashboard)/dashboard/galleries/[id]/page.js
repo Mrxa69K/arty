@@ -157,7 +157,7 @@ const fetchGallery = async () => {
 
     setPhotos(photos || [])
 
-    // ✅ Fetch folders
+    //  Fetch folders
     await fetchFolders()
 
     const { data: links } = await supabase
@@ -210,7 +210,6 @@ const fetchGallery = async () => {
       setIsSaving(false)
     }
   }
-// ✅ AJOUTE CETTE FONCTION ICI (avant processFiles)
 const generateVideoThumbnail = (file) => {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video')
@@ -325,7 +324,6 @@ const generateVideoThumbnail = (file) => {
             try {
   const isVideo = file.type.startsWith('video/')
 
-  // ✅ NOUVEAU: Génère thumbnail pour vidéos
   let thumbnailUrl = null
   if (isVideo) {
     try {
@@ -376,7 +374,7 @@ const generateVideoThumbnail = (file) => {
     .insert({
       id: photoId,
       gallery_id: galleryId,
-      image_url: isVideo ? thumbnailUrl : publicUrl,  // ✅ Thumbnail pour vidéos
+      image_url: isVideo ? thumbnailUrl : publicUrl,  
       video_url: isVideo ? publicUrl : null,
       storage_path: filePath,
       file_name: file.name,
@@ -394,7 +392,7 @@ const generateVideoThumbnail = (file) => {
   return {
     id: photoId,
     gallery_id: galleryId,
-    image_url: isVideo ? thumbnailUrl : publicUrl,  // ✅ Thumbnail pour vidéos
+    image_url: isVideo ? thumbnailUrl : publicUrl,  //  Thumbnail pour vidéos
     video_url: isVideo ? publicUrl : null,
     storage_path: filePath,
     file_name: file.name,
@@ -520,7 +518,7 @@ const generateVideoThumbnail = (file) => {
   })
 }
 
-// ✅ NEW: Select All / Deselect All
+//  NEW: Select All / Deselect All
 const handleSelectAll = () => {
   if (selectedPhotos.size === photos.length) {
     // Deselect all
@@ -760,6 +758,8 @@ const handleGenerateLink = async () => {
             <span className="hidden sm:inline text-black/60">{user?.email}</span>
           </div>
         </header>
+
+        
 
         <section className="flex-1 py-8 px-4 sm:px-6 max-w-6xl mx-auto w-full space-y-6">
           <Link href="/dashboard/galleries" className="inline-flex items-center text-xs text-black/60 hover:text-black/80">

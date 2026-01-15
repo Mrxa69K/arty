@@ -1,291 +1,222 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { supabase } from '@/lib/supabase'
-import { Camera, Loader2 } from 'lucide-react'
 
-export default function SignupPage() {
-  const router = useRouter()
-  const [fullName, setFullName] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
+export function PlanSelectionModal({ open, onClose, userEmail }) {
   const [isLoading, setIsLoading] = useState(false)
-  const [pendingPlan, setPendingPlan] = useState(null)
+  const [selectedPlan, setSelectedPlan] = useState(null)
+  const [currentWord, setCurrentWord] = useState(0)
+  
+  const words = ['clients', 'galleries', 'moments', 'stories', 'memories']
 
-  // Vérifier s'il y a un plan en attente au chargement
   useEffect(() => {
-    const plan = localStorage.getItem('pending_plan')
-    if (plan) {
-      setPendingPlan(plan)
-      toast.info(`You'll be redirected to checkout after signup (${plan})`)
-    }
+    const interval = setInterval(() => {
+      setCurrentWord((prev) => (prev + 1) % words.length)
+    }, 2000)
+    return () => clearInterval(interval)
   }, [])
 
-  const handleSignup = async (e) => {
-    e.preventDefault()
+  const handleSelectPlan = async (planType) => {
     setIsLoading(true)
+    setSelectedPlan(planType)
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-        },
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan: planType })
       })
 
-      if (error) {
-        toast.error(error.message)
-        return
+      if (!res.ok) {
+        const error = await res.json()
+        throw new Error(error.error || 'Checkout failed')
       }
 
-      if (data.user && !data.session) {
-        // Email confirmation requise
-        toast.success('Check your email to confirm your account!')
-        
-        // Garder le plan en localStorage pour après confirmation
-        router.push('/login')
-      } else {
-        // Session créée immédiatement
-        toast.success('Account created successfully!')
-
-        // Vérifier si un plan était en attente
-        const plan = localStorage.getItem('pending_plan')
-        
-        if (plan) {
-          // Supprimer le plan du localStorage
-          localStorage.removeItem('pending_plan')
-          
-          // Lancer le checkout Stripe automatiquement
-          try {
-            const res = await fetch('/api/checkout', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ plan }),
-            })
-
-            if (!res.ok) {
-              const error = await res.json().catch(() => ({}))
-              console.error('Checkout error after signup', res.status, error)
-              toast.error('Account created, but checkout failed. Redirecting to dashboard.')
-              router.push('/dashboard')
-              return
-            }
-
-            const checkoutData = await res.json()
-            if (checkoutData.url) {
-              // Rediriger vers Stripe Checkout
-              window.location.href = checkoutData.url
-            } else {
-              router.push('/dashboard')
-            }
-          } catch (err) {
-            console.error('Checkout error:', err)
-            toast.error('Account created, but checkout failed. Redirecting to dashboard.')
-            router.push('/dashboard')
-          }
-        } else {
-          // Pas de plan en attente → dashboard normal
-          router.push('/dashboard')
-        }
+      const data = await res.json()
+      
+      if (data.url) {
+        window.location.href = data.url
       }
     } catch (error) {
-      toast.error('An unexpected error occurred')
-    } finally {
+      console.error('Plan selection error:', error)
+      toast.error(error.message || 'Failed to process payment.')
       setIsLoading(false)
+      setSelectedPlan(null)
     }
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      {/* background cover */}
-      <div
-        className="fixed inset-0"
-        style={{
-          backgroundImage: "url('/cover.webp')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      {/* beige wash + grain */}
-      <div className="fixed inset-0 bg-[#F5F0EA]/70 mix-blend-soft-light" />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.14] mix-blend-multiply"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-          backgroundSize: 'cover',
-        }}
-      />
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto border-0 bg-transparent shadow-none p-0">
+        {/* Background */}
+        <div className="relative rounded-3xl overflow-hidden">
+          {/* Your golden cover.webp */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage: "url('/cover.webp')",
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          />
+          <div className="absolute inset-0 bg-[#F5F0EA]/95 mix-blend-soft-light" />
+          <div
+            className="pointer-events-none absolute inset-0 opacity-[0.12] mix-blend-multiply"
+            style={{
+              backgroundImage:
+                "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
+              backgroundSize: 'cover',
+            }}
+          />
 
-      <div className="relative z-10 flex min-h-screen">
-        {/* left side – logo frame + floating tagline */}
-        <div className="hidden lg:flex lg:flex-col lg:w-1/2 justify-between px-7 py-6">
-          {/* logo encadré */}
-          <div className="flex items-center">
-            <div className="inline-flex items-center justify-center px-4 py-2 border border-black/80 rounded-[999px] bg-black/5 backdrop-blur-sm">
-              <span className="text-xs tracking-[0.18em] uppercase">
-                ARTYDROP
-              </span>
-            </div>
-          </div>
-
-          {/* tagline */}
-          <div className="mb-4">
-            <p
-              className="
-                tagline-aura
-                text-center
-                text-[15px]
-                font-semibold
-                text-black/80
-                tracking-[0.22em]
-                uppercase
-                whitespace-nowrap
-                animate-[float_6s_ease-in-out_infinite]
-              "
-            >
-              Calm, intentional delivery for modern photographers.
-            </p>
-          </div>
-
-          {/* footer links */}
-          <div className="text-[11px] text-black/65 flex gap-4">
-            <span>Terms of Service</span>
-            <span>Privacy Policy</span>
-          </div>
-        </div>
-
-        {/* right side – signup form */}
-        <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-md mx-4 my-10 lg:my-0">
-            {/* logo mobile */}
-            <div className="lg:hidden mb-10 flex items-center gap-2">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#F97316] flex items-center justify-center shadow-sm">
-                <Camera className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-sm tracking-[0.18em] uppercase">
-                ARTYdrop
-              </span>
-            </div>
-
-            {pendingPlan && (
-              <div className="mb-4 p-3 rounded-xl bg-black/5 border border-black/10">
-                <p className="text-xs text-black/70 text-center">
-                  ✨ After signup, you'll be redirected to checkout
-                </p>
-              </div>
-            )}
-
-            <Card className="border border-black/10 bg-[#F8F3EB]/95 shadow-2xl rounded-3xl">
-              <CardHeader className="space-y-2 pb-4">
-                <CardTitle className="text-xl font-semibold text-center">
-                  Create an account
-                </CardTitle>
-                <CardDescription className="text-center text-xs text-black/60">
-                  Start delivering beautiful galleries to your clients.
-                </CardDescription>
-              </CardHeader>
-
-              <form onSubmit={handleSignup}>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="text-xs text-black/70">
-                      Full name
-                    </Label>
-                    <Input
-                      id="fullName"
-                      type="text"
-                      placeholder="John Doe"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email" className="text-xs text-black/70">
-                      Email
-                    </Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="password" className="text-xs text-black/70">
-                      Password
-                    </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      minLength={6}
-                      disabled={isLoading}
-                      className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                    />
-                    <p className="text-xs text-black/55">
-                      Must be at least 6 characters.
-                    </p>
-                  </div>
-                </CardContent>
-
-                <CardFooter className="flex flex-col space-y-4 pt-2">
-                  <Button
-                    type="submit"
-                    className="w-full h-10 rounded-full bg-black text-white hover:bg-black/90 text-sm"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Creating account...
-                      </>
-                    ) : (
-                      'Create account'
-                    )}
-                  </Button>
-                  <p className="text-center text-sm text-black/60">
-                    Already have an account?{' '}
-                    <Link
-                      href="/login"
-                      className="text-black hover:underline font-medium"
+          <div className="relative px-6 sm:px-12 py-10 sm:py-12">
+            {/* Header - More compact */}
+            <div className="text-center mb-12">
+              <h1 className="text-3xl sm:text-5xl font-serif text-black/90 mb-4 leading-tight tracking-tight">
+                One place to deliver
+              </h1>
+              
+              {/* Animated word cycling - smaller */}
+              <div className="h-12 sm:h-16 flex items-center justify-center overflow-hidden">
+                <div className="relative">
+                  {words.map((word, index) => (
+                    <div
+                      key={word}
+                      className={`absolute inset-0 flex items-center justify-center transition-all duration-700 ${
+                        index === currentWord
+                          ? 'opacity-100 translate-y-0'
+                          : index === (currentWord - 1 + words.length) % words.length
+                          ? 'opacity-0 -translate-y-full'
+                          : 'opacity-0 translate-y-full'
+                      }`}
                     >
-                      Sign in
-                    </Link>
-                  </p>
-                </CardFooter>
-              </form>
-            </Card>
+                      <span className="text-4xl sm:text-6xl font-serif text-black/20 tracking-tight">
+                        {word}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Plans - Compact cards */}
+            <div className="max-w-4xl mx-auto grid md:grid-cols-3 gap-4 mb-8">
+              {/* Test Plan */}
+              <button
+                onClick={() => handleSelectPlan('test')}
+                disabled={isLoading}
+                className="group relative text-left"
+              >
+                <div className="relative bg-white/40 backdrop-blur-md border border-black/10 rounded-xl p-6 transition-all duration-500 hover:bg-white/60 hover:shadow-xl hover:-translate-y-0.5">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-black/40 mb-2">
+                        Test
+                      </p>
+                      <div className="flex items-baseline gap-1.5 mb-1">
+                        <span className="text-3xl font-serif text-black/90">€1</span>
+                        <span className="text-xs text-black/50">one-time</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-black/60 border-t border-black/10 pt-4">
+                      <p>1 gallery</p>
+                      <p>10 photos</p>
+                      <p>3 days</p>
+                    </div>
+                  </div>
+
+                  {isLoading && selectedPlan === 'test' && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
+                    </div>
+                  )}
+                </div>
+                
+                <p className="text-[9px] text-center text-black/40 mt-2 tracking-wide">
+                  One-time only
+                </p>
+              </button>
+
+              {/* Pay as you go */}
+              <button
+                onClick={() => handleSelectPlan('payg')}
+                disabled={isLoading}
+                className="group relative text-left"
+              >
+                <div className="relative bg-black text-white rounded-xl p-6 transition-all duration-500 hover:shadow-xl hover:-translate-y-0.5">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/50 mb-2">
+                        Flexible
+                      </p>
+                      <div className="flex items-baseline gap-1.5 mb-1">
+                        <span className="text-3xl font-serif">€4.90</span>
+                        <span className="text-xs text-white/60">per gallery</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-white/70 border-t border-white/20 pt-4">
+                      <p>Unlimited galleries</p>
+                      <p>Unlimited photos</p>
+                      <p>No expiration</p>
+                    </div>
+                  </div>
+
+                  {isLoading && selectedPlan === 'payg' && (
+                    <div className="absolute inset-0 bg-black/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-white/60" />
+                    </div>
+                  )}
+                </div>
+              </button>
+
+              {/* Studio */}
+              <button
+                onClick={() => handleSelectPlan('studio')}
+                disabled={isLoading}
+                className="group relative text-left"
+              >
+                <div className="relative bg-white/40 backdrop-blur-md border border-black/10 rounded-xl p-6 transition-all duration-500 hover:bg-white/60 hover:shadow-xl hover:-translate-y-0.5">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-black/40 mb-2">
+                        Professional
+                      </p>
+                      <div className="flex items-baseline gap-1.5 mb-1">
+                        <span className="text-3xl font-serif text-black/90">€19</span>
+                        <span className="text-xs text-black/50">/month</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 text-xs text-black/60 border-t border-black/10 pt-4">
+                      <p>Unlimited galleries</p>
+                      <p>Unlimited photos</p>
+                      <p>Priority support</p>
+                    </div>
+                  </div>
+
+                  {isLoading && selectedPlan === 'studio' && (
+                    <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-xl flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin text-black/40" />
+                    </div>
+                  )}
+                </div>
+              </button>
+            </div>
+
+            {/* Footer */}
+            <div className="text-center">
+              <p className="text-xs text-black/50">
+                Fair pricing to help photographers 💙
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

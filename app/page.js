@@ -174,7 +174,7 @@ export default function HomePage() {
                   <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-400 to-teal-500 border-2 border-white" />
                 </div>
                 <span className="text-[11px] text-black/70">
-                  Trusted by <span className="font-semibold">500+ photographers</span>
+                  Trusted by <span className="font-semibold">200+ photographers</span>
                 </span>
               </div>
             </div>
@@ -197,15 +197,15 @@ export default function HomePage() {
             <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-black/60 pt-2">
               <span className="flex items-center gap-1">
                 <Check className="w-3 h-3 text-black/80" />
-                12,000+ galleries delivered
+                1,000+ galleries delivered
               </span>
               <span className="flex items-center gap-1">
                 <Check className="w-3 h-3 text-black/80" />
-                98% satisfaction
+                99% satisfaction
               </span>
               <span className="flex items-center gap-1">
                 <Check className="w-3 h-3 text-black/80" />
-                No credit card required
+                Try with just 1€
               </span>
             </div>
 

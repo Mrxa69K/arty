@@ -4,22 +4,29 @@ import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
   try {
-    const { token } = await params
-    console.log('🟢 API: Received token:', token)
+    const { galleryId } = await params  // ✅ Proper param destructuring
+    console.log('🟢 API: Received galleryId:', galleryId)
 
-    let galleryId = null
+    let finalGalleryId = null
     let galleryTitle = 'gallery'
 
-    // FIRST: Check if token is a direct gallery ID
+    // FIRST: Check if it's a direct gallery ID (dashboard access)
     const { data: gallery, error: galleryError } = await supabaseAdmin
       .from('galleries')
-      .select('id, title')
-      .eq('id', token)
+      .select('id, title, allow_download')  // ✅ Added allow_download
+      .eq('id', galleryId)
       .maybeSingle()
 
     if (gallery) {
       console.log('✅ Found gallery by ID:', gallery.id)
-      galleryId = gallery.id
+      
+      // ✅ CHECK PERMISSION for direct gallery access
+      if (!gallery.allow_download) {
+        console.log('❌ Downloads not allowed for this gallery')
+        return NextResponse.json({ error: 'Downloads are disabled for this gallery' }, { status: 403 })
+      }
+      
+      finalGalleryId = gallery.id
       galleryTitle = gallery.title
     } else {
       // SECOND: Check if it's a gallery_links token
@@ -27,7 +34,7 @@ export async function POST(request, { params }) {
       const { data: link, error: linkError } = await supabaseAdmin
         .from('gallery_links')
         .select('gallery_id, allow_download, expires_at, galleries(title)')
-        .eq('token', token)
+        .eq('token', galleryId)
         .maybeSingle()
 
       if (!link) {
@@ -44,17 +51,17 @@ export async function POST(request, { params }) {
         return NextResponse.json({ error: 'Link expired' }, { status: 403 })
       }
 
-      galleryId = link.gallery_id
+      finalGalleryId = link.gallery_id
       galleryTitle = link.galleries?.title || 'gallery'
     }
 
-    console.log('📁 Fetching photos for gallery:', galleryId)
+    console.log('📁 Fetching photos for gallery:', finalGalleryId)
 
     // Fetch photos
     const { data: photos, error: photosError } = await supabaseAdmin
       .from('photos')
       .select('image_url, video_url, file_name, media_type')
-      .eq('gallery_id', galleryId)
+      .eq('gallery_id', finalGalleryId)
       .order('sort_order', { ascending: true })
 
     if (photosError || !photos || photos.length === 0) {

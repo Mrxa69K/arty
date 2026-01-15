@@ -13,12 +13,19 @@ export async function POST(request, { params }) {
     // FIRST: Check if token is a direct gallery ID
     const { data: gallery, error: galleryError } = await supabaseAdmin
       .from('galleries')
-      .select('id, title')
+      .select('id, title, allow_download')  // ✅ Added allow_download
       .eq('id', token)
       .maybeSingle()
 
     if (gallery) {
       console.log('✅ ZIP: Found gallery by ID:', gallery.id)
+      
+      // ✅ CHECK PERMISSION HERE!
+      if (!gallery.allow_download) {
+        console.log('❌ ZIP: Downloads disabled for this gallery')
+        return NextResponse.json({ error: 'Downloads are not allowed for this gallery' }, { status: 403 })
+      }
+      
       galleryId = gallery.id
       galleryTitle = gallery.title
     } else {
