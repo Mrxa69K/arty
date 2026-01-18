@@ -1,7 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 import { Loader2, Sparkles, Crown } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -52,6 +58,14 @@ export function PlanSelectionModal({ open, onClose, userEmail }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto border-0 bg-transparent shadow-none p-0">
+        {/* Hidden but accessible title for screen readers */}
+        <DialogHeader className="sr-only">
+          <DialogTitle>Choose Your Plan</DialogTitle>
+          <DialogDescription>
+            Select a subscription plan that works best for your photography business
+          </DialogDescription>
+        </DialogHeader>
+
         <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden">
           {/* Animated gradient background */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#F5F0EA] via-[#FDF9F3] to-[#F5E6D3]" />
@@ -95,9 +109,9 @@ export function PlanSelectionModal({ open, onClose, userEmail }) {
                 </div>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl md:text-5xl font-serif text-black/90 mb-3 sm:mb-4 leading-tight tracking-tight animate-fade-in">
+              <h2 className="text-2xl sm:text-3xl md:text-5xl font-serif text-black/90 mb-3 sm:mb-4 leading-tight tracking-tight animate-fade-in">
                 Deliver beautiful
-              </h1>
+              </h2>
               
               {/* Animated word cycling - responsive */}
               <div className="h-10 sm:h-12 md:h-14 flex items-center justify-center overflow-hidden">

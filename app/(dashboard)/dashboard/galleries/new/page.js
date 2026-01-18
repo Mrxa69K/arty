@@ -19,7 +19,8 @@ import {
   Lock,
   Clock,
   Share2,
-  X
+  X,
+  Mail
 } from 'lucide-react'
 import { toast } from 'sonner'
 import bcrypt from 'bcryptjs'
@@ -32,9 +33,6 @@ export default function NewGalleryWizard() {
   const [isPublishing, setIsPublishing] = useState(false)
   const hasCreatedGallery = useRef(false)
 
-
-  
-
   // Step 1: Photos
   const [photos, setPhotos] = useState([])
   const [isUploading, setIsUploading] = useState(false)
@@ -43,6 +41,7 @@ export default function NewGalleryWizard() {
   const [details, setDetails] = useState({
     title: '',
     clientName: '',
+    clientEmail: '', // ✅ NEW
     eventDate: '',
     notes: ''
   })
@@ -73,8 +72,7 @@ export default function NewGalleryWizard() {
     return () => clearInterval(interval)
   }, [galleryId, details, sharing])
 
-// Create gallery on mount
-// Create gallery on mount
+ // Create gallery on mount
 useEffect(() => {
   const initGallery = async () => {
     if (hasCreatedGallery.current || galleryId) return
@@ -82,23 +80,45 @@ useEffect(() => {
     hasCreatedGallery.current = true
     
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
       
-      // ✅ CHECK PLAN PERMISSION BEFORE CREATING
-      const permissionCheck = await fetch('/api/galleries/check-permission', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'create_gallery' })
-      })
+      if (userError || !user) {
+        console.error('Not authenticated:', userError)
+        toast.error('Please log in to create galleries')
+        router.push('/login')
+        return
+      }
 
-      const permissionResult = await permissionCheck.json()
+      // ✅ Check plan limits CLIENT-SIDE
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan')
+        .eq('id', user.id)
+        .single()
 
-      if (!permissionResult.allowed) {
-        toast.error(permissionResult.reason || 'Cannot create gallery')
+      const userPlan = profile?.plan || 'free'
+
+      // Count existing galleries
+      const { count: galleryCount } = await supabase
+        .from('galleries')
+        .select('*', { count: 'exact', head: true })
+        .eq('owner_id', user.id)
+
+      // Check limits
+      const planLimits = {
+        free: 3,
+        test: 1,
+        payg: 999999,
+        studio: 999999
+      }
+
+      if (galleryCount >= (planLimits[userPlan] || 3)) {
+        toast.error(`You've reached your gallery limit. Upgrade your plan.`)
         router.push('/dashboard')
         return
       }
 
+      // Create gallery
       const { data, error } = await supabase
         .from('galleries')
         .insert({
@@ -120,8 +140,7 @@ useEffect(() => {
   }
   
   initGallery()
-}, [galleryId])
-
+}, [])
 
   const saveDraft = async () => {
     if (!galleryId || isSaving) return
@@ -133,6 +152,7 @@ useEffect(() => {
         .update({
           title: details.title || 'Untitled Gallery',
           client_name: details.clientName,
+          client_email: details.clientEmail || null, // ✅ SAVE CLIENT EMAIL
           event_date: details.eventDate || null,
           notes: details.notes
         })
@@ -152,33 +172,39 @@ const handleFileUpload = async (e) => {
   setIsUploading(true)
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    
+    if (userError || !user) {
+      toast.error('Please log in')
+      setIsUploading(false)
+      return
+    }
 
-    // ✅ Count current photos in gallery FIRST
+    // ✅ Check photo limits CLIENT-SIDE
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('plan')
+      .eq('id', user.id)
+      .single()
+
+    const userPlan = profile?.plan || 'free'
+
     const { count: currentPhotoCount } = await supabase
       .from('photos')
       .select('*', { count: 'exact', head: true })
       .eq('gallery_id', galleryId)
 
-    // ✅ Check if adding these files would exceed limit
-    const totalAfterUpload = currentPhotoCount + files.length
+    const totalPhotos = currentPhotoCount + files.length
 
-    // ✅ CHECK PERMISSION BEFORE UPLOADING
-    const permissionCheck = await fetch('/api/galleries/check-permission', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        action: 'upload_photos',
-        galleryId: galleryId,
-        currentPhotoCount: currentPhotoCount,
-        filesToUpload: files.length
-      })
-    })
+    const photoLimits = {
+      free: 50,
+      test: 10,
+      payg: 999999,
+      studio: 999999
+    }
 
-    const permissionResult = await permissionCheck.json()
-
-    if (!permissionResult.allowed) {
-      toast.error(permissionResult.reason || 'Cannot upload photos')
+    if (totalPhotos > (photoLimits[userPlan] || 50)) {
+      toast.error(`Photo limit exceeded for ${userPlan} plan`)
       setIsUploading(false)
       return
     }
@@ -229,29 +255,109 @@ const handleFileUpload = async (e) => {
 }
 
 
-
-
   const deletePhoto = async (photoId) => {
-  try {
-    const photoToDelete = photos.find(p => p.id === photoId)
-    if (!photoToDelete) return
+    try {
+      const photoToDelete = photos.find(p => p.id === photoId)
+      if (!photoToDelete) return
 
-    // Delete from storage using storage_path
-    if (photoToDelete.storage_path) {
-      await supabase.storage.from('photos').remove([photoToDelete.storage_path])
+      // Delete from storage using storage_path
+      if (photoToDelete.storage_path) {
+        await supabase.storage.from('photos').remove([photoToDelete.storage_path])
+      }
+      
+      // Delete from database
+      await supabase.from('photos').delete().eq('id', photoId)
+      
+      setPhotos(photos.filter(p => p.id !== photoId))
+      toast.success('Photo deleted')
+    } catch (error) {
+      console.error('Delete error:', error)
+      toast.error('Failed to delete photo')
+    }
+  }
+
+  // ✅ HELPER: Validate email
+  const isValidEmail = (email) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+  }
+
+  // ✅ HELPER: Create gallery share
+
+const createGalleryShare = async (galleryId, email, userId, galleryTitle) => {
+  try {
+    const accessToken = crypto.randomUUID()
+
+    console.log('Creating share for:', { galleryId, email, userId })
+
+    // ✅ Just try to insert directly (no pre-check)
+    const { data: newShare, error: shareError } = await supabase
+      .from('gallery_shares')
+      .insert({
+        gallery_id: galleryId,
+        client_email: email,
+        access_token: accessToken,
+        shared_by: userId
+      })
+      .select()
+      .single()
+
+    if (shareError) {
+      console.error('Share creation error details:', {
+        message: shareError.message,
+        details: shareError.details,
+        hint: shareError.hint,
+        code: shareError.code
+      })
+      
+      // If duplicate, that's okay
+      if (shareError.code === '23505') {
+        console.log('Share already exists, skipping')
+        toast.success(`Gallery already shared with ${email}`)
+        return
+      }
+      
+      throw shareError
+    }
+
+    console.log('Share created successfully:', newShare)
+
+    // Send email notification
+    try {
+      const shareLink = `${window.location.origin}/gallery/${accessToken}`
+      
+      const emailResponse = await fetch('/api/send-gallery-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientEmail: email,
+          galleryTitle,
+          shareLink
+        })
+      })
+
+      if (!emailResponse.ok) {
+        console.warn('Email notification failed, but share created')
+      }
+    } catch (emailError) {
+      console.warn('Email error (share still created):', emailError)
+    }
+
+    toast.success(`Gallery shared with ${email}`)
+  } catch (error) {
+    console.error('Error creating share - full error:', JSON.stringify(error, null, 2))
+    
+    // More detailed error message
+    if (error?.code === '23505') {
+      toast.error('This gallery is already shared with this client')
+    } else if (error?.code === '42501') {
+      toast.error('Permission denied. Check your database policies.')
+    } else {
+      toast.error(`Failed to share: ${error?.message || 'Unknown error'}`)
     }
     
-    // Delete from database
-    await supabase.from('photos').delete().eq('id', photoId)
-    
-    setPhotos(photos.filter(p => p.id !== photoId))
-    toast.success('Photo deleted')
-  } catch (error) {
-    console.error('Delete error:', error)
-    toast.error('Failed to delete photo')
+    throw error
   }
 }
-
 
 
   // Navigation
@@ -266,6 +372,13 @@ const handleFileUpload = async (e) => {
         toast.error('Gallery title is required')
         return
       }
+
+      // ✅ Validate email if provided
+      if (details.clientEmail && !isValidEmail(details.clientEmail)) {
+        toast.error('Please enter a valid client email')
+        return
+      }
+
       await saveDraft()
     }
 
@@ -275,47 +388,61 @@ const handleFileUpload = async (e) => {
   }
 
   const goToPreviousStep = () => {
-      console.log('Previous clicked! Current step:', currentStep)
-
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
   }
 
   // Step 4: Publish
-  const handlePublish = async () => {
-    setIsPublishing(true)
+// Step 4: Publish
+const handlePublish = async () => {
+  setIsPublishing(true)
 
-    try {
-      let passwordHash = null
-      if (sharing.hasPassword && sharing.password) {
-        passwordHash = await bcrypt.hash(sharing.password, 10)
-      }
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
 
-      const { error: updateError } = await supabase
-        .from('galleries')
-        .update({
-          title: details.title,
-          client_name: details.clientName,
-          event_date: details.eventDate || null,
-          notes: details.notes,
-          status: 'active',
-          passwordhash: passwordHash,
-          allow_download: sharing.allowDownload
-        })
-        .eq('id', galleryId)
-
-      if (updateError) throw updateError
-
-      toast.success('Gallery published!')
-      router.push(`/dashboard/galleries/${galleryId}`)
-    } catch (error) {
-      console.error('Publish error:', error)
-      toast.error('Failed to publish gallery')
-    } finally {
-      setIsPublishing(false)
+    let passwordHash = null
+    if (sharing.hasPassword && sharing.password) {
+      passwordHash = await bcrypt.hash(sharing.password, 10)
     }
+
+    const { error: updateError } = await supabase
+      .from('galleries')
+      .update({
+        title: details.title,
+        client_name: details.clientName,
+        client_email: details.clientEmail || null,
+        event_date: details.eventDate || null,
+        notes: details.notes,
+        status: 'active',
+        passwordhash: passwordHash,
+        allow_download: sharing.allowDownload
+      })
+      .eq('id', galleryId)
+
+    if (updateError) throw updateError
+
+    // ✅ Try to share, but don't fail if it errors
+    if (details.clientEmail) {
+      try {
+        await createGalleryShare(galleryId, details.clientEmail, user.id, details.title)
+      } catch (shareError) {
+        console.error('Share error:', shareError)
+        // Gallery is published, just sharing failed
+        toast.warning('Gallery published, but email sharing failed')
+      }
+    }
+
+    toast.success('Gallery published!')
+    router.push(`/dashboard/galleries/${galleryId}`)
+  } catch (error) {
+    console.error('Publish error:', error)
+    toast.error('Failed to publish gallery')
+  } finally {
+    setIsPublishing(false)
   }
+}
+
 
   if (!galleryId) {
     return (
@@ -410,29 +537,28 @@ const handleFileUpload = async (e) => {
                     </div>
                   </label>
 
-                      {photos.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-black/70 mb-3">{photos.length} photo(s) uploaded</p>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                          {photos.map(photo => (
-                            <div key={photo.id} className="relative group">
-                              <img
-                                src={photo.image_url || photo.video_url}  // ✅ image_url ou video_url
-                                alt=""
-                                className="w-full h-32 object-cover rounded-xl"
-                              />
-                              <button
-                                onClick={() => deletePhoto(photo.id)}
-                                className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <X className="w-4 h-4" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
+                  {photos.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-black/70 mb-3">{photos.length} photo(s) uploaded</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                        {photos.map(photo => (
+                          <div key={photo.id} className="relative group">
+                            <img
+                              src={photo.image_url || photo.video_url}
+                              alt=""
+                              className="w-full h-32 object-cover rounded-xl"
+                            />
+                            <button
+                              onClick={() => deletePhoto(photo.id)}
+                              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
                       </div>
-                    )}
-
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -470,6 +596,24 @@ const handleFileUpload = async (e) => {
                         placeholder="e.g., Sarah Martinez"
                         className="w-full px-4 py-3 rounded-xl border border-black/10 bg-white focus:outline-none focus:ring-2 focus:ring-black/20"
                       />
+                    </div>
+
+                    {/* ✅ NEW: Client Email Field */}
+                    <div>
+                      <label className="block text-sm font-medium text-black/80 mb-2">
+                        <Mail className="w-4 h-4 inline mr-1" />
+                        Client Email
+                      </label>
+                      <input
+                        type="email"
+                        value={details.clientEmail}
+                        onChange={(e) => setDetails({ ...details, clientEmail: e.target.value })}
+                        placeholder="client@example.com"
+                        className="w-full px-4 py-3 rounded-xl border border-black/10 bg-white focus:outline-none focus:ring-2 focus:ring-black/20"
+                      />
+                      <p className="text-xs text-black/50 mt-1">
+                        Client will receive an email with access to this gallery when published
+                      </p>
                     </div>
 
                     <div>
@@ -601,6 +745,14 @@ const handleFileUpload = async (e) => {
                             <span className="font-medium text-black">{details.clientName}</span>
                           </div>
                         )}
+
+                        {/* ✅ Show client email in summary */}
+                        {details.clientEmail && (
+                          <div className="flex justify-between">
+                            <span className="text-black/60">Client Email:</span>
+                            <span className="font-medium text-black">{details.clientEmail}</span>
+                          </div>
+                        )}
                         
                         {details.eventDate && (
                           <div className="flex justify-between">
@@ -633,13 +785,30 @@ const handleFileUpload = async (e) => {
                       </div>
                     </div>
 
+                    {/* ✅ Show notification message if email provided */}
+                    {details.clientEmail && (
+                      <div className="border border-blue-200 bg-blue-50 rounded-xl p-4">
+                        <div className="flex items-start gap-3">
+                          <Mail className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-blue-900">
+                              Email notification will be sent
+                            </p>
+                            <p className="text-xs text-blue-700 mt-1">
+                              {details.clientEmail} will receive a link to view this gallery
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
                     <div>
                       <h3 className="font-semibold text-black/80 mb-3">Photos Preview</h3>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {photos.slice(0, 8).map(photo => (
                           <img
                             key={photo.id}
-                             src={photo.image_url || photo.video_url}
+                            src={photo.image_url || photo.video_url}
                             alt=""
                             className="w-full h-24 object-cover rounded-lg"
                           />
