@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { PlanSelectionModal } from '../_components/PlanSelectionModal'
 import { useAuth } from '@/app/providers'
 import Link from 'next/link'
-import { Loader2, ArrowUpRight } from 'lucide-react'
+import { Loader2, ArrowUpRight, Camera, Image, Sparkles } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -16,10 +17,10 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    if (!user) return
+    if (! user) return
     
     fetchUserProfile()
-    fetchGalleries()
+    fetchGalleriesWithThumbnails()
     fetchStats()
   }, [user])
 
@@ -27,16 +28,15 @@ export default function DashboardPage() {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('plan_type, plan_status, plan_expires_at, used_test_plan')
-        .eq('id', user.id)
+        .select('plan_type, plan_status, plan_expires_at, used_test_plan, full_name')
+        .eq('id', user. id)
         .single()
 
       if (error) throw error
 
       setUserProfile(data)
 
-      // ✅ FIXED: Only show modal if no plan, inactive, or expired
-      const hasNoPlan = !data.plan_type || data.plan_type === 'none'
+      const hasNoPlan = ! data.plan_type || data. plan_type === 'none'
       const isInactive = data.plan_status !== 'active'
       
       let isExpired = false
@@ -54,9 +54,9 @@ export default function DashboardPage() {
     }
   }
 
-  const fetchGalleries = async () => {
+  const fetchGalleriesWithThumbnails = async () => {
     try {
-      const { data, error } = await supabase
+      const { data:  galleriesData, error } = await supabase
         .from('galleries')
         .select('*')
         .eq('owner_id', user.id)
@@ -64,7 +64,25 @@ export default function DashboardPage() {
         .limit(6)
 
       if (error) throw error
-      setGalleries(data || [])
+
+      const galleriesWithThumbnails = await Promise.all(
+        (galleriesData || []).map(async (gallery) => {
+          const { data:  photos } = await supabase
+            . from('photos')
+            .select('image_url, video_url, media_type')
+            .eq('gallery_id', gallery.id)
+            .order('sort_order', { ascending: true })
+            .limit(1)
+
+          const thumbnail = photos? .[0]
+          return {
+            ... gallery,
+            thumbnail: thumbnail?. image_url || thumbnail?.video_url || null
+          }
+        })
+      )
+
+      setGalleries(galleriesWithThumbnails)
     } catch (error) {
       console.error('Error fetching galleries:', error)
     }
@@ -73,21 +91,21 @@ export default function DashboardPage() {
   const fetchStats = async () => {
     try {
       const { count: galleriesCount } = await supabase
-        .from('galleries')
+        . from('galleries')
         .select('*', { count: 'exact', head: true })
         .eq('owner_id', user.id)
 
       const { data: galleriesData } = await supabase
-        .from('galleries')
+        . from('galleries')
         .select('id')
         .eq('owner_id', user.id)
 
-      const galleryIds = galleriesData?.map(g => g.id) || []
+      const galleryIds = galleriesData?. map(g => g.id) || []
 
       let photosCount = 0
       if (galleryIds.length > 0) {
         const { count } = await supabase
-          .from('photos')
+          . from('photos')
           .select('*', { count: 'exact', head: true })
           .in('gallery_id', galleryIds)
         
@@ -104,205 +122,457 @@ export default function DashboardPage() {
   }
 
   const getPlanName = () => {
-    if (!userProfile) return 'Free'
+    if (! userProfile) return 'Free'
     const names = { test: 'Test', payg: 'Flexible', studio: 'Studio', none: 'Free' }
     return names[userProfile.plan_type] || 'Free'
+  }
+
+  const getPlanColor = () => {
+    if (!userProfile) return 'from-gray-50 to-gray-100'
+    const colors = {
+      test: 'from-blue-50 to-blue-100',
+      payg: 'from-purple-50 to-purple-100',
+      studio: 'from-amber-50 to-amber-100',
+      none: 'from-gray-50 to-gray-100'
+    }
+    return colors[userProfile.plan_type] || 'from-gray-50 to-gray-100'
+  }
+
+  // Animation Variants
+  const containerVariants = {
+    hidden:  { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren:  0.1,
+        delayChildren: 0.2
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.6,
+        ease: [0.22, 1, 0.36, 1] // Custom easing
+      }
+    }
+  }
+
+  const headerVariants = {
+    hidden:  { opacity: 0, y:  -20 },
+    visible:  {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration:  0.8,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }
+  }
+
+  const welcomeVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      transition: {
+        duration: 0.8,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }
+  }
+
+  const galleryVariants = {
+    hidden: { opacity: 0, scale: 0.9, y: 30 },
+    visible: {
+      opacity: 1,
+      scale: 1,
+      y: 0,
+      transition:  {
+        duration: 0.7,
+        ease: [0.22, 1, 0.36, 1]
+      }
+    }
   }
 
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F5F0EA]">
-        <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+        </motion.div>
       </div>
     )
   }
 
   return (
     <main className="min-h-screen relative overflow-hidden">
-  {/* Background */}
-<div
-  className="fixed inset-0"
-  style={{
-    backgroundImage: "url('/cover.webp')",  // ✅ YOUR COVER.WEBP IS HERE
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-  }}
-/>
-<div className="fixed inset-0 bg-[#]/80" />  {/* Overlay to soften it */}
-<div
-  className="pointer-events-none fixed inset-0 opacity-[0.12] mix-blend-multiply"
-  style={{
-    backgroundImage:
-      "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-    backgroundSize: 'cover',
-  }}
-/>  {/* Grain texture on top */}
-
+      {/* Background */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: "url('/cover.webp')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      />
+      <div className="fixed inset-0 z-[1] bg-white/30 backdrop-blur-[1px]" />
+      <div className="fixed inset-0 z-[2] bg-gradient-to-b from-[#F5F0EA]/10 via-transparent to-[#F5F0EA]/40" />
+      <div
+        className="pointer-events-none fixed inset-0 z-[3] opacity-[0.06] mix-blend-overlay"
+        style={{
+          backgroundImage: 
+            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
+          backgroundSize: 'cover',
+        }}
+      />
 
       <div className="relative z-10 min-h-screen">
-        {/* Minimal Header - Cosmos style */}
-        <header className="pt-8 px-6 sm:px-12 max-w-7xl mx-auto">
+        {/* Header */}
+        <motion.header
+          variants={headerVariants}
+          initial="hidden"
+          animate="visible"
+          className="pt-6 sm:pt-8 px-4 sm:px-12 max-w-7xl mx-auto"
+        >
           <div className="flex items-center justify-between">
             <Link href="/" className="group">
-              <span className="text-2xl font-serif text-black/90 tracking-tight group-hover:text-black transition-colors">
+              <span className="text-xl sm:text-2xl font-serif text-black/90 tracking-tight group-hover:text-black transition-colors">
                 Artydrop
               </span>
             </Link>
             
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex items-center gap-3 sm:gap-6 text-sm">
               <Link 
                 href="/dashboard/galleries" 
-                className="text-black/50 hover:text-black transition-colors hidden sm:block"
+                className="text-black/50 hover:text-black transition-colors text-xs sm:text-sm"
               >
                 Galleries
               </Link>
-              <div className="px-3 py-1.5 rounded-full bg-black/5 backdrop-blur-sm border border-black/10">
-                <span className="text-xs text-black/60">{getPlanName()}</span>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content - Clean & Spacious */}
-        <section className="py-12 sm:py-20 px-6 sm:px-12 max-w-7xl mx-auto">
-          {/* Stats - Minimalist */}
-          <div className="mb-16 sm:mb-24">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 sm:gap-12">
-              <div className="space-y-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-black/40">
-                  Galleries
-                </p>
-                <p className="text-5xl sm:text-6xl font-serif text-black/90">
-                  {stats.galleries}
-                </p>
-              </div>
-              <div className="space-y-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-black/40">
-                  Photos
-                </p>
-                <p className="text-5xl sm:text-6xl font-serif text-black/90">
-                  {stats.photos}
-                </p>
-              </div>
-              <div className="hidden sm:block space-y-2">
-                <p className="text-[10px] uppercase tracking-[0.3em] text-black/40">
-                  Plan
-                </p>
-                <p className="text-2xl font-serif text-black/70">
-                  {getPlanName()}
-                </p>
-              </div>
-              <div className="hidden sm:block" />
-            </div>
-          </div>
-
-          {/* Quick Actions - No icons, just text */}
-          <div className="mb-16 sm:mb-24">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Link href="/dashboard/galleries/new">
-                <div className="group relative overflow-hidden rounded-2xl bg-black text-white p-8 sm:p-12 transition-all duration-500 hover:shadow-2xl">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                  <div className="relative space-y-4">
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/50">
-                      Action
-                    </p>
-                    <h3 className="text-3xl sm:text-4xl font-serif group-hover:translate-x-2 transition-transform duration-500">
-                      Create gallery
-                    </h3>
-                    <div className="flex items-center gap-2 text-white/60 group-hover:text-white transition-colors">
-                      <span className="text-sm">Start now</span>
-                      <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <button 
+              <button
                 onClick={() => setShowPlanModal(true)}
-                className="group relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl border border-black/10 p-8 sm:p-12 transition-all duration-500 hover:bg-white/60 hover:shadow-2xl text-left"
+                className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-gradient-to-r ${getPlanColor()} border border-black/10 hover:border-black/20 transition-all`}
               >
-                <div className="relative space-y-4">
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-black/40">
-                    Upgrade
-                  </p>
-                  <h3 className="text-3xl sm:text-4xl font-serif text-black/90 group-hover:translate-x-2 transition-transform duration-500">
-                    View plans
-                  </h3>
-                  <div className="flex items-center gap-2 text-black/50 group-hover:text-black transition-colors">
-                    <span className="text-sm">See options</span>
-                    <ArrowUpRight className="w-4 h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-                  </div>
-                </div>
+                <span className="text-[10px] sm:text-xs font-medium text-black/70">{getPlanName()}</span>
               </button>
             </div>
           </div>
+        </motion.header>
 
-          {/* Recent Galleries - Grid like Cosmos */}
+        {/* Main Content */}
+        <section className="pt-8 sm: pt-12 px-4 sm:px-12 max-w-7xl mx-auto">
+          {/* Welcome Section */}
+          <motion.div
+            variants={welcomeVariants}
+            initial="hidden"
+            animate="visible"
+            className="mb-8 sm:mb-12"
+          >
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-serif text-black/90 mb-2 sm:mb-3">
+              Welcome back{userProfile?.full_name ? `, ${userProfile. full_name. split(' ')[0]}` : ''}
+            </h1>
+            <p className="text-xs sm:text-sm text-black/50 tracking-wide">
+              Manage your galleries and share your work beautifully
+            </p>
+          </motion.div>
+
+          {/* Stats Cards - Animated */}
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-8 sm:mb-12"
+          >
+            {/* Galleries Card */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.3 }}
+              className="group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/60 backdrop-blur-xl border border-black/10 p-6 sm:p-8 shadow-lg hover:shadow-2xl transition-shadow"
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale:  1, rotate: 0 }}
+                transition={{ delay: 0.5, duration: 0.6, type: "spring" }}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center opacity-60 group-hover:opacity-100 transition-opacity"
+              >
+                <Camera className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
+              </motion.div>
+              <div className="space-y-1 sm:space-y-2">
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-black/40 font-medium">
+                  Galleries
+                </p>
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  className="text-4xl sm:text-5xl md:text-6xl font-serif text-black/90 group-hover:text-black transition-colors"
+                >
+                  {stats.galleries}
+                </motion.p>
+                <p className="text-[10px] sm:text-xs text-black/50">
+                  {stats.galleries === 1 ? 'gallery' : 'total galleries'}
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Photos Card */}
+            <motion. div
+              variants={itemVariants}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.3 }}
+              className="group relative overflow-hidden rounded-2xl sm: rounded-3xl bg-white/60 backdrop-blur-xl border border-black/10 p-6 sm:p-8 shadow-lg hover:shadow-2xl transition-shadow"
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate:  0 }}
+                transition={{ delay: 0.6, duration: 0.6, type: "spring" }}
+                className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center opacity-60 group-hover: opacity-100 transition-opacity"
+              >
+                <Image className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+              </motion.div>
+              <div className="space-y-1 sm:space-y-2">
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-black/40 font-medium">
+                  Photos
+                </p>
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.5 }}
+                  animate={{ opacity:  1, scale: 1 }}
+                  transition={{ delay:  0.7, duration: 0.5 }}
+                  className="text-4xl sm:text-5xl md:text-6xl font-serif text-black/90 group-hover:text-black transition-colors"
+                >
+                  {stats.photos}
+                </motion.p>
+                <p className="text-[10px] sm:text-xs text-black/50">
+                  uploaded total
+                </p>
+              </div>
+            </motion.div>
+
+            {/* Plan Card */}
+            <motion.div
+              variants={itemVariants}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.3 }}
+              className="col-span-2 lg:col-span-1 group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-br from-black via-black to-gray-900 border border-black/20 p-6 sm:p-8 shadow-lg hover:shadow-2xl transition-shadow"
+            >
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale:  1, rotate: 0 }}
+                transition={{ delay: 0.7, duration: 0.6, type: "spring" }}
+                className="absolute top-3 right-3 sm: top-4 sm:right-4 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center group-hover:bg-white/20 transition-all"
+              >
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-white/70" />
+              </motion.div>
+              <div className="space-y-1 sm:space-y-2">
+                <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-white/40 font-medium">
+                  Current Plan
+                </p>
+                <motion.p
+                  initial={{ opacity: 0, scale:  0.5 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.8, duration: 0.5 }}
+                  className="text-2xl sm:text-3xl md:text-4xl font-serif text-white group-hover:text-white transition-colors"
+                >
+                  {getPlanName()}
+                </motion. p>
+                <button
+                  onClick={() => setShowPlanModal(true)}
+                  className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-white/60 hover:text-white transition-colors"
+                >
+                  View plans
+                  <ArrowUpRight className="w-3 h-3" />
+                </button>
+              </div>
+            </motion. div>
+          </motion.div>
+
+          {/* Quick Actions */}
+          <motion. div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="grid sm:grid-cols-2 gap-3 sm:gap-4 mb-8 sm:mb-12"
+          >
+            <motion.div variants={itemVariants}>
+              <Link href="/dashboard/galleries/new">
+                <motion.div
+                  whileHover={{ scale: 1.01, y: -3 }}
+                  transition={{ duration: 0.3 }}
+                  className="group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-black text-white p-6 sm:p-10 md:p-12 shadow-lg hover:shadow-2xl"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  <div className="relative space-y-3 sm:space-y-4">
+                    <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-white/50 font-medium">
+                      Action
+                    </p>
+                    <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif group-hover:translate-x-2 transition-transform duration-500">
+                      Create gallery
+                    </h3>
+                    <div className="flex items-center gap-2 text-white/60 group-hover:text-white transition-colors">
+                      <span className="text-xs sm:text-sm">Start now</span>
+                      <ArrowUpRight className="w-3 h-3 sm:w-4 sm: h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
+            </motion. div>
+
+            <motion.div variants={itemVariants}>
+              <motion.button
+                whileHover={{ scale: 1.01, y: -3 }}
+                transition={{ duration: 0.3 }}
+                onClick={() => setShowPlanModal(true)}
+                className="w-full group relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/40 backdrop-blur-xl border border-black/10 p-6 sm:p-10 md:p-12 shadow-lg hover:bg-white/60 hover:shadow-2xl text-left"
+              >
+                <div className="relative space-y-3 sm:space-y-4">
+                  <p className="text-[9px] sm:text-[10px] uppercase tracking-[0.25em] sm:tracking-[0.3em] text-black/40 font-medium">
+                    Upgrade
+                  </p>
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-serif text-black/90 group-hover:translate-x-2 transition-transform duration-500">
+                    View plans
+                  </h3>
+                  <div className="flex items-center gap-2 text-black/50 group-hover:text-black transition-colors">
+                    <span className="text-xs sm:text-sm">See options</span>
+                    <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+                  </div>
+                </div>
+              </motion.button>
+            </motion.div>
+          </motion. div>
+
+          {/* Recent Galleries with Thumbnails */}
           {galleries.length > 0 && (
-            <div>
-              <div className="flex items-baseline justify-between mb-8">
-                <h2 className="text-2xl sm:text-3xl font-serif text-black/90">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+            >
+              <div className="flex items-baseline justify-between mb-6 sm:mb-8">
+                <h2 className="text-xl sm:text-2xl md:text-3xl font-serif text-black/90">
                   Recent galleries
                 </h2>
                 <Link 
                   href="/dashboard/galleries"
-                  className="text-sm text-black/50 hover:text-black transition-colors flex items-center gap-1"
+                  className="text-xs sm:text-sm text-black/50 hover:text-black transition-colors flex items-center gap-1"
                 >
                   View all
                   <ArrowUpRight className="w-3 h-3" />
                 </Link>
               </div>
 
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {galleries.map((gallery) => (
-                  <Link 
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6"
+              >
+                {galleries.map((gallery, index) => (
+                  <motion.div
                     key={gallery.id}
-                    href={`/dashboard/galleries/${gallery.id}`}
-                    className="group"
+                    variants={galleryVariants}
+                    custom={index}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <div className="relative overflow-hidden rounded-2xl bg-white/40 backdrop-blur-xl border border-black/10 aspect-[4/3] transition-all duration-500 hover:bg-white/60 hover:shadow-xl hover:scale-[1.02]">
-                      {/* Placeholder or cover image */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/5 to-black/20 group-hover:scale-105 transition-transform duration-700" />
-                      
-                      <div className="absolute inset-0 p-6 flex flex-col justify-end">
-                        <div className="space-y-2">
-                          <h3 className="text-xl font-serif text-black/90 group-hover:text-black transition-colors">
-                            {gallery.title || 'Untitled'}
-                          </h3>
-                          <p className="text-xs text-black/50 capitalize">
-                            {gallery.status}
-                          </p>
+                    <Link href={`/dashboard/galleries/${gallery.id}`}>
+                      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-white/60 backdrop-blur-xl border border-black/10 aspect-[4/3] shadow-lg hover:shadow-2xl group">
+                        {/* Thumbnail Image */}
+                        {gallery.thumbnail ?  (
+                          <motion.img
+                            initial={{ scale: 1.1, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.6 }}
+                            src={gallery.thumbnail}
+                            alt={gallery.title || 'Gallery'}
+                            className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 bg-gradient-to-br from-black/5 via-black/10 to-black/20 flex items-center justify-center">
+                            <Camera className="w-12 h-12 sm:w-16 sm:h-16 text-black/20" />
+                          </div>
+                        )}
+                        
+                        {/* Overlay */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                        
+                        {/* Content */}
+                        <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-end">
+                          <div className="space-y-1 sm:space-y-2">
+                            <h3 className="text-base sm:text-lg md:text-xl font-serif text-white line-clamp-2">
+                              {gallery.title || 'Untitled'}
+                            </h3>
+                            <div className="flex items-center gap-2 text-[10px] sm:text-xs text-white/70">
+                              <span className="capitalize">{gallery.status}</span>
+                              {gallery.client_name && (
+                                <>
+                                  <span>•</span>
+                                  <span className="truncate">{gallery.client_name}</span>
+                                </>
+                              )}
+                            </div>
+                          </div>
                         </div>
-                      </div>
 
-                      {/* Hover arrow */}
-                      <div className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                        <ArrowUpRight className="w-4 h-4 text-black/70" />
+                        {/* Hover Arrow */}
+                        <motion. div
+                          initial={{ opacity:  0, scale: 0.8 }}
+                          whileHover={{ opacity: 1, scale: 1.1 }}
+                          transition={{ duration:  0.3 }}
+                          className="absolute top-3 right-3 sm:top-4 sm:right-4 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center"
+                        >
+                          <ArrowUpRight className="w-4 h-4 text-black/70" />
+                        </motion.div>
                       </div>
-                    </div>
-                  </Link>
+                    </Link>
+                  </motion.div>
                 ))}
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
 
-          {/* Empty state */}
+          {/* Empty State */}
           {galleries.length === 0 && (
-            <div className="text-center py-20">
-              <div className="space-y-4 max-w-md mx-auto">
-                <h3 className="text-3xl font-serif text-black/90">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity:  1, y: 0 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+              className="text-center py-16 sm:py-20"
+            >
+              <div className="space-y-4 sm:space-y-6 max-w-md mx-auto px-4">
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale:  1 }}
+                  transition={{ delay: 1, duration: 0.5, type: "spring" }}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-black/5 flex items-center justify-center mx-auto"
+                >
+                  <Camera className="w-8 h-8 sm: w-10 sm:h-10 text-black/30" />
+                </motion.div>
+                <h3 className="text-2xl sm:text-3xl font-serif text-black/90">
                   Start creating
                 </h3>
-                <p className="text-sm text-black/50 leading-relaxed">
+                <p className="text-xs sm:text-sm text-black/50 leading-relaxed">
                   You haven't created any galleries yet. Start by creating your first gallery to share your work with clients.
                 </p>
                 <Link href="/dashboard/galleries/new">
-                  <button className="mt-6 px-6 py-3 rounded-full bg-black text-white text-sm hover:scale-105 transition-transform duration-300">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="mt-4 sm:mt-6 px-6 sm:px-8 py-3 sm:py-4 rounded-full bg-black text-white text-xs sm:text-sm font-medium shadow-lg hover:shadow-xl transition-shadow"
+                  >
                     Create your first gallery
-                  </button>
+                  </motion.button>
                 </Link>
               </div>
-            </div>
+            </motion.div>
           )}
         </section>
       </div>
@@ -311,11 +581,11 @@ export default function DashboardPage() {
       <PlanSelectionModal
         open={showPlanModal}
         onClose={() => {
-          if (userProfile?.plan_status === 'active') {
+          if (userProfile?. plan_status === 'active') {
             setShowPlanModal(false)
           }
         }}
-        userEmail={user?.email}
+        userEmail={user?. email}
       />
     </main>
   )

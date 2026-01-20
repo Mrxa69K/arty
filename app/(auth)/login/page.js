@@ -14,14 +14,17 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, Eye, EyeOff } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleLogin = async (e) => {
@@ -29,36 +32,43 @@ export default function LoginPage() {
     setIsLoading(true)
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
+
       if (error) {
         toast.error(error.message)
+        setIsLoading(false)
         return
       }
+
+      // Store remember me preference if needed
+      if (rememberMe && data.session) {
+        localStorage.setItem('rememberMe', 'true')
+      }
+
       toast.success('Welcome back!')
       router.push('/dashboard')
     } catch (error) {
+      console.error('Login error:', error)
       toast.error('An unexpected error occurred')
-    } finally {
       setIsLoading(false)
     }
   }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* background cover with your image */}
+      {/* Background */}
       <div
         className="fixed inset-0"
         style={{
-          backgroundImage: "url('/cover.webp')",
+          backgroundImage:  "url('/cover.webp')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
       />
 
-      {/* beige wash + grain for calm look */}
       <div className="fixed inset-0 bg-[#F5F0EA]/70 mix-blend-soft-light" />
       <div
         className="pointer-events-none fixed inset-0 opacity-[0.14] mix-blend-multiply"
@@ -69,50 +79,37 @@ export default function LoginPage() {
         }}
       />
 
-      {/* layout with right panel */}
       <div className="relative z-10 flex min-h-screen">
-        {/* left side = just logo + links over background */}
-<div className="hidden lg:flex lg:flex-col lg:w-1/2 justify-between px-7 py-6">
-  {/* logo encadré */}
-  <div className="flex items-center">
-    <div className="inline-flex items-center justify-center px-4 py-2 border border-black/80 rounded-[999px] bg-black/5 backdrop-blur-sm">
-      <span className="text-xs tracking-[0.18em]  font-semibold uppercase">
-        ARTYdrop
-      </span>
-    </div>
-  </div>
+        {/* Left side */}
+        <div className="hidden lg:flex lg:flex-col lg:w-1/2 justify-between px-7 py-6">
+          <div className="flex items-center">
+            <div className="inline-flex items-center justify-center px-4 py-2 border border-black/80 rounded-[999px] bg-black/5 backdrop-blur-sm">
+              <Link href="/" className="text-xs tracking-[0.18em] font-semibold uppercase">
+                ARTYdrop
+              </Link>
+            </div>
+          </div>
 
-  {/* tagline centrée sur une ligne, bold */}
-  <div className="mb-4">
-    <p
-      className="
-        tagline-aura
-        text-[15px]
-        font-semibold
-        text-center
-        text-black/80
-        tracking-[0.22em]
-        uppercase
-        whitespace-nowrap
-        animate-[float_6s_ease-in-out_infinite]
-      "
-    >
-      Calm, intentional delivery for modern photographers.
-    </p>
-  </div>
+          <div className="mb-4">
+            <p className="tagline-aura text-[15px] font-semibold text-center text-black/80 tracking-[0.22em] uppercase whitespace-nowrap animate-[float_6s_ease-in-out_infinite]">
+              Calm, intentional delivery for modern photographers.
+            </p>
+          </div>
 
-  {/* footer links */}
-  <div className="text-[11px] text-black/65 flex gap-4">
-    <span>Terms of Service</span>
-    <span>Privacy Policy</span>
-  </div>
-</div>
+          <div className="text-[11px] text-black/65 flex gap-4">
+            <Link href="/terms" className="hover:text-black transition-colors">
+              Terms of Service
+            </Link>
+            <Link href="/privacy" className="hover:text-black transition-colors">
+              Privacy Policy
+            </Link>
+          </div>
+        </div>
 
-
-        {/* right side = beige panel with form */}
+        {/* Right side */}
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-md mx-4 my-10 lg:my-0">
-            {/* small logo for mobile */}
+            {/* Mobile logo */}
             <div className="lg:hidden mb-10 flex items-center gap-2">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#F97316] flex items-center justify-center shadow-sm">
                 <Camera className="w-4 h-4 text-white" />
@@ -140,6 +137,7 @@ export default function LoginPage() {
 
               <form onSubmit={handleLogin}>
                 <CardContent className="space-y-4">
+                  {/* Email */}
                   <div className="space-y-2">
                     <Label htmlFor="email" className="text-xs text-black/70">
                       Email
@@ -155,26 +153,55 @@ export default function LoginPage() {
                       className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
                     />
                   </div>
+
+                  {/* Password */}
                   <div className="space-y-2">
                     <Label htmlFor="password" className="text-xs text-black/70">
                       Password
                     </Label>
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      disabled={isLoading}
-                      className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                    />
-                    <div className="flex justify-end">
+                    <div className="relative">
+                      <Input
+                        id="password"
+                        type={showPassword ?  "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={isLoading}
+                        className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/70 transition-colors"
+                        disabled={isLoading}
+                        aria-label={showPassword ? "Hide password" :  "Show password"}
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Checkbox
+                          id="remember"
+                          checked={rememberMe}
+                          onCheckedChange={setRememberMe}
+                          disabled={isLoading}
+                          className="border-black/20 data-[state=checked]:bg-black data-[state=checked]:border-black"
+                        />
+                        <label
+                          htmlFor="remember"
+                          className="text-[11px] text-black/60 cursor-pointer"
+                        >
+                          Remember me
+                        </label>
+                      </div>
                       <Link
                         href="/forgot-password"
-                        className="text-[11px] text-black/60 hover:text-black underline underline-offset-4"
+                        className="text-[11px] text-black/60 hover:text-black underline underline-offset-4 transition-colors"
                       >
-                        Forgot password?
+                        Forgot password? 
                       </Link>
                     </div>
                   </div>

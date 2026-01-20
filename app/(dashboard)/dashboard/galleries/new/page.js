@@ -721,6 +721,8 @@ const handlePublish = async () => {
                 </div>
               )}
 
+
+
               {/* STEP 4: Review & Publish */}
               {currentStep === 4 && (
                 <div className="space-y-6">
@@ -876,7 +878,9 @@ const handlePublish = async () => {
           </div>
 
         </div>
-      </div>
+      </div>  
     </div>
   )
+
+  
 }

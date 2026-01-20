@@ -17,7 +17,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
-import { Camera, Loader2 } from 'lucide-react'
+import { Camera, Loader2, Eye, EyeOff } from 'lucide-react'
+
 
 export default function SignupPage() {
   const router = useRouter()
@@ -28,63 +29,67 @@ export default function SignupPage() {
   const [acceptTerms, setAcceptTerms] = useState(false)
   const [acceptMarketing, setAcceptMarketing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
-  const handleSignup = async (e) => {
-    e.preventDefault()
-    
-    if (!acceptTerms) {
-      toast.error('Please accept the terms and conditions')
+// Around line 32-87, improve error handling: 
+const handleSignup = async (e) => {
+  e.preventDefault()
+  
+  if (!acceptTerms) {
+    toast.error('Please accept the terms and conditions')
+    return
+  }
+
+  setIsLoading(true)
+
+  try {
+    const { data: authData, error: authError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          user_type: userType,
+        }
+      }
+    })
+
+    if (authError) {
+      toast.error(authError. message)
+      setIsLoading(false) // ✅ ADD THIS
       return
     }
 
-    setIsLoading(true)
+    if (authData.user) {
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({
+          full_name: fullName,
+          user_type: userType,
+          marketing_emails: acceptMarketing,
+        })
+        .eq('id', authData. user.id)
 
-    try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            user_type: userType,
-          }
-        }
-      })
-
-      if (authError) {
-        toast.error(authError.message)
-        return
+      if (profileError) {
+        console.error('Profile update error:', profileError)
+        // ✅ ADD USER NOTIFICATION
+        toast.warning('Account created but profile incomplete.  Please update your profile.')
       }
-
-      if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .update({
-            full_name: fullName,
-            user_type: userType,
-            marketing_emails: acceptMarketing,
-          })
-          .eq('id', authData.user.id)
-
-        if (profileError) {
-          console.error('Profile update error:', profileError)
-        }
-      }
-
-      toast.success('Account created successfully!')
-      
-      if (userType === 'photographer') {
-        router.push('/dashboard')
-      } else {
-        router.push('/client/dashboard')
-      }
-    } catch (error) {
-      console.error('Signup error:', error)
-      toast.error('An unexpected error occurred')
-    } finally {
-      setIsLoading(false)
     }
+
+    toast.success('Account created successfully!')
+    
+    if (userType === 'photographer') {
+      router.push('/dashboard')
+    } else {
+      router. push('/client/dashboard')
+    }
+  } catch (error) {
+    console.error('Signup error:', error)
+    toast.error('An unexpected error occurred')
+    setIsLoading(false) // ✅ ADD THIS
   }
+} 
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -124,11 +129,10 @@ export default function SignupPage() {
               Calm, intentional delivery for modern photographers.
             </p>
           </div>
-
-          <div className="text-[11px] text-black/65 flex gap-4">
-            <span>Terms of Service</span>
-            <span>Privacy Policy</span>
-          </div>
+        <div className="text-[11px] text-black/65 flex gap-4">
+          <Link href="/terms">Terms of Service</Link>
+          <Link href="/privacy">Privacy Policy</Link>
+        </div>
         </div>
 
         {/* Right side */}
@@ -265,18 +269,35 @@ export default function SignupPage() {
                     <Label htmlFor="password" className="text-xs text-black/70">
                       Password
                     </Label>
+                     <div className="relative">
                     <Input
+                     
                       id="password"
-                      type="password"
+                      type={showPassword ? "text" : "password"}
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       minLength={6}
                       disabled={isLoading}
-                      className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                    />
-                  </div>
+                       className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm pr-10"
+                                          />
+                      <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/70 transition-colors"
+                      disabled={isLoading}
+                      aria-label={showPassword ? "Hide password" :  "Show password"}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                    </div>
+
+                  <p className="text-[10px] text-black/50">At least 6 characters</p>
+                   
+                      </div>
+
+                  
 
                   {/* Terms and Conditions Checkbox */}
                   <div className="space-y-3 pt-2">
