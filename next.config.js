@@ -2,13 +2,15 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    unoptimized: true,
+    domains: ['yspjuakdfukoawjjiulb. supabase.co'], // Your Supabase domain
   },
+  // Remove experimental. appDir - it's default now
 
+/**
   experimental: {
-    appDir: true,          // ← AJOUT IMPORTANT
+    appDir: true,          
   },
-
+*/
   serverExternalPackages: ['mongodb', 'stripe'],
 
   webpack(config, { dev }) {

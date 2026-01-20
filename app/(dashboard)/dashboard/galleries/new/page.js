@@ -32,6 +32,7 @@ export default function NewGalleryWizard() {
   const [isSaving, setIsSaving] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const hasCreatedGallery = useRef(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   // Step 1: Photos
   const [photos, setPhotos] = useState([])
@@ -73,74 +74,62 @@ export default function NewGalleryWizard() {
   }, [galleryId, details, sharing])
 
  // Create gallery on mount
+
+
 useEffect(() => {
-  const initGallery = async () => {
-    if (hasCreatedGallery.current || galleryId) return
-    
-    hasCreatedGallery.current = true
-    
-    try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
-      if (userError || !user) {
-        console.error('Not authenticated:', userError)
-        toast.error('Please log in to create galleries')
-        router.push('/login')
-        return
-      }
-
-      // ✅ Check plan limits CLIENT-SIDE
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('plan')
-        .eq('id', user.id)
-        .single()
-
-      const userPlan = profile?.plan || 'free'
-
-      // Count existing galleries
-      const { count: galleryCount } = await supabase
-        .from('galleries')
-        .select('*', { count: 'exact', head: true })
-        .eq('owner_id', user.id)
-
-      // Check limits
-      const planLimits = {
-        free: 3,
-        test: 1,
-        payg: 999999,
-        studio: 999999
-      }
-
-      if (galleryCount >= (planLimits[userPlan] || 3)) {
-        toast.error(`You've reached your gallery limit. Upgrade your plan.`)
-        router.push('/dashboard')
-        return
-      }
-
-      // Create gallery
-      const { data, error } = await supabase
-        .from('galleries')
-        .insert({
-          owner_id: user.id,
-          title: 'Untitled Gallery',
-          status: 'draft'
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      
-      setGalleryId(data.id)
-    } catch (error) {
-      console.error('Error creating draft:', error)
-      toast.error('Failed to create gallery')
-      router.push('/dashboard')
-    }
+const initGallery = async () => {
+  // ✅ PREVENT DOUBLE CREATION
+  if (hasCreatedGallery. current || galleryId || isCreating) {
+    console.log('⏭️ Skipping gallery creation - already exists')
+    return
   }
   
+  hasCreatedGallery.current = true
+  setIsCreating(true)
+  
+  try {
+    const { data:  { user }, error:  userError } = await supabase. auth.getUser()
+    
+    if (userError || !user) {
+      console.error('Not authenticated:', userError)
+      toast.error('Please log in to create galleries')
+      router.push('/login')
+      return
+    }
+
+    console.log('🆕 Creating new gallery...')
+
+    // ✅ Let Supabase auto-generate the ID (remove uuidv4)
+    const { data, error } = await supabase
+      .from('galleries')
+      .insert({
+        owner_id: user.id,
+        title: 'Untitled Gallery',
+        status: 'draft'
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Failed to create gallery:', error)
+      throw error
+    }
+    
+    console.log('✅ Gallery created:', data. id)
+    setGalleryId(data.id)
+    
+  } catch (error) {
+    console.error('Error creating draft:', error)
+    toast.error('Failed to create gallery')
+    hasCreatedGallery.current = false
+    router.push('/dashboard')
+  } finally {
+    setIsCreating(false)
+  }
+}
+  
   initGallery()
-}, [])
+}, []) // ✅ Empty deps - only run once
 
   const saveDraft = async () => {
     if (!galleryId || isSaving) return
@@ -320,6 +309,55 @@ const createGalleryShare = async (galleryId, email, userId, galleryTitle) => {
     }
 
     console.log('Share created successfully:', newShare)
+
+    // 3.  SEND EMAIL (if client email provided)
+if (details.clientEmail) {
+  console.log('🔵 Attempting to send email to:', details.clientEmail)
+  
+  try {
+    const galleryUrl = `${window.location.origin}/g/${galleryId}`
+    
+    console.log('🔵 Email data:', {
+      type: 'galleryShared',
+      to: details.clientEmail,
+      galleryUrl,
+      hasPassword: sharing.hasPassword
+    })
+    
+    const emailResponse = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'galleryShared',
+        to: details.clientEmail,
+        data: {
+          clientName: details.clientName || '',
+          galleryTitle: details.title,
+          galleryUrl,
+          password: sharing.hasPassword ? sharing.password : null
+        }
+      })
+    })
+
+    console.log('🔵 Email response status:', emailResponse.status)
+    const responseData = await emailResponse.json()
+    console.log('🔵 Email response data:', responseData)
+
+    if (! emailResponse.ok) {
+      console.error('❌ Email failed:', responseData)
+      toast.warning('Gallery published but email failed')
+    } else {
+      console.log('✅ Email sent successfully!')
+      toast.success('✅ Gallery published and email sent!')
+    }
+  } catch (emailError) {
+    console.error('❌ Email error:', emailError)
+    toast.warning('Gallery published but email failed')
+  }
+} else {
+  console.log('⚠️ No client email provided, skipping email')
+  toast.success('Gallery published!')
+}
 
     // Send email notification
     try {

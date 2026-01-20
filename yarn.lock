@@ -769,13 +769,6 @@
   resolved "https://registry.npmjs.org/@standard-schema/utils/-/utils-0.3.0.tgz"
   integrity sha512-e7Mew686owMaPJVNNLs55PUvgz371nKgwsc4vxE49zsODpJEnxgxRo2y/OKrqueavXgZNMDVj3DdHFlaSAeU8g==
 
-"@supabase/auth-helpers-nextjs@^0.15.0":
-  version "0.15.0"
-  resolved "https://registry.npmjs.org/@supabase/auth-helpers-nextjs/-/auth-helpers-nextjs-0.15.0.tgz"
-  integrity sha512-VtXz3GGnxluoxks1g3SaCoYr2OZ7PgRukDl+pLWrDfD2dPDaG8hmkp5iBZsU+lmsDYALGNO2dgbymgpAfD8eCQ==
-  dependencies:
-    cookie "^1.0.2"
-
 "@supabase/auth-js@2.89.0":
   version "2.89.0"
   resolved "https://registry.npmjs.org/@supabase/auth-js/-/auth-js-2.89.0.tgz"

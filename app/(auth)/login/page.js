@@ -26,37 +26,42 @@ export default function LoginPage() {
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
+const handleLogin = async (e) => {
+  e.preventDefault()
+  setIsLoading(true)
+  setError('')
 
-      if (error) {
-        toast.error(error.message)
-        setIsLoading(false)
-        return
-      }
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    })
 
-      // Store remember me preference if needed
-      if (rememberMe && data.session) {
-        localStorage.setItem('rememberMe', 'true')
-      }
+    if (error) throw error
 
-      toast.success('Welcome back!')
-      router.push('/dashboard')
-    } catch (error) {
-      console.error('Login error:', error)
-      toast.error('An unexpected error occurred')
-      setIsLoading(false)
-    }
+    console.log('✅ Login successful!')
+
+    // ✅ IMPORTANT: Wait for session to be saved to localStorage
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Get redirect path
+    const searchParams = new URLSearchParams(window.location.search)
+    const redirect = searchParams.get('redirect') || '/dashboard'
+    
+    console.log('🔵 Redirecting to:', redirect)
+    
+    // ✅ Force a FULL page reload (not just client-side navigation)
+    window.location.replace(redirect)
+    
+  } catch (error) {
+    console.error('❌ Login failed:', error)
+    setError(error.message)
+    setIsLoading(false)
   }
-
+}
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Background */}
