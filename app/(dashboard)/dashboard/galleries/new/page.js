@@ -394,47 +394,84 @@ const createGalleryShare = async (galleryId, email, userId, galleryTitle) => {
   }
 
   // Step 4: Publish
-// Step 4: Publish
 const handlePublish = async () => {
+  // Validation
+  if (!details.title) {
+    toast.error('Please add a gallery title')
+    return
+  }
+  if (photos.length === 0) {
+    toast.error('Please upload at least one photo')
+    return
+  }
+
   setIsPublishing(true)
 
   try {
-    const { data: { user } } = await supabase.auth.getUser()
+    // 1. Update gallery
+    const { error: galleryError } = await supabase
+      .from('galleries')
+      .update({
+        status: 'active',
+        title:  details.title,
+        client_name: details.clientName,
+        client_email:  details.clientEmail,
+        event_date: details.eventDate || null,
+        notes: details. notes
+      })
+      .eq('id', galleryId)
 
+    if (galleryError) throw galleryError
+
+    // 2. Create share link with password
     let passwordHash = null
     if (sharing.hasPassword && sharing.password) {
+      const bcrypt = await import('bcryptjs')
       passwordHash = await bcrypt.hash(sharing.password, 10)
     }
 
-    const { error: updateError } = await supabase
+    await supabase
       .from('galleries')
       .update({
-        title: details.title,
-        client_name: details.clientName,
-        client_email: details.clientEmail || null,
-        event_date: details.eventDate || null,
-        notes: details.notes,
-        status: 'active',
         passwordhash: passwordHash,
         allow_download: sharing.allowDownload
       })
       .eq('id', galleryId)
 
-    if (updateError) throw updateError
-
-    // ✅ Try to share, but don't fail if it errors
+    // 3. ✅ SEND EMAIL (if client email provided)
     if (details.clientEmail) {
       try {
-        await createGalleryShare(galleryId, details.clientEmail, user.id, details.title)
-      } catch (shareError) {
-        console.error('Share error:', shareError)
-        // Gallery is published, just sharing failed
-        toast.warning('Gallery published, but email sharing failed')
+        const galleryUrl = `${window.location.origin}/g/${galleryId}`
+        
+        await fetch('/api/send-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'galleryShared',
+            to: details.clientEmail,
+            data: {
+              clientName: details.clientName || '',
+              galleryTitle: details. title,
+              galleryUrl,
+              password: sharing.hasPassword ? sharing.password : null
+            }
+          })
+        })
+
+        toast.success(' Gallery published and email sent!')
+      } catch (emailError) {
+        console.error('Email failed:', emailError)
+        toast.warning('Gallery published but email failed')
       }
+    } else {
+      toast.success('Gallery published!')
     }
 
-    toast.success('Gallery published!')
-    router.push(`/dashboard/galleries/${galleryId}`)
+    // Redirect
+    setTimeout(() => {
+      router.push(`/dashboard/galleries/${galleryId}`)
+    }, 1500)
+
   } catch (error) {
     console.error('Publish error:', error)
     toast.error('Failed to publish gallery')
