@@ -73,43 +73,71 @@ export default function HomePage() {
   const [pricingRef, pricingInView] = useInView()
   const [testimonialsRef, testimonialsInView] = useInView()
 
-  async function handleCheckout(plan) {
-    if (loading) return
+async function handleCheckout(plan) {
+  if (loading) return
+  
+  try {
+    setIsRedirecting(true)
     
-    try {
-      setIsRedirecting(true)
-      
-      if (! user) {
-        localStorage.setItem('pending_plan', plan)
-        router.push('/signup')
-        return
-      }
+    // ✅ Check if user is logged in
+    if (!user) {
+      console.log('❌ User not logged in, redirecting to signup')
+      localStorage.setItem('pending_plan', plan)
+      router.push('/signup')
+      return
+    }
 
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
-      })
+    console.log('🔵 User authenticated:', user.email)
 
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({}))
-        console.error('Checkout error', res.status, error)
-        alert('Checkout error:  ' + (error?. error || res.status))
-        setIsRedirecting(false)
-        return
-      }
+    // ✅ Get fresh session with token
+    const { data: { session }, error:  sessionError } = await supabase. auth.getSession()
+    
+    if (sessionError || !session) {
+      console.error('❌ No valid session:', sessionError)
+      alert('Please log in again')
+      router.push('/login')
+      return
+    }
 
-      const data = await res.json()
-      if (data.url) {
-        window.location. href = data.url
-      } else {
-        setIsRedirecting(false)
-      }
-    } catch (err) {
-      console.error(err)
+    console.log('✅ Session token obtained')
+
+    // ✅ Call checkout API with Authorization header
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body:  JSON.stringify({ plan }),
+    })
+
+    console.log('📡 API Response status:', res.status)
+
+    if (!res.ok) {
+      const error = await res. json().catch(() => ({ error: 'Unknown error' }))
+      console.error('❌ Checkout error:', error)
+      alert('Checkout failed: ' + (error?.error || 'Please try again'))
+      setIsRedirecting(false)
+      return
+    }
+
+    const data = await res.json()
+    console.log('✅ Checkout response:', data)
+
+    if (data.url) {
+      console.log('🔀 Redirecting to Stripe...')
+      window.location.href = data.url
+    } else {
+      console.error('❌ No checkout URL returned')
+      alert('Checkout failed.  Please try again.')
       setIsRedirecting(false)
     }
+  } catch (err) {
+    console.error('❌ Checkout exception:', err)
+    alert('An error occurred.  Please try again.')
+    setIsRedirecting(false)
   }
+}
 
   const faqs = [
     {

@@ -3,55 +3,58 @@ import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
 const stripe = new Stripe(process. env.STRIPE_SECRET_KEY)
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env. SUPABASE_SERVICE_ROLE_KEY
-)
 
 export async function POST(request) {
+  console.log('🔵 Checkout API called')
+  
   try {
-    // ✅ FIX 1: Get session from cookies (server-side)
-    const cookieHeader = request.headers.get('cookie')
+    // ✅ Get Authorization header
+    const authHeader = request.headers.get('authorization')
+    console.log('🔵 Auth header present:', !!authHeader)
     
-    if (!cookieHeader) {
-      console.error('❌ No cookies found in request')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No authorization header found')
       return NextResponse. json(
         { error: 'Not authenticated. Please log in.' },
         { status: 401 }
       )
     }
 
-    // ✅ FIX 2: Create Supabase client with cookies
-    const supabaseAuth = createClient(
-      process.env. NEXT_PUBLIC_SUPABASE_URL,
-      process. env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-      {
-        global: {
-          headers: {
-            cookie: cookieHeader
-          }
-        }
-      }
+    const token = authHeader. replace('Bearer ', '')
+    console.log('🔵 Token extracted:', token. substring(0, 20) + '...')
+
+    // ✅ Create Supabase client
+    const supabase = createClient(
+      process. env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     )
 
-    // ✅ FIX 3: Get authenticated user
-    const { data: { user }, error:  authError } = await supabaseAuth.auth.getUser()
+    // ✅ Verify token and get user
+    const { data:  { user }, error:  authError } = await supabase.auth.getUser(token)
 
-    if (authError || !user) {
+    if (authError) {
       console.error('❌ Auth error:', authError)
       return NextResponse.json(
-        { error: 'Not authenticated. Please log in.' },
+        { error: 'Authentication failed. Please log in again.' },
         { status: 401 }
       )
     }
 
-    console.log('✅ Authenticated user:', user.id, user.email)
+    if (!user) {
+      console.error('❌ No user found from token')
+      return NextResponse. json(
+        { error: 'User not found. Please log in.' },
+        { status: 401 }
+      )
+    }
 
-    // Get plan from request body
+    console.log('✅ User authenticated:', user.id, user.email)
+
+    // ✅ Get plan from request
     const { plan } = await request.json()
 
     if (!plan) {
-      return NextResponse.json(
+      return NextResponse. json(
         { error: 'Plan is required' },
         { status: 400 }
       )
@@ -59,28 +62,31 @@ export async function POST(request) {
 
     console.log('🔵 Creating checkout for plan:', plan)
 
-    // Get user's email
-    const userEmail = user.email
-
-    // Define price IDs based on plan
+    // ✅ Define price IDs
     const priceIds = {
-      'trial-gallery': process.env.STRIPE_PRICE_TRIAL, // €1 trial
-      'payg':  process.env.STRIPE_PRICE_PAYG,           // €4. 90 per gallery
-      'studio': process.env.STRIPE_PRICE_STUDIO,       // €19/month
+      'trial-gallery': process.env.STRIPE_PRICE_TRIAL,
+      'payg':  process.env.STRIPE_PRICE_PAYG,
+      'studio': process.env. STRIPE_PRICE_STUDIO,
     }
 
     const priceId = priceIds[plan]
 
     if (!priceId) {
+      console.error('❌ Invalid plan:', plan)
       return NextResponse.json(
         { error: `Invalid plan: ${plan}` },
         { status: 400 }
       )
     }
 
-    // Create Stripe checkout session
+    console.log('🔵 Using price ID:', priceId)
+
+    // ✅ Determine mode (subscription vs one-time payment)
+    const isSubscription = plan === 'studio'
+
+    // ✅ Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
-      customer_email: userEmail,
+      customer_email: user.email,
       client_reference_id: user.id,
       line_items: [
         {
@@ -88,23 +94,34 @@ export async function POST(request) {
           quantity: 1,
         },
       ],
-      mode: plan === 'studio' ? 'subscription' : 'payment',
+      mode: isSubscription ?  'subscription' : 'payment',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard? session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/? canceled=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
       metadata: {
-        user_id: user.id,
+        user_id:  user.id,
         plan: plan,
       },
-   
+      // Add subscription metadata if applicable
+      ...(isSubscription && {
+        subscription_data: {
+          metadata: {
+            user_id: user.id,
+            plan: plan
+          }
+        }
+      })
     })
 
-    console.log('✅ Checkout session created:', session.id)
+    console.log('✅ Stripe session created:', session.id)
 
-    return NextResponse.json({ url: session.url })
+    return NextResponse.json({ 
+      url: session.url,
+      session_id: session.id 
+    })
 
   } catch (error) {
     console.error('❌ Checkout error:', error)
-    return NextResponse.json(
+    return NextResponse. json(
       { error: error.message || 'Failed to create checkout session' },
       { status: 500 }
     )
