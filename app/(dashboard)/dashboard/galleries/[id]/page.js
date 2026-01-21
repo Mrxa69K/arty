@@ -634,34 +634,81 @@ const handleDeleteFolder = async (folderId) => {
 }
 
   
-
 const handleGenerateLink = async () => {
   try {
+    console.log('🔵 Starting link generation...')
+    
     let passwordHash = null
     if (linkSettings.hasPassword && linkSettings.password) {
       passwordHash = await bcrypt.hash(linkSettings.password, 10)
     }
 
-    const { error } = await supabase
-      .from('galleries')
-      .update({
-        passwordhash: passwordHash,
-        allow_download: linkSettings.allowdownload  
-      })
-      .eq('id', galleryId)
+    // ✅ Check if gallery link already exists
+    const { data: existingLink, error: selectError } = await supabase
+      .from('gallery_links')  // ✅ WITH UNDERSCORE
+      .select('*')
+      .eq('gallery_id', galleryId)
+      .single()
 
-    if (error) throw error
+    console.log('🔵 Existing link:', existingLink)
 
-    setGallery({ ...gallery, allow_download: linkSettings.allowdownload })
-    toast.success(galleryLink ? 'Settings updated!' : 'Share link generated!')
-    setGalleryLink({ token: galleryId })
+    if (existingLink) {
+      // ✅ Update existing link
+      console.log('🔵 Updating existing link...')
+      
+      const { error:  updateError } = await supabase
+        .from('gallery_links')  // ✅ WITH UNDERSCORE
+        .update({
+          password_hash: passwordHash,  // ✅ WITH UNDERSCORE
+          expires_at: linkSettings.expires_at || null,
+          allow_download: linkSettings.allow_download  // ✅ WITH UNDERSCORE
+        })
+        .eq('gallery_id', galleryId)
+
+      if (updateError) {
+        console.error('❌ Update error:', updateError)
+        throw new Error(`Update failed: ${updateError.message}`)
+      }
+
+      toast.success('Settings updated!')
+      setGalleryLink(existingLink)
+      
+    } else {
+      // ✅ Create new link
+      console.log('🔵 Creating new link.. .')
+      const newToken = uuidv4()
+
+      const { data: insertResult, error: insertError } = await supabase
+        .from('gallery_links')  // ✅ WITH UNDERSCORE
+        .insert({
+          id: uuidv4(),
+          gallery_id: galleryId,
+          token: newToken,
+          password_hash: passwordHash,  // ✅ WITH UNDERSCORE
+          expires_at: linkSettings.expires_at || null,
+          allow_download:  linkSettings.allow_download  // ✅ WITH UNDERSCORE
+        })
+        .select()
+        .single()
+
+      if (insertError) {
+        console.error('❌ Insert error:', insertError)
+        throw new Error(`Insert failed: ${insertError.message}`)
+      }
+
+      console.log('✅ Link created:', insertResult)
+      setGalleryLink({ token: newToken })
+      toast.success('Share link generated!')
+    }
+
+    // ✅ Refresh gallery data
+    await fetchGallery()
+    
   } catch (error) {
-    console.error('Error updating gallery:', error)
-    toast.error('Failed to update settings')
+    console.error('❌ Error:', error)
+    toast.error(`Failed to update settings: ${error. message}`)
   }
 }
-
-
 
   const copyShareLink = () => {
     if (galleryLink && typeof window !== 'undefined') {

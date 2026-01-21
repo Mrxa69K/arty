@@ -7,10 +7,9 @@ import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-
 import {
   Camera, Lock, Loader2, Download, X, 
-  Calendar, AlertCircle,ChevronLeft, ChevronRight, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
+  Calendar, AlertCircle, ChevronLeft, ChevronRight, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
   ArrowLeft, FileText
 } from 'lucide-react'
 
@@ -39,9 +38,6 @@ export default function PublicGalleryPage() {
   const [folders, setFolders] = useState([])           
   const [selectedFolder, setSelectedFolder] = useState(null)  
 
-
-  
-
   const [loading, setLoading] = useState(true)
 
   // Lightbox
@@ -60,7 +56,7 @@ export default function PublicGalleryPage() {
   }, [token])
 
   useEffect(() => {
-    if (isAuthenticated || (!requiresPassword && gallery)) {
+    if (isAuthenticated || (! requiresPassword && gallery)) {
       fetchPhotos(sessionToken)
     }
   }, [isAuthenticated, requiresPassword, gallery, sessionToken])
@@ -70,17 +66,17 @@ export default function PublicGalleryPage() {
       const response = await fetch(`/api/gallery/${token}`)
       const data = await response.json()
 
-      if (!response.ok) {
+      if (! response.ok) {
         if (data.expired) setExpired(true)
         else setError(data.error || 'Gallery not found')
         return
       }
 
-      setGallery(data.gallery)
+      setGallery(data. gallery)
       setRequiresPassword(data.requires_password)
       setAllowDownload(data.allow_download)
 
-      if (!data.requires_password) setIsAuthenticated(true)
+      if (! data.requires_password) setIsAuthenticated(true)
     } catch (err) {
       console.error('Error fetching gallery:', err)
       setError('Failed to load gallery')
@@ -89,33 +85,32 @@ export default function PublicGalleryPage() {
     }
   }
 
-const fetchPhotos = async (session) => {
-  setLoading(true)  // ✅ START LOADING
-  try {
-    const sessionParam = session || sessionToken
-    const url = sessionParam
-      ? `/api/gallery/${token}/photos?session=${encodeURIComponent(sessionParam)}`
-      : `/api/gallery/${token}/photos`
-    
-    const response = await fetch(url)  // ✅ UNE SEULE FOIS
-    const data = await response.json()
+  const fetchPhotos = async (session) => {
+    setLoading(true)
+    try {
+      const sessionParam = session || sessionToken
+      const url = sessionParam
+        ? `/api/gallery/${token}/photos?session=${encodeURIComponent(sessionParam)}`
+        : `/api/gallery/${token}/photos`
+      
+      const response = await fetch(url)
+      const data = await response.json()
 
-    if (!response.ok) {
-      if (data.expired) setExpired(true)
-      console.error('Error fetching photos:', data.error)
-      return
+      if (!response.ok) {
+        if (data.expired) setExpired(true)
+        console.error('Error fetching photos:', data.error)
+        return
+      }
+
+      setPhotos(data.photos || [])
+      setFolders(data.folders || [])
+      setAllowDownload(data.allow_download)
+    } catch (err) {
+      console.error('Error fetching photos:', err)
+    } finally {
+      setLoading(false)
     }
-
-    setPhotos(data.photos || [])
-    setFolders(data.folders || [])
-    setAllowDownload(data.allow_download)
-  } catch (err) {
-    console.error('Error fetching photos:', err)
-  } finally {
-    setLoading(false)  // ✅ STOP LOADING
   }
-}
-
 
   const handlePasswordSubmit = async (e) => {
     e.preventDefault()
@@ -145,55 +140,54 @@ const fetchPhotos = async (session) => {
       setAllowDownload(data.allow_download)
     } catch (err) {
       console.error('Password verification error:', err)
-      setPasswordError('An error occurred. Please try again.')
+      setPasswordError('An error occurred.  Please try again.')
     } finally {
       setIsVerifying(false)
     }
   }
-const handleDownload = async (photo, showToast = true) => {
-  setDownloadingId(photo.id)
-  try {
-    // ✅ Use API route instead of direct URL
-    const response = await fetch(`/api/gallery/${token}/download-photo`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ photoId: photo.id })
-    })
 
-    if (!response.ok) {
-      const error = await response.json()
-      throw new Error(error.error || 'Download failed')
+  const handleDownload = async (photo, showToast = true) => {
+    setDownloadingId(photo.id)
+    try {
+      const response = await fetch(`/api/gallery/${token}/download-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId: photo.id })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Download failed')
+      }
+
+      const blob = await response.blob()
+      const blobUrl = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = blobUrl
+      link.download = photo.file_name || `${photo.media_type}-${photo.id}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
+      link.style.display = 'none'
+      document.body.appendChild(link)
+      link.click()
+
+      setTimeout(() => {
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(blobUrl)
+      }, 100)
+
+      if (showToast) {
+        toast.success(`${photo.media_type === 'video' ?  'Video' : 'Photo'} downloaded`)
+      }
+      return true
+    } catch (err) {
+      console.error('Download error:', err)
+      if (showToast) {
+        toast.error(err.message || 'Failed to download.  Please try again.')
+      }
+      return false
+    } finally {
+      setDownloadingId(null)
     }
-
-    const blob = await response.blob()
-    const blobUrl = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = blobUrl
-    link.download = photo.file_name || `${photo.media_type}-${photo.id}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
-    link.style.display = 'none'
-    document.body.appendChild(link)
-    link.click()
-
-    setTimeout(() => {
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(blobUrl)
-    }, 100)
-
-    if (showToast) {
-      toast.success(`${photo.media_type === 'video' ? 'Video' : 'Photo'} downloaded`)
-    }
-    return true
-  } catch (err) {
-    console.error('Download error:', err)
-    if (showToast) {
-      toast.error(err.message || 'Failed to download. Please try again.')
-    }
-    return false
-  } finally {
-    setDownloadingId(null)
   }
-}
-
 
   const handleDownloadAllZip = async () => {
     if (photos.length === 0) {
@@ -221,8 +215,8 @@ const handleDownload = async (photo, showToast = true) => {
       const url = window.URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      const filename = gallery?.title 
-        ? `${gallery.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`
+      const filename = gallery?. title 
+        ? `${gallery.title. replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`
         : 'gallery.zip'
       a.download = filename
       document.body.appendChild(a)
@@ -261,7 +255,7 @@ const handleDownload = async (photo, showToast = true) => {
   }, [photos.length])
 
   const handleKeyDown = useCallback((e) => {
-    if (!lightboxOpen) return
+    if (! lightboxOpen) return
     
     switch(e.key) {
       case 'Escape':
@@ -295,8 +289,8 @@ const handleDownload = async (photo, showToast = true) => {
         <div
           className="fixed inset-0"
           style={{
-            backgroundImage: "url('/cover.webp')",
-            backgroundSize: 'cover',
+            backgroundImage: "url('/cover. webp')",
+            backgroundSize:  'cover',
             backgroundPosition: 'center',
           }}
         />
@@ -304,8 +298,8 @@ const handleDownload = async (photo, showToast = true) => {
         <div
           className="pointer-events-none fixed inset-0 opacity-[0.14] mix-blend-multiply"
           style={{
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
+            backgroundImage: 
+              "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1. 2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
             backgroundSize: 'cover',
           }}
         />
@@ -331,7 +325,7 @@ const handleDownload = async (photo, showToast = true) => {
           className="fixed inset-0"
           style={{
             backgroundImage: "url('/cover.webp')",
-            backgroundSize: 'cover',
+            backgroundSize:  'cover',
             backgroundPosition: 'center',
           }}
         />
@@ -341,7 +335,7 @@ const handleDownload = async (photo, showToast = true) => {
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-            backgroundSize: 'cover',
+            backgroundSize:  'cover',
           }}
         />
 
@@ -378,7 +372,7 @@ const handleDownload = async (photo, showToast = true) => {
           className="fixed inset-0"
           style={{
             backgroundImage: "url('/cover.webp')",
-            backgroundSize: 'cover',
+            backgroundSize:  'cover',
             backgroundPosition: 'center',
           }}
         />
@@ -388,7 +382,7 @@ const handleDownload = async (photo, showToast = true) => {
           style={{
             backgroundImage:
               "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-            backgroundSize: 'cover',
+            backgroundSize:  'cover',
           }}
         />
 
@@ -427,7 +421,7 @@ const handleDownload = async (photo, showToast = true) => {
           style={{
             backgroundImage: "url('/cover.webp')",
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition:  'center',
           }}
         />
         <div className="fixed inset-0 bg-[#F5F0EA]/70 mix-blend-soft-light" />
@@ -449,7 +443,7 @@ const handleDownload = async (photo, showToast = true) => {
               Protected Gallery
             </h1>
             <p className="text-sm text-black/60 mb-6 text-center">
-              This gallery is password protected. Enter the password to view.
+              This gallery is password protected. Enter the password to view. 
             </p>
             
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -457,7 +451,7 @@ const handleDownload = async (photo, showToast = true) => {
                 <Label className="text-xs font-medium text-black/80">Password</Label>
                 <div className="relative">
                   <Input
-                    type={showPassword ? 'text' : 'password'}
+                    type={showPassword ? 'text' :  'password'}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="Enter password"
@@ -468,7 +462,7 @@ const handleDownload = async (photo, showToast = true) => {
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-black/40 hover:text-black/60"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff className="w-4 h-4" /> :  <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 {passwordError && (
@@ -483,7 +477,7 @@ const handleDownload = async (photo, showToast = true) => {
                 {isVerifying ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Verifying...
+                    Verifying... 
                   </>
                 ) : (
                   'Unlock Gallery'
@@ -536,7 +530,7 @@ const handleDownload = async (photo, showToast = true) => {
 
           {/* Photo/Video Content */}
           <div className="w-full h-full flex items-center justify-center">
-            {currentPhoto?.media_type === 'video' ? (
+            {currentPhoto?. media_type === 'video' ? (
               <video
                 src={currentPhoto.video_url}
                 controls
@@ -545,14 +539,14 @@ const handleDownload = async (photo, showToast = true) => {
               />
             ) : (
               <img
-                src={currentPhoto?.image_url}
+                src={currentPhoto?. image_url}
                 alt={currentPhoto?.file_name}
                 className="max-w-full max-h-full object-contain rounded-lg"
               />
             )}
           </div>
 
-          {/* Download Button */}
+          {/* ✅ Download Button - ONLY if allowed */}
           {allowDownload && currentPhoto && (
             <Button
               onClick={() => handleDownload(currentPhoto, true)}
@@ -588,7 +582,7 @@ const handleDownload = async (photo, showToast = true) => {
       <div
         className="fixed inset-0"
         style={{
-          backgroundImage: "url('/cover.webp')",
+          backgroundImage: "url('/cover. webp')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}
@@ -612,16 +606,17 @@ const handleDownload = async (photo, showToast = true) => {
           </div>
         </Link>
         
+        {/* ✅ Header Download All - ONLY if allowed */}
         {allowDownload && photos.length > 0 && (
           <Button
             onClick={handleDownloadAllZip}
             disabled={isDownloadingZip}
             className="hidden sm:flex h-9 px-4 rounded-full bg-black text-white hover:bg-black/90 text-xs items-center gap-2"
           >
-            {isDownloadingZip ? (
+            {isDownloadingZip ?  (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Preparing...
+                Preparing... 
               </>
             ) : (
               <>
@@ -639,13 +634,13 @@ const handleDownload = async (photo, showToast = true) => {
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="flex-1">
                 <h1 className="text-2xl sm:text-3xl font-semibold text-black/80 mb-2">
-                  {gallery?.title || 'Client gallery'}
+                  {gallery?. title || 'Client gallery'}
                 </h1>
                 <div className="flex flex-wrap items-center gap-3 text-xs text-black/60">
                   {gallery?.client_name && (
                     <span className="flex items-center gap-1">
                       <Camera className="w-3 h-3" />
-                      {gallery.client_name}
+                      {gallery. client_name}
                     </span>
                   )}
                   {gallery?.event_date && (
@@ -661,7 +656,8 @@ const handleDownload = async (photo, showToast = true) => {
                 </div>
               </div>
 
-              {allowDownload && photos.length > 0 && (
+              {/* ✅ Mobile Download All - ONLY if allowed */}
+              {allowDownload && photos. length > 0 && (
                 <Button
                   onClick={handleDownloadAllZip}
                   disabled={isDownloadingZip}
@@ -682,7 +678,7 @@ const handleDownload = async (photo, showToast = true) => {
               )}
             </div>
 
-            {!allowDownload && photos.length > 0 && (
+            {! allowDownload && photos.length > 0 && (
               <div className="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center gap-2">
                 <EyeOff className="w-3 h-3" />
                 This gallery is view‑only. Downloads are not enabled.
@@ -691,219 +687,207 @@ const handleDownload = async (photo, showToast = true) => {
           </div>
 
           {/* Folder Browser */}
-{/* Folder Browser */}
-{folders.length > 0 && (
-  <div className="mb-8">
-    {selectedFolder ? (
-      // Back button
-      <button
-        onClick={() => setSelectedFolder(null)}
-        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group mb-6"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        Back to Files
-      </button>
-    ) : (
-      // Folder grid
-      <div>
-        <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
-          <FileText className="w-5 h-5" />
-          Your Folders
-        </h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {folders.map(folder => {
-            const folderPhotos = photos.filter(p => p.folder_id === folder.id)
-            const count = folderPhotos.length
-            if (count === 0) return null
-            
-            // Get first 4 photos as preview
-            const previewPhotos = folderPhotos.slice(0, 4)
-            
-            return (
-              <button
-                key={folder.id}
-                onClick={() => setSelectedFolder(folder.id)}
-                className="group relative rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-black/10 hover:border-black/20 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02]"
-              >
-                {/* Preview Grid */}
-                <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 mb-3">
-                  {previewPhotos.length === 1 ? (
-                    <img
-                      src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
-                      alt=""
-                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                    />
-                  ) : previewPhotos.length === 2 ? (
-                    <div className="grid grid-cols-2 gap-1 h-full">
-                      {previewPhotos.map((photo, idx) => (
-                        <img
-                          key={idx}
-                          src={photo.thumbnail_url || photo.image_url}
-                          alt=""
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      ))}
-                    </div>
-                  ) : previewPhotos.length >= 3 ? (
-                    <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
-                      <img
-                        src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
-                        alt=""
-                        className="col-span-2 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      {previewPhotos.slice(1, 3).map((photo, idx) => (
-                        <img
-                          key={idx}
-                          src={photo.thumbnail_url || photo.image_url}
-                          alt=""
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <FileText className="w-12 h-12 text-black/20" />
-                    </div>
-                  )}
-                  
-                  {/* Overlay gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
+          {folders.length > 0 && (
+            <div className="mb-8">
+              {selectedFolder ?  (
+                <button
+                  onClick={() => setSelectedFolder(null)}
+                  className="inline-flex items-center gap-2 px-4 py-2. 5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group mb-6"
+                >
+                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                  Back to Files
+                </button>
+              ) : (
+                <div>
+                  <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Your Folders
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {folders.map(folder => {
+                      const folderPhotos = photos.filter(p => p.folder_id === folder.id)
+                      const count = folderPhotos.length
+                      if (count === 0) return null
+                      
+                      const previewPhotos = folderPhotos.slice(0, 4)
+                      
+                      return (
+                        <button
+                          key={folder.id}
+                          onClick={() => setSelectedFolder(folder. id)}
+                          className="group relative rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-black/10 hover: border-black/20 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02]"
+                        >
+                          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 mb-3">
+                            {previewPhotos.length === 1 ? (
+                              <img
+                                src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
+                                alt=""
+                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                              />
+                            ) : previewPhotos.length === 2 ? (
+                              <div className="grid grid-cols-2 gap-1 h-full">
+                                {previewPhotos.map((photo, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={photo.thumbnail_url || photo.image_url}
+                                    alt=""
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                  />
+                                ))}
+                              </div>
+                            ) : previewPhotos.length >= 3 ? (
+                              <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
+                                <img
+                                  src={previewPhotos[0].thumbnail_url || previewPhotos[0]. image_url}
+                                  alt=""
+                                  className="col-span-2 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                />
+                                {previewPhotos.slice(1, 3).map((photo, idx) => (
+                                  <img
+                                    key={idx}
+                                    src={photo.thumbnail_url || photo.image_url}
+                                    alt=""
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                  />
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <FileText className="w-12 h-12 text-black/20" />
+                              </div>
+                            )}
+                            
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
 
-                {/* Folder info */}
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-black/90 truncate mb-0.5 group-hover:text-black transition-colors">
-                      {folder.name}
-                    </h4>
-                    <p className="text-xs text-black/50 flex items-center gap-1">
-                      <Images className="w-3 h-3" />
-                      {count} {count === 1 ? 'file' : 'files'}
-                    </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-black/90 truncate mb-0.5 group-hover:text-black transition-colors">
+                                {folder.name}
+                              </h4>
+                              <p className="text-xs text-black/50 flex items-center gap-1">
+                                <Images className="w-3 h-3" />
+                                {count} {count === 1 ? 'file' : 'files'}
+                              </p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all ml-3">
+                              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
                   </div>
-                  <div className="w-8 h-8 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all ml-3">
-                    <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                  </div>
-                </div>
-              </button>
-            )
-          })}
-        </div>
-      </div>
-    )}
-  </div>
-)}
-
-{/* Photos Grid */}
-{(() => {
-  // Filter logic
- 
-  const filteredPhotos = selectedFolder === null
-    ? photos.filter(p => p.folder_id === null)
-    : photos.filter(p => p.folder_id === selectedFolder)
-  
-  // ✅ SHOW LOADER WHILE LOADING
-  if (loading) {
-    return (
-      <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
-        <Loader2 className="w-12 h-12 text-black/20 animate-spin mx-auto mb-4" />
-        <p className="text-sm text-black/60">Loading your photos...</p>
-      </div>
-    )
-  }
-  
-  if (filteredPhotos.length === 0 && selectedFolder === null && folders.length > 0) {
-    return null
-  }
-  
-  if (filteredPhotos.length === 0) {
-    return (
-      <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
-        <div className="w-16 h-16 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-4">
-          <Images className="w-8 h-8 text-black/30" />
-        </div>
-        <h3 className="text-lg font-semibold text-black/80 mb-2">
-          {selectedFolder ? 'No files in this folder' : 'No photos yet'}
-        </h3>
-        <p className="text-sm text-black/60 max-w-sm mx-auto">
-          {selectedFolder ? 'This folder is empty' : 'Your photographer is preparing your gallery'}
-        </p>
-      </div>
-    )
-  }
-  
-
-  
-  return (
-    <div>
-      {selectedFolder === null && filteredPhotos.length > 0 && (
-        <h3 className="text-sm font-medium text-black/80 mb-3 mt-6">📄 Files</h3>
-      )}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
-        {filteredPhotos.map((photo, index) => (
-          <div
-            key={photo.id}
-            className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-square hover:shadow-xl transition-all duration-300"
-            onClick={() => {
-           const realIndex = photos.findIndex(p => p.id === photo.id)
-            openLightbox(realIndex)
-}}
-          >
-            {photo.media_type === 'video' && !photo.thumbnail_url ? (
-              <video
-                src={photo.video_url}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                muted
-                playsInline
-                preload="metadata"
-              />
-            ) : (
-              <img
-                src={photo.thumbnail_url || photo.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
-                alt={photo.file_name || `Photo ${index + 1}`}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                loading="lazy"
-                onError={(e) => {
-                  e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
-                  e.target.className += ' opacity-75 border-2 border-dashed border-slate-300'
-                }}
-              />
-            )}
-
-            {photo.media_type === 'video' && (
-              <>
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40" />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-16 h-16 rounded-full bg-white/95 shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all">
-                    <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M8 5v14l11-7z"/>
-                    </svg>
-                  </div>
-                </div>
-                <div className="absolute top-3 left-3 px-2.5 py-1 bg-red-500/95 text-white text-xs font-bold rounded-full shadow-lg">
-                  VIDEO
-                </div>
-              </>
-            )}
-            
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
-            <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-xs text-white">
-              {allowDownload && (
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-2 py-1 rounded-full">
-                  <Download className="w-3 h-3" />
                 </div>
               )}
-              <div className="bg-black/70 px-2 py-1 rounded-full">
-                {index + 1}
-              </div>
             </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-})()}
+          )}
 
+          {/* Photos Grid */}
+          {(() => {
+            const filteredPhotos = selectedFolder === null
+              ? photos. filter(p => p.folder_id === null)
+              : photos.filter(p => p.folder_id === selectedFolder)
+            
+            if (loading) {
+              return (
+                <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
+                  <Loader2 className="w-12 h-12 text-black/20 animate-spin mx-auto mb-4" />
+                  <p className="text-sm text-black/60">Loading your photos...</p>
+                </div>
+              )
+            }
+            
+            if (filteredPhotos.length === 0 && selectedFolder === null && folders.length > 0) {
+              return null
+            }
+            
+            if (filteredPhotos.length === 0) {
+              return (
+                <div className="rounded-2xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-12 text-center">
+                  <div className="w-16 h-16 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-4">
+                    <Images className="w-8 h-8 text-black/30" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-black/80 mb-2">
+                    {selectedFolder ?  'No files in this folder' : 'No photos yet'}
+                  </h3>
+                  <p className="text-sm text-black/60 max-w-sm mx-auto">
+                    {selectedFolder ? 'This folder is empty' : 'Your photographer is preparing your gallery'}
+                  </p>
+                </div>
+              )
+            }
+            
+            return (
+              <div>
+                {selectedFolder === null && filteredPhotos.length > 0 && (
+                  <h3 className="text-sm font-medium text-black/80 mb-3 mt-6">📄 Files</h3>
+                )}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-2 md:gap-3">
+                  {filteredPhotos.map((photo, index) => (
+                    <div
+                      key={photo.id}
+                      className="group relative rounded-xl overflow-hidden bg-slate-100 cursor-pointer aspect-square hover:shadow-xl transition-all duration-300"
+                      onClick={() => {
+                        const realIndex = photos.findIndex(p => p. id === photo.id)
+                        openLightbox(realIndex)
+                      }}
+                    >
+                      {photo.media_type === 'video' && ! photo.thumbnail_url ?  (
+                        <video
+                          src={photo.video_url}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          muted
+                          playsInline
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={photo.thumbnail_url || photo.image_url || 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='}
+                          alt={photo.file_name || `Photo ${index + 1}`}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading="lazy"
+                          onError={(e) => {
+                            e.target.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzAwIiBoZWlnaHQ9IjMwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjZGN0ZGIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxOCIgZmlsbD0iIzk5OTk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZG9taW5hbnQtYmFzZWxpbmU9ImNlbnRyYWwiPk5vIEltYWdlPC90ZXh0Pjwvc3ZnPg=='
+                            e.target.className += ' opacity-75 border-2 border-dashed border-slate-300'
+                          }}
+                        />
+                      )}
+
+                      {photo.media_type === 'video' && (
+                        <>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/40" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-16 h-16 rounded-full bg-white/95 shadow-2xl flex items-center justify-center group-hover:scale-110 transition-all">
+                              <svg className="w-8 h-8 text-black ml-1" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M8 5v14l11-7z"/>
+                              </svg>
+                            </div>
+                          </div>
+                          <div className="absolute top-3 left-3 px-2. 5 py-1 bg-red-500/95 text-white text-xs font-bold rounded-full shadow-lg">
+                            VIDEO
+                          </div>
+                        </>
+                      )}
+                      
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <div className="absolute bottom-2 left-2 right-2 flex justify-between items-center text-xs text-white">
+                        {/* ✅ Download icon - ONLY if allowed */}
+                        {allowDownload && (
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-black/70 px-2 py-1 rounded-full">
+                            <Download className="w-3 h-3" />
+                          </div>
+                        )}
+                        <div className={`bg-black/70 px-2 py-1 rounded-full ${allowDownload ? '' : 'ml-auto'}`}>
+                          {index + 1}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       </div>
     </div>
