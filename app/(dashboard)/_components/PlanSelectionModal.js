@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'  
 import { 
   Dialog, 
   DialogContent, 
@@ -26,34 +27,52 @@ export function PlanSelectionModal({ open, onClose, userEmail }) {
     return () => clearInterval(interval)
   }, [])
 
-  const handleSelectPlan = async (planType) => {
-    setIsLoading(true)
-    setSelectedPlan(planType)
+const handleSelectPlan = async (planType) => {
+  setIsLoading(true)
+  setSelectedPlan(planType)
 
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: planType })
-      })
-
-      if (!res.ok) {
-        const error = await res.json()
-        throw new Error(error.error || 'Checkout failed')
-      }
-
-      const data = await res.json()
-      
-      if (data.url) {
-        window.location.href = data.url
-      }
-    } catch (error) {
-      console.error('Plan selection error:', error)
-      toast.error(error.message || 'Failed to process payment.')
+  try {
+    // ✅ GET SESSION TOKEN
+    const { data:  { session }, error: sessionError } = await supabase.auth. getSession()
+    
+    if (sessionError || !session) {
+      console.error('❌ No valid session:', sessionError)
+      toast.error('Please log in again')
       setIsLoading(false)
       setSelectedPlan(null)
+      return
     }
+
+    console.log('✅ Session token obtained for plan:', planType)
+
+    // ✅ CALL API WITH AUTH TOKEN
+    const res = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON. stringify({ plan: planType })
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.error || 'Checkout failed')
+    }
+
+    const data = await res. json()
+    
+    if (data.url) {
+      console.log('🔀 Redirecting to Stripe...')
+      window.location.href = data.url
+    }
+  } catch (error) {
+    console.error('❌ Plan selection error:', error)
+    toast.error(error. message || 'Failed to process payment.')
+    setIsLoading(false)
+    setSelectedPlan(null)
   }
+}
 
   return (
     <Dialog open={open} onOpenChange={onClose}>

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { supabase } from '@/lib/supabase' 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -79,7 +80,7 @@ async function handleCheckout(plan) {
   try {
     setIsRedirecting(true)
     
-    // ✅ Check if user is logged in
+    // Check if user is logged in
     if (!user) {
       console.log('❌ User not logged in, redirecting to signup')
       localStorage.setItem('pending_plan', plan)
@@ -89,7 +90,7 @@ async function handleCheckout(plan) {
 
     console.log('🔵 User authenticated:', user.email)
 
-    // ✅ Get fresh session with token
+    // ✅ GET SESSION TOKEN - THIS IS THE KEY!
     const { data: { session }, error:  sessionError } = await supabase. auth.getSession()
     
     if (sessionError || !session) {
@@ -101,22 +102,22 @@ async function handleCheckout(plan) {
 
     console.log('✅ Session token obtained')
 
-    // ✅ Call checkout API with Authorization header
+    // ✅ PASS TOKEN IN AUTHORIZATION HEADER
     const res = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`
+        'Authorization': `Bearer ${session.access_token}`  // ✅ THIS IS CRITICAL!
       },
-      body:  JSON.stringify({ plan }),
+      body: JSON.stringify({ plan }),
     })
 
     console.log('📡 API Response status:', res.status)
 
     if (!res.ok) {
-      const error = await res. json().catch(() => ({ error: 'Unknown error' }))
+      const error = await res.json().catch(() => ({ error: 'Unknown error' }))
       console.error('❌ Checkout error:', error)
-      alert('Checkout failed: ' + (error?.error || 'Please try again'))
+      alert('Checkout failed:  ' + (error?. error || 'Please try again'))
       setIsRedirecting(false)
       return
     }
@@ -129,7 +130,7 @@ async function handleCheckout(plan) {
       window.location.href = data.url
     } else {
       console.error('❌ No checkout URL returned')
-      alert('Checkout failed.  Please try again.')
+      alert('Checkout failed. Please try again.')
       setIsRedirecting(false)
     }
   } catch (err) {
