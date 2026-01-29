@@ -693,7 +693,7 @@ export default function PublicGalleryPage() {
                 <div className="space-y-4">
                   <button
                     onClick={() => setSelectedFolder(null)}
-                    className="inline-flex items-center gap-2 px-4 py-2. 5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group"
                   >
                     <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
                     Back to Files

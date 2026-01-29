@@ -8,6 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { toast } from 'sonner'
 import bcrypt from 'bcryptjs'
 import { format } from 'date-fns'
+import { DEFAULT_FOLDERS } from '@/lib/folderUtils'
 
 import { 
   Upload, 
@@ -177,14 +178,8 @@ export default function NewGalleryWizard() {
       setGalleryId(data.id)
       
       // Create default folders
-      const defaultFolders = [
-        { name: '📸 Raw', folder_type: 'raw', sort_order: 1 },
-        { name: '✨ Edited', folder_type: 'edited', sort_order: 2 },
-        { name: '🎥 Videos', folder_type: 'videos', sort_order: 3 },
-        { name: '📁 Other', folder_type: 'other', sort_order: 4 }
-      ]
-
-      for (const folder of defaultFolders) {
+      let folderErrors = []
+      for (const folder of DEFAULT_FOLDERS) {
         const { error: folderError } = await supabase.from('folders').insert({
           gallery_id: data.id,
           ...folder
@@ -192,7 +187,15 @@ export default function NewGalleryWizard() {
         
         if (folderError) {
           console.error('Failed to create folder:', folder.name, folderError)
+          folderErrors.push({ name: folder.name, error: folderError })
         }
+      }
+      
+      // Show warning if some folders failed to create
+      if (folderErrors.length > 0 && folderErrors.length < DEFAULT_FOLDERS.length) {
+        toast.warning(`Gallery created, but ${folderErrors.length} folder(s) failed to create`)
+      } else if (folderErrors.length === DEFAULT_FOLDERS.length) {
+        toast.warning('Gallery created, but default folders could not be created')
       }
       
     } catch (error) {

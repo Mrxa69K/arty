@@ -80,7 +80,10 @@ ALTER TABLE photos ADD COLUMN thumbnail_url TEXT;
 
 ## 🎨 UI Components
 
-### FolderCard Component
+### FolderCard Component (Optional)
+The `components/FolderCard.jsx` component is available as a reusable component for displaying folders. However, the current implementation uses inline folder cards in `app/g/[token]/page.js` for more flexibility and customization.
+
+If you want to use the FolderCard component:
 ```jsx
 <FolderCard 
   folder={folderObject}
@@ -95,6 +98,14 @@ ALTER TABLE photos ADD COLUMN thumbnail_url TEXT;
 - `photoCount` - Number of files in the folder
 - `previewPhotos` - Array of photo objects for preview
 - `onClick` - Function to call when card is clicked
+
+### Folder Utilities
+The `lib/folderUtils.js` file contains shared constants and helper functions for folder management:
+- `DEFAULT_FOLDERS` - Array of default folders to create
+- `FOLDER_ICONS` - Icon components for each folder type
+- `FOLDER_EMOJI_ICONS` - Emoji icons for each folder type
+- `FOLDER_COLORS` - Color schemes for each folder type
+- Helper functions: `getFolderIcon()`, `getFolderEmoji()`, `getFolderLabel()`, `getFolderColors()`
 
 ## 🚀 API Endpoints
 

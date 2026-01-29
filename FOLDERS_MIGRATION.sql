@@ -75,6 +75,15 @@ CREATE INDEX IF NOT EXISTS idx_folders_gallery ON folders(gallery_id);
 CREATE INDEX IF NOT EXISTS idx_folders_sort ON folders(gallery_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_photos_folder ON photos(folder_id);
 
+-- Create or replace the update_updated_at function (may already exist from SUPABASE_SETUP.sql)
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Create trigger for updated_at on folders
 DROP TRIGGER IF EXISTS update_folders_timestamp ON folders;
 CREATE TRIGGER update_folders_timestamp 
