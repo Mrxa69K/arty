@@ -19,9 +19,32 @@ import bcrypt from 'bcryptjs'
 import { generateVideoThumbnail } from '@/lib/videoThumbnail';
 
 import {
-  ArrowLeft, Loader2, Upload, Trash2, Copy, Check, Link as LinkIcon,
-  Lock, Calendar, Download, Eye, X, Images, Camera, FileText, Share2,
-  CheckCircle2, Circle, Shield, Clock, Globe, ImagePlus, Info, Pencil, User
+  ArrowLeft, 
+  Loader2, 
+  Upload, 
+  Trash2, 
+  Copy, 
+  Check, 
+  Link as LinkIcon,
+  Lock, 
+  Calendar, 
+  Download, 
+  Eye, 
+  X, 
+  Images, 
+  Camera, 
+  FileText, 
+  Share2,
+  CheckCircle2, 
+  Circle, 
+  Shield, 
+  Clock, 
+  Globe, 
+  ImagePlus, 
+  Info, 
+  Pencil, 
+  User,
+  ChevronRight  
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { v4 as uuidv4 } from 'uuid'
@@ -149,6 +172,10 @@ const fetchGallery = async () => {
       status: gallery.status
     })
 
+
+
+
+
     const { data: photos } = await supabase
       .from('photos')
       .select('*')
@@ -185,6 +212,86 @@ const fetchGallery = async () => {
 }
 
 
+    const handleFileUpload = async (e, targetFolderId = null) => {
+  const files = Array.from(e.target.files)
+  if (!files.length) return
+
+  setIsUploading(true)
+  setUploadProgress(0)
+
+  try {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      toast.error('Please log in')
+      return
+    }
+
+    const totalFiles = files.length
+    let uploadedCount = 0
+
+    for (const file of files) {
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${user.id}/${galleryId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      const isVideo = file.type.startsWith('video/')
+
+      const { error: uploadError } = await supabase.storage
+        .from('photos')
+        .upload(fileName, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('photos')
+        .getPublicUrl(fileName)
+
+      // 🆕 Déterminer le folder_id automatiquement ou utiliser le dossier sélectionné
+      let assignedFolderId = targetFolderId || selectedFolder
+
+      // Si pas de dossier spécifié, assigner automatiquement selon le type
+      if (!assignedFolderId) {
+        if (isVideo) {
+          // Trouver le dossier "Videos"
+          const videoFolder = folders.find(f => f.folder_type === 'videos')
+          assignedFolderId = videoFolder?.id || null
+        } else {
+          // Par défaut : dossier "Other"
+          const otherFolder = folders.find(f => f.folder_type === 'other')
+          assignedFolderId = otherFolder?.id || null
+        }
+      }
+
+      const { data: photoData, error: dbError } = await supabase
+        .from('photos')
+        .insert({
+          gallery_id: galleryId,
+          folder_id: assignedFolderId,  // 🆕 Assigner le dossier
+          storage_path: fileName,
+          image_url: isVideo ? null : publicUrl,
+          video_url: isVideo ? publicUrl : null,
+          media_type: isVideo ? 'video' : 'image',
+          file_name: file.name,
+          file_size: file.size
+        })
+        .select()
+        .single()
+
+      if (dbError) throw dbError
+
+      setPhotos(prev => [...prev, photoData])
+      
+      uploadedCount++
+      setUploadProgress(Math.round((uploadedCount / totalFiles) * 100))
+    }
+
+    toast.success(`${files.length} file(s) uploaded${selectedFolder ? ' to folder' : ''}`)
+  } catch (error) {
+    console.error('Upload error:', error)
+    toast.error('Failed to upload files')
+  } finally {
+    setIsUploading(false)
+    setUploadProgress(0)
+  }
+}
   
   const handleSave = async () => {
     setIsSaving(true)
@@ -916,58 +1023,105 @@ const handleGenerateLink = async () => {
 
           <div className="rounded-3xl border border-black/10 bg-[#FDF9F3]/95 shadow-md p-6">
             {activeTab === 'photos' && (
-              <div className="space-y-6">
-    
+  <div className="space-y-6">
+
+    {/* 🆕 Breadcrumb Navigation */}
+    {selectedFolder && (
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          onClick={() => setSelectedFolder(null)}
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium bg-white/60 hover:bg-white border border-black/10 text-black transition-all"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to All Folders
+        </button>
+        <div className="flex items-center gap-2 text-sm text-black/60">
+          <span>📂 Gallery</span>
+          <ChevronRight className="w-4 h-4" />
+          <span className="font-medium text-black/90">
+            {(() => {
+              const folder = folders.find(f => f.id === selectedFolder)
+              const folderIcons = {
+                raw: '📸',
+                edited: '✨',
+                videos: '🎥',
+                other: '📁',
+                custom: '📂'
+              }
+              const icon = folderIcons[folder?.folder_type] || '📂'
+              return `${icon} ${folder?.name}`
+            })()}
+          </span>
+        </div>
+      </div>
+    )}
+
     <div className="flex items-center justify-between flex-wrap gap-3">
       <div>
-        <h2 className="text-lg font-semibold text-black/80">Photos & Videos</h2>
-        <p className="text-xs text-black/60 mt-1">Upload and manage your gallery content</p>
+        <h2 className="text-lg font-semibold text-black/80">
+          {selectedFolder ? (
+            (() => {
+              const folder = folders.find(f => f.id === selectedFolder)
+              const folderIcons = {
+                raw: '📸',
+                edited: '✨',
+                videos: '🎥',
+                other: '📁',
+                custom: '📂'
+              }
+              const icon = folderIcons[folder?.folder_type] || '📂'
+              return `${icon} ${folder?.name}`
+            })()
+          ) : (
+            'Photos & Videos'
+          )}
+        </h2>
+        <p className="text-xs text-black/60 mt-1">
+          {selectedFolder 
+            ? 'Upload and manage files in this folder' 
+            : 'Upload and manage your gallery content'}
+        </p>
       </div>
       
       <div className="flex items-center gap-2 flex-wrap">
-  <Button
-    onClick={() => setShowCreateFolder(true)}
-    className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-white/60 border border-black/10 text-black hover:bg-white/80"
-  >
-    <FileText className="w-3 h-3" />
-    New Folder
-  </Button>
-  
-  {photos.length > 0 && (
-
+        {!selectedFolder && (
           <Button
-            onClick={() => {
-              if (selectedPhotos.size === photos.length) {
-                setSelectedPhotos(new Set())
-              } else {
-                setSelectedPhotos(new Set(photos.map(p => p.id)))
-              }
-            }}
+            onClick={() => setShowCreateFolder(true)}
             className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-white/60 border border-black/10 text-black hover:bg-white/80"
           >
-            {selectedPhotos.size === photos.length ? (
-              <>
-                <X className="w-3 h-3" />
-                Deselect All
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-3 h-3" />
-                Select All
-              </>
-            )}
+            <FileText className="w-3 h-3" />
+            New Folder
           </Button>
         )}
-        
-        {selectedPhotos.size > 0 && (
-          <Button
-            onClick={handleDeleteSelected}
-            className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-red-600 text-white hover:bg-red-700"
-          >
-            <Trash2 className="w-3 h-3" />
-            Delete ({selectedPhotos.size})
-          </Button>
-        )}
+
+        <Button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={isUploading}
+          className="h-9 px-4 rounded-full text-xs flex items-center gap-2 bg-black text-white hover:bg-black/90"
+        >
+          {isUploading ? (
+            <>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Uploading...
+            </>
+          ) : (
+            <>
+              <Upload className="w-3 h-3" />
+              {selectedFolder 
+                ? `Upload to ${folders.find(f => f.id === selectedFolder)?.name || 'Folder'}`
+                : 'Upload Files'}
+            </>
+          )}
+        </Button>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          onChange={(e) => handleFileUpload(e, selectedFolder)}
+          className="hidden"
+        />
       </div>
     </div>
 
@@ -988,59 +1142,38 @@ const handleGenerateLink = async () => {
                   </div>
                 )}
 
-                <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`
-                    relative rounded-2xl border-2 border-dashed p-12 text-center cursor-pointer transition-all
-                    ${isDragging 
-                      ? 'border-black/40 bg-black/5' 
-                      : 'border-black/20 bg-white/40 hover:border-black/30 hover:bg-white/60'
-                    }
-                  `}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    multiple
-                    accept="image/*,video/mp4,video/quicktime,video/webm"
-                    onChange={handlePhotoUpload}
-                    className="hidden"
-                  />
-
-                  <div className="space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-black/5 flex items-center justify-center mx-auto">
-                      <Upload className="w-6 h-6 text-black/40" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-black/80">
-                        {isDragging ? 'Drop files here' : 'Click to upload or drag and drop'}
-                      </p>
-                      <p className="text-xs text-black/60 mt-1">
-                        Photos: JPEG, PNG, WebP, GIF (max 10MB) • Videos: MP4, MOV, WebM (max 100MB)
-                      </p>
-                    </div>
-                  </div>
-                  
-                  {isUploading && (
-                    <div className="mt-4">
-                      <div className="h-2 bg-black/10 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-black transition-all duration-300"
-                          style={{ width: `${uploadProgress}%` }}
-                        />
-                      </div>
-                      <p className="text-xs text-black/60 mt-2">
-                        Uploading... {uploadProgress}%
-                      </p>
-                    </div>
-                  )}
-                
-
-                
-      </div>
+             <div
+  onDragOver={handleDragOver}
+  onDragLeave={handleDragLeave}
+  onDrop={(e) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = Array.from(e.dataTransfer.files)
+    handleFileUpload({ target: { files } }, selectedFolder)
+  }}
+  onClick={() => fileInputRef.current?.click()}
+  className={`border-2 border-dashed rounded-2xl p-8 text-center cursor-pointer transition-all ${
+    isDragging 
+      ? 'border-black bg-black/5 scale-[0.98]' 
+      : 'border-black/20 hover:border-black/40 hover:bg-black/5'
+  }`}
+>
+  <div className="pointer-events-none">
+    {isUploading ? (
+      <Loader2 className="w-10 h-10 mx-auto text-black/40 animate-spin mb-3" />
+    ) : (
+      <Upload className="w-10 h-10 mx-auto text-black/40 mb-3" />
+    )}
+    <p className="text-sm font-medium text-black/80 mb-1">
+      {isDragging ? 'Drop files here' : selectedFolder 
+        ? `Upload to ${folders.find(f => f.id === selectedFolder)?.name || 'this folder'}`
+        : 'Click to upload or drag and drop'}
+    </p>
+    <p className="text-xs text-black/60 mt-1">
+      Photos: JPEG, PNG, WebP, GIF (max 10MB) • Videos: MP4, MOV, WebM (max 100MB)
+    </p>
+  </div>
+</div>
 
       {/* Create Folder Modal */}
       {showCreateFolder && (
@@ -1078,66 +1211,88 @@ const handleGenerateLink = async () => {
         </div>
       )}
       {/* Folder Filters */}
-      {folders.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap">
+{folders.length > 0 && (
+  <div className="flex items-center gap-2 flex-wrap">
+    <button
+      onClick={() => setSelectedFolder(null)}
+      className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+        selectedFolder === null
+          ? 'bg-black text-white'
+          : 'bg-white/60 text-black/60 hover:bg-white/80'
+      }`}
+    >
+      All Photos ({photos.length})
+    </button>
+    {folders.map(folder => {
+      const count = photos.filter(p => p.folder_id === folder.id).length
+      
+      // Icônes selon le type
+      const folderIcons = {
+        raw: '📸',
+        edited: '✨',
+        videos: '🎥',
+        other: '📁',
+        custom: '📂'
+      }
+      const icon = folderIcons[folder.folder_type] || '📂'
+      
+      return (
+        <div key={folder.id} className="relative group">
           <button
-            onClick={() => setSelectedFolder(null)}
-            className={`px-3 py-1.5 rounded-full text-xs transition-all ${
-              selectedFolder === null
+            onClick={() => setSelectedFolder(folder.id)}
+            className={`px-3 py-1.5 rounded-full text-xs transition-all flex items-center gap-1 ${
+              selectedFolder === folder.id
                 ? 'bg-black text-white'
                 : 'bg-white/60 text-black/60 hover:bg-white/80'
             }`}
           >
-            All Photos ({photos.length})
+            <span>{icon}</span>
+            <span>{folder.name}</span>
+            <span className="opacity-70">({count})</span>
           </button>
-          {folders.map(folder => {
-            const count = photos.filter(p => p.folder_id === folder.id).length
-            return (
-              <div key={folder.id} className="relative group">
-                <button
-                  onClick={() => setSelectedFolder(folder.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs transition-all ${
-                    selectedFolder === folder.id
-                      ? 'bg-black text-white'
-                      : 'bg-white/60 text-black/60 hover:bg-white/80'
-                  }`}
-                >
-                  📁 {folder.name} ({count})
-                </button>
-                <button
-                  onClick={() => handleDeleteFolder(folder.id)}
-                  className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-                >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Move to Folder */}
-      {selectedPhotos.size > 0 && folders.length > 0 && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
-          <p className="text-xs text-amber-800">
-            <span className="font-semibold">{selectedPhotos.size}</span> selected
-          </p>
-          <select
-            onChange={(e) => handleMoveToFolder(e.target.value || null)}
-            className="h-8 px-3 rounded-lg text-xs border border-black/10 bg-white"
-            defaultValue=""
+          <button
+            onClick={() => handleDeleteFolder(folder.id)}
+            className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-600 text-white opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
           >
-            <option value="">Move to...</option>
-            <option value="">📁 All Photos</option>
-            {folders.map(folder => (
-              <option key={folder.id} value={folder.id}>
-                📁 {folder.name}
-              </option>
-            ))}
-          </select>
+            <X className="w-2.5 h-2.5" />
+          </button>
         </div>
-      )}
-
+      )
+    })}
+  </div>
+)}
+   {selectedPhotos.size > 0 && folders.length > 0 && (
+  <div className="flex items-center justify-between p-3 rounded-xl bg-amber-50 border border-amber-200">
+    <p className="text-xs text-amber-800">
+      <span className="font-semibold">{selectedPhotos.size}</span> selected
+    </p>
+    <select
+      onChange={(e) => handleMoveToFolder(e.target.value || null)}
+      className="h-8 px-3 rounded-lg text-xs border border-black/10 bg-white"
+      defaultValue=""
+    >
+      <option value="">Move to...</option>
+      <option value="">📁 All Photos</option>
+      {folders.map(folder => {
+        const count = photos.filter(p => p.folder_id === folder.id).length
+        const folderIcons = {
+          raw: '📸',
+          edited: '✨',
+          videos: '🎥',
+          other: '📁',
+          custom: '📂'
+        }
+        const icon = folderIcons[folder.folder_type] || '📂'
+        
+        return (
+          <option key={folder.id} value={folder.id}>
+            {icon} {folder.name} ({count})
+          </option>
+        )
+      })}
+    </select>
+  </div>
+)}
          {photos.filter(p => selectedFolder === null || p.folder_id === selectedFolder).length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
           {photos

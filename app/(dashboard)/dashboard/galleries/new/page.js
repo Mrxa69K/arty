@@ -175,6 +175,9 @@ export default function NewGalleryWizard() {
       
       console.log('✅ Gallery created:', data. id)
       setGalleryId(data.id)
+
+      await createDefaultFolders(data.id)
+
       
     } catch (error) {
       console.error('Error creating draft:', error)
@@ -257,6 +260,28 @@ export default function NewGalleryWizard() {
     }
   }
 
+
+const createDefaultFolders = async (galleryId) => {
+  const defaultFolders = [
+    { name: '📸 Raw', folder_type: 'RAW', sort_order: 1 },
+    { name: '✨ Edited', folder_type: 'EDITED', sort_order: 2 },
+    { name: '🎥 Videos', folder_type: 'VIDEOS', sort_order: 3 },
+    { name: '📁 Other', folder_type: 'OTHER', sort_order: 4 }
+  ]
+
+  try {
+    for (const folder of defaultFolders) {
+      await supabase.from('folders').insert({
+        id: crypto.randomUUID(),
+        gallery_id: galleryId,
+        ...folder
+      })
+    }
+    console.log('✅ Default folders created')
+  } catch (error) {
+    console.error('Error creating default folders:', error)
+  }
+}
   const saveDraft = async () => {
     if (!galleryId || isSaving) return
 

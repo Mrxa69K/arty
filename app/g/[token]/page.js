@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { FolderCard } from '@/components/FolderCard'
+
 
 import {
   Camera, Lock, Loader2, Download, X, 
@@ -686,102 +688,69 @@ export default function PublicGalleryPage() {
             )}
           </div>
 
-          {/* Folder Browser */}
-          {folders.length > 0 && (
-            <div className="mb-8">
-              {selectedFolder ?  (
-                <button
-                  onClick={() => setSelectedFolder(null)}
-                  className="inline-flex items-center gap-2 px-4 py-2. 5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group mb-6"
-                >
-                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                  Back to Files
-                </button>
-              ) : (
-                <div>
-                  <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Your Folders
-                  </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {folders.map(folder => {
-                      const folderPhotos = photos.filter(p => p.folder_id === folder.id)
-                      const count = folderPhotos.length
-                      if (count === 0) return null
-                      
-                      const previewPhotos = folderPhotos.slice(0, 4)
-                      
-                      return (
-                        <button
-                          key={folder.id}
-                          onClick={() => setSelectedFolder(folder. id)}
-                          className="group relative rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-black/10 hover: border-black/20 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02]"
-                        >
-                          <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 mb-3">
-                            {previewPhotos.length === 1 ? (
-                              <img
-                                src={previewPhotos[0].thumbnail_url || previewPhotos[0].image_url}
-                                alt=""
-                                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                              />
-                            ) : previewPhotos.length === 2 ? (
-                              <div className="grid grid-cols-2 gap-1 h-full">
-                                {previewPhotos.map((photo, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={photo.thumbnail_url || photo.image_url}
-                                    alt=""
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                  />
-                                ))}
-                              </div>
-                            ) : previewPhotos.length >= 3 ? (
-                              <div className="grid grid-cols-2 grid-rows-2 gap-1 h-full">
-                                <img
-                                  src={previewPhotos[0].thumbnail_url || previewPhotos[0]. image_url}
-                                  alt=""
-                                  className="col-span-2 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                />
-                                {previewPhotos.slice(1, 3).map((photo, idx) => (
-                                  <img
-                                    key={idx}
-                                    src={photo.thumbnail_url || photo.image_url}
-                                    alt=""
-                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                                  />
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center">
-                                <FileText className="w-12 h-12 text-black/20" />
-                              </div>
-                            )}
-                            
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                          </div>
-
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-semibold text-black/90 truncate mb-0.5 group-hover:text-black transition-colors">
-                                {folder.name}
-                              </h4>
-                              <p className="text-xs text-black/50 flex items-center gap-1">
-                                <Images className="w-3 h-3" />
-                                {count} {count === 1 ? 'file' : 'files'}
-                              </p>
-                            </div>
-                            <div className="w-8 h-8 rounded-full bg-black/5 group-hover:bg-black group-hover:text-white flex items-center justify-center transition-all ml-3">
-                              <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                            </div>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
+{/* Folder Browser */}
+{folders.length > 0 && (
+  <div className="mb-8">
+    {selectedFolder ? (
+      // Breadcrumb - Quand on est dans un dossier
+      <div className="mb-6">
+        <button
+          onClick={() => setSelectedFolder(null)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group"
+        >
+          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+          Back to Folders
+        </button>
+        
+        {/* Breadcrumb */}
+        <div className="mt-3 flex items-center gap-2 text-sm text-black/60">
+          <span>🏠 Gallery</span>
+          <ChevronRight className="w-4 h-4" />
+          <span className="font-medium text-black/90">
+            {(() => {
+              const folder = folders.find(f => f.id === selectedFolder)
+              const folderIcons = {
+                raw: '📸',
+                edited: '✨',
+                videos: '🎥',
+                other: '📁',
+                custom: '📂'
+              }
+              const icon = folderIcons[folder?.folder_type] || '📂'
+              const count = photos.filter(p => p.folder_id === selectedFolder).length
+              return `${icon} ${folder?.name} (${count})`
+            })()}
+          </span>
+        </div>
+      </div>
+    ) : (
+      // Vue des dossiers
+      <div>
+        <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
+          <FileText className="w-5 h-5" />
+          Your Folders
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {folders.map(folder => {
+            const folderPhotos = photos.filter(p => p.folder_id === folder.id)
+            const count = folderPhotos.length
+            const previewPhotos = folderPhotos.slice(0, 4)
+            
+            return (
+              <FolderCard
+                key={folder.id}
+                folder={folder}
+                photoCount={count}
+                previewPhotos={previewPhotos}
+                onClick={() => setSelectedFolder(folder.id)}
+              />
+            )
+          })}
+        </div>
+      </div>
+    )}
+  </div>
+)}
 
           {/* Photos Grid */}
           {(() => {
