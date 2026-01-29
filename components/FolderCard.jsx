@@ -2,50 +2,24 @@
 
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Folder, Camera, Sparkles, Video, Files, FolderOpen } from 'lucide-react'
+import { Folder } from 'lucide-react'
+import { 
+  FOLDER_ICONS, 
+  FOLDER_LABELS, 
+  FOLDER_COLORS, 
+  getFolderIcon, 
+  getFolderLabel, 
+  getFolderColors 
+} from '@/lib/folderUtils'
 
 export function FolderCard({ folder, photoCount = 0, previewPhotos = [], onClick }) {
-  const folderIcons = {
-    raw: Camera,
-    edited: Sparkles,
-    videos: Video,
-    other: Files,
-    custom: FolderOpen
-  }
-  
-  const folderLabels = {
-    raw: 'Raw Photos',
-    edited: 'Edited Photos',
-    videos: 'Videos',
-    other: 'Files',
-    custom: folder?.name || 'Folder'
-  }
-
-  const folderColors = {
-    raw: 'bg-blue-50 border-blue-200 hover:border-blue-300',
-    edited: 'bg-purple-50 border-purple-200 hover:border-purple-300',
-    videos: 'bg-green-50 border-green-200 hover:border-green-300',
-    other: 'bg-gray-50 border-gray-200 hover:border-gray-300',
-    custom: 'bg-orange-50 border-orange-200 hover:border-orange-300'
-  }
-
-  const badgeColors = {
-    raw: 'bg-blue-100 text-blue-800 hover:bg-blue-200',
-    edited: 'bg-purple-100 text-purple-800 hover:bg-purple-200',
-    videos: 'bg-green-100 text-green-800 hover:bg-green-200',
-    other: 'bg-gray-100 text-gray-800 hover:bg-gray-200',
-    custom: 'bg-orange-100 text-orange-800 hover:bg-orange-200'
-  }
-
-  const folderType = folder?.folder_type || 'custom'
-  const Icon = folderIcons[folderType] || FolderOpen
-  const label = folderType === 'custom' ? folder?.name : folderLabels[folderType]
-  const colorClass = folderColors[folderType] || folderColors.custom
-  const badgeClass = badgeColors[folderType] || badgeColors.custom
+  const Icon = getFolderIcon(folder?.folder_type)
+  const label = getFolderLabel(folder?.folder_type, folder?.name)
+  const colors = getFolderColors(folder?.folder_type)
 
   return (
     <Card 
-      className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border-2 ${colorClass}`}
+      className={`cursor-pointer transition-all duration-300 hover:shadow-xl hover:scale-105 border-2 ${colors.card}`}
       onClick={onClick}
     >
       <CardContent className="p-6">
@@ -53,7 +27,7 @@ export function FolderCard({ folder, photoCount = 0, previewPhotos = [], onClick
           {/* Header */}
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
-              <div className={`p-3 rounded-lg ${badgeClass}`}>
+              <div className={`p-3 rounded-lg ${colors.badge}`}>
                 <Icon className="w-6 h-6" />
               </div>
               <div>
@@ -63,8 +37,8 @@ export function FolderCard({ folder, photoCount = 0, previewPhotos = [], onClick
                 </p>
               </div>
             </div>
-            <Badge variant="outline" className={badgeClass}>
-              {folderType}
+            <Badge variant="outline" className={colors.badge}>
+              {folder?.folder_type || 'custom'}
             </Badge>
           </div>
 

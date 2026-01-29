@@ -14,6 +14,7 @@ import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import bcrypt from 'bcryptjs'
+import { FOLDER_ICONS, FOLDER_EMOJI_ICONS, getFolderIcon, getFolderEmoji } from '@/lib/folderUtils'
 
 
 import { generateVideoThumbnail } from '@/lib/videoThumbnail';
@@ -1101,14 +1102,8 @@ const handleGenerateLink = async () => {
           {folders.map(folder => {
             const count = photos.filter(p => p.folder_id === folder.id).length
             
-            // Get icon based on folder type
-            const folderIcons = {
-              raw: <Camera className="w-3.5 h-3.5" />,
-              edited: <Sparkles className="w-3.5 h-3.5" />,
-              videos: <Video className="w-3.5 h-3.5" />,
-              other: <Files className="w-3.5 h-3.5" />
-            }
-            const icon = folderIcons[folder.folder_type] || <FolderOpen className="w-3.5 h-3.5" />
+            // Get icon from shared utilities
+            const Icon = getFolderIcon(folder.folder_type)
             
             return (
               <div key={folder.id} className="relative group">
@@ -1120,7 +1115,8 @@ const handleGenerateLink = async () => {
                       : 'bg-white/60 text-black/60 hover:bg-white/80'
                   }`}
                 >
-                  {icon} {folder.name} ({count})
+                  <Icon className="w-3.5 h-3.5" />
+                  {folder.name} ({count})
                 </button>
                 <button
                   onClick={() => handleDeleteFolder(folder.id)}
@@ -1149,13 +1145,7 @@ const handleGenerateLink = async () => {
             <option value="">📁 All Photos ({photos.filter(p => p.folder_id === null).length})</option>
             {folders.map(folder => {
               const count = photos.filter(p => p.folder_id === folder.id).length
-              const icons = {
-                raw: '📸',
-                edited: '✨',
-                videos: '🎥',
-                other: '📁'
-              }
-              const emoji = icons[folder.folder_type] || '📂'
+              const emoji = getFolderEmoji(folder.folder_type)
               return (
                 <option key={folder.id} value={folder.id}>
                   {emoji} {folder.name} ({count} files)
