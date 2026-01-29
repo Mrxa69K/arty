@@ -56,7 +56,7 @@ export async function GET(request, { params }) {
 
     const { data: foldersData } = await supabaseAdmin
       .from('folders')
-      .select('id, name, sort_order')
+      .select('id, name, folder_type, description, sort_order')
       .eq('gallery_id', galleryData.id)
       .order('sort_order', { ascending: true })
 

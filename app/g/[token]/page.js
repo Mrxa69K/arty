@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import {
   Camera, Lock, Loader2, Download, X, 
   Calendar, AlertCircle, ChevronLeft, ChevronRight, Images, Eye, EyeOff, Sparkles, CheckCircle as CheckCircleIcon,
-  ArrowLeft, FileText
+  ArrowLeft, FileText, Video, Files, FolderOpen, Home
 } from 'lucide-react'
 
 import { Progress } from '@/components/ui/progress'
@@ -690,13 +690,45 @@ export default function PublicGalleryPage() {
           {folders.length > 0 && (
             <div className="mb-8">
               {selectedFolder ?  (
-                <button
-                  onClick={() => setSelectedFolder(null)}
-                  className="inline-flex items-center gap-2 px-4 py-2. 5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group mb-6"
-                >
-                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                  Back to Files
-                </button>
+                <div className="space-y-4">
+                  <button
+                    onClick={() => setSelectedFolder(null)}
+                    className="inline-flex items-center gap-2 px-4 py-2. 5 rounded-xl text-sm font-medium bg-white/80 backdrop-blur-sm hover:bg-white border border-black/10 text-black transition-all hover:shadow-lg group"
+                  >
+                    <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
+                    Back to Files
+                  </button>
+                  
+                  {/* Breadcrumb */}
+                  <div className="flex items-center gap-2 text-sm">
+                    <button 
+                      onClick={() => setSelectedFolder(null)}
+                      className="flex items-center gap-1.5 text-black/60 hover:text-black transition-colors"
+                    >
+                      <Home className="w-4 h-4" />
+                      <span>Gallery</span>
+                    </button>
+                    <ChevronRight className="w-4 h-4 text-black/30" />
+                    <span className="text-black/90 font-medium flex items-center gap-1.5">
+                      {(() => {
+                        const currentFolder = folders.find(f => f.id === selectedFolder)
+                        const folderIcons = {
+                          raw: <Camera className="w-4 h-4" />,
+                          edited: <Sparkles className="w-4 h-4" />,
+                          videos: <Video className="w-4 h-4" />,
+                          other: <Files className="w-4 h-4" />
+                        }
+                        const icon = folderIcons[currentFolder?.folder_type] || <FolderOpen className="w-4 h-4" />
+                        return (
+                          <>
+                            {icon}
+                            {currentFolder?.name} ({photos.filter(p => p.folder_id === selectedFolder).length} files)
+                          </>
+                        )
+                      })()}
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <div>
                   <h3 className="text-lg font-semibold text-black/90 mb-4 flex items-center gap-2">
@@ -711,12 +743,53 @@ export default function PublicGalleryPage() {
                       
                       const previewPhotos = folderPhotos.slice(0, 4)
                       
+                      // Folder icon and color based on type
+                      const folderConfig = {
+                        raw: { 
+                          icon: <Camera className="w-5 h-5" />, 
+                          color: 'bg-blue-50 border-blue-200 hover:border-blue-300',
+                          badge: 'bg-blue-100 text-blue-800'
+                        },
+                        edited: { 
+                          icon: <Sparkles className="w-5 h-5" />, 
+                          color: 'bg-purple-50 border-purple-200 hover:border-purple-300',
+                          badge: 'bg-purple-100 text-purple-800'
+                        },
+                        videos: { 
+                          icon: <Video className="w-5 h-5" />, 
+                          color: 'bg-green-50 border-green-200 hover:border-green-300',
+                          badge: 'bg-green-100 text-green-800'
+                        },
+                        other: { 
+                          icon: <Files className="w-5 h-5" />, 
+                          color: 'bg-gray-50 border-gray-200 hover:border-gray-300',
+                          badge: 'bg-gray-100 text-gray-800'
+                        }
+                      }
+                      
+                      const config = folderConfig[folder.folder_type] || {
+                        icon: <FolderOpen className="w-5 h-5" />,
+                        color: 'bg-orange-50 border-orange-200 hover:border-orange-300',
+                        badge: 'bg-orange-100 text-orange-800'
+                      }
+                      
                       return (
                         <button
                           key={folder.id}
                           onClick={() => setSelectedFolder(folder. id)}
-                          className="group relative rounded-2xl overflow-hidden bg-white/60 backdrop-blur-sm border border-black/10 hover: border-black/20 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02]"
+                          className={`group relative rounded-2xl overflow-hidden border-2 hover:shadow-2xl transition-all duration-300 p-4 text-left hover:scale-[1.02] ${config.color}`}
                         >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className={`p-2.5 rounded-lg ${config.badge}`}>
+                              {config.icon}
+                            </div>
+                            {folder.folder_type && (
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium ${config.badge}`}>
+                                {folder.folder_type}
+                              </span>
+                            )}
+                          </div>
+                          
                           <div className="relative aspect-video rounded-xl overflow-hidden bg-slate-100 mb-3">
                             {previewPhotos.length === 1 ? (
                               <img

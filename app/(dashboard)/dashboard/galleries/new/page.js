@@ -176,6 +176,25 @@ export default function NewGalleryWizard() {
       console.log('✅ Gallery created:', data. id)
       setGalleryId(data.id)
       
+      // Create default folders
+      const defaultFolders = [
+        { name: '📸 Raw', folder_type: 'raw', sort_order: 1 },
+        { name: '✨ Edited', folder_type: 'edited', sort_order: 2 },
+        { name: '🎥 Videos', folder_type: 'videos', sort_order: 3 },
+        { name: '📁 Other', folder_type: 'other', sort_order: 4 }
+      ]
+
+      for (const folder of defaultFolders) {
+        const { error: folderError } = await supabase.from('folders').insert({
+          gallery_id: data.id,
+          ...folder
+        })
+        
+        if (folderError) {
+          console.error('Failed to create folder:', folder.name, folderError)
+        }
+      }
+      
     } catch (error) {
       console.error('Error creating draft:', error)
       toast.error('Failed to create gallery')

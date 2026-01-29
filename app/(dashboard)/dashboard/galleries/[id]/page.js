@@ -21,7 +21,8 @@ import { generateVideoThumbnail } from '@/lib/videoThumbnail';
 import {
   ArrowLeft, Loader2, Upload, Trash2, Copy, Check, Link as LinkIcon,
   Lock, Calendar, Download, Eye, X, Images, Camera, FileText, Share2,
-  CheckCircle2, Circle, Shield, Clock, Globe, ImagePlus, Info, Pencil, User
+  CheckCircle2, Circle, Shield, Clock, Globe, ImagePlus, Info, Pencil, User,
+  Folder, FolderOpen, FolderPlus, Sparkles, Video, Files
 } from 'lucide-react'
 import { format, formatDistanceToNow } from 'date-fns'
 import { v4 as uuidv4 } from 'uuid'
@@ -562,6 +563,7 @@ const handleCreateFolder = async () => {
         id: uuidv4(),
         gallery_id: galleryId,
         name: newFolderName.trim(),
+        folder_type: 'custom',
         sort_order: folders.length
       })
       .select()
@@ -1046,7 +1048,12 @@ const handleGenerateLink = async () => {
       {showCreateFolder && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowCreateFolder(false)}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-semibold text-black/80 mb-4">Create New Folder</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="p-2 bg-black/5 rounded-lg">
+                <FolderPlus className="w-5 h-5 text-black/70" />
+              </div>
+              <h3 className="text-lg font-semibold text-black/80">Create New Folder</h3>
+            </div>
             <Input
               value={newFolderName}
               onChange={(e) => setNewFolderName(e.target.value)}
@@ -1082,27 +1089,38 @@ const handleGenerateLink = async () => {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setSelectedFolder(null)}
-            className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+            className={`px-3 py-1.5 rounded-full text-xs transition-all flex items-center gap-1.5 ${
               selectedFolder === null
                 ? 'bg-black text-white'
                 : 'bg-white/60 text-black/60 hover:bg-white/80'
             }`}
           >
+            <Images className="w-3.5 h-3.5" />
             All Photos ({photos.length})
           </button>
           {folders.map(folder => {
             const count = photos.filter(p => p.folder_id === folder.id).length
+            
+            // Get icon based on folder type
+            const folderIcons = {
+              raw: <Camera className="w-3.5 h-3.5" />,
+              edited: <Sparkles className="w-3.5 h-3.5" />,
+              videos: <Video className="w-3.5 h-3.5" />,
+              other: <Files className="w-3.5 h-3.5" />
+            }
+            const icon = folderIcons[folder.folder_type] || <FolderOpen className="w-3.5 h-3.5" />
+            
             return (
               <div key={folder.id} className="relative group">
                 <button
                   onClick={() => setSelectedFolder(folder.id)}
-                  className={`px-3 py-1.5 rounded-full text-xs transition-all ${
+                  className={`px-3 py-1.5 rounded-full text-xs transition-all flex items-center gap-1.5 ${
                     selectedFolder === folder.id
                       ? 'bg-black text-white'
                       : 'bg-white/60 text-black/60 hover:bg-white/80'
                   }`}
                 >
-                  📁 {folder.name} ({count})
+                  {icon} {folder.name} ({count})
                 </button>
                 <button
                   onClick={() => handleDeleteFolder(folder.id)}
@@ -1128,12 +1146,22 @@ const handleGenerateLink = async () => {
             defaultValue=""
           >
             <option value="">Move to...</option>
-            <option value="">📁 All Photos</option>
-            {folders.map(folder => (
-              <option key={folder.id} value={folder.id}>
-                📁 {folder.name}
-              </option>
-            ))}
+            <option value="">📁 All Photos ({photos.filter(p => p.folder_id === null).length})</option>
+            {folders.map(folder => {
+              const count = photos.filter(p => p.folder_id === folder.id).length
+              const icons = {
+                raw: '📸',
+                edited: '✨',
+                videos: '🎥',
+                other: '📁'
+              }
+              const emoji = icons[folder.folder_type] || '📂'
+              return (
+                <option key={folder.id} value={folder.id}>
+                  {emoji} {folder.name} ({count} files)
+                </option>
+              )
+            })}
           </select>
         </div>
       )}
