@@ -1376,6 +1376,62 @@ const handleGenerateLink = async () => {
                 </div>
 
                 <div className="space-y-4">
+                  {/* Gallery Cover Image Section */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-medium text-black/80">Gallery Cover Image</Label>
+                    <p className="text-[10px] text-black/60 mb-2">Choose a cover image for this gallery</p>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {photos.slice(0, 12).map((photo) => (
+                        <button
+                          key={photo.id}
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const imageUrl = photo.media_type === 'video' ? photo.video_url : photo.image_url
+                              const { error } = await supabase
+                                .from('galleries')
+                                .update({ cover_photo_url: imageUrl })
+                                .eq('id', galleryId)
+                              
+                              if (error) throw error
+                              
+                              setGallery({ ...gallery, cover_photo_url: imageUrl })
+                              toast.success('Cover image updated!')
+                            } catch (error) {
+                              console.error('Error updating cover:', error)
+                              toast.error('Failed to update cover image')
+                            }
+                          }}
+                          className={`relative aspect-square rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
+                            gallery?.cover_photo_url === (photo.media_type === 'video' ? photo.video_url : photo.image_url)
+                              ? 'border-black shadow-lg'
+                              : 'border-black/10 hover:border-black/30'
+                          }`}
+                        >
+                          <img
+                            src={photo.media_type === 'video' ? photo.video_url : photo.image_url}
+                            alt="Gallery photo"
+                            className="w-full h-full object-cover"
+                          />
+                          {gallery?.cover_photo_url === (photo.media_type === 'video' ? photo.video_url : photo.image_url) && (
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                              <Check className="w-6 h-6 text-white" />
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    
+                    {photos.length === 0 && (
+                      <div className="p-4 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                        Upload photos first to select a cover image
+                      </div>
+                    )}
+                  </div>
+                  
+                  <Separator className="my-4" />
+
                   <div className="space-y-2">
                     <Label className="text-xs font-medium text-black/80">Gallery Title</Label>
                     <Input

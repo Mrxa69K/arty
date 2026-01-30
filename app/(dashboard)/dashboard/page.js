@@ -69,17 +69,24 @@ export default function DashboardPage() {
 
       const galleriesWithThumbnails = await Promise. all(
         (galleriesData || []).map(async (gallery) => {
-          const { data:  photos } = await supabase
-            . from('photos')
-            .select('image_url, video_url, media_type')
-            .eq('gallery_id', gallery.id)
-            .order('sort_order', { ascending: true })
-            .limit(1)
+          // Use cover_photo_url if available, otherwise fall back to first photo
+          let thumbnail = gallery.cover_photo_url
+          
+          if (!thumbnail) {
+            const { data:  photos } = await supabase
+              . from('photos')
+              .select('image_url, video_url, media_type')
+              .eq('gallery_id', gallery.id)
+              .order('sort_order', { ascending: true })
+              .limit(1)
 
-          const thumbnail = photos?.[0]
+            const firstPhoto = photos?.[0]
+            thumbnail = firstPhoto?.image_url || firstPhoto?.video_url || null
+          }
+          
           return {
             ...gallery,
-            thumbnail: thumbnail?.image_url || thumbnail?.video_url || null
+            thumbnail
           }
         })
       )
