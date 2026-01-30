@@ -124,7 +124,11 @@ export default function DashboardPage() {
   }
 
   const handleCreateGallery = async () => {
-    if (isCreating) return
+    // Prevent duplicate calls
+    if (isCreating) {
+      console.log('⚠️ Gallery creation already in progress')
+      return
+    }
     
     setIsCreating(true)
     
@@ -183,6 +187,7 @@ export default function DashboardPage() {
       console.log('✅ Gallery created:', newGallery.id)
       toast.success('Gallery created!')
       
+      // Don't reset isCreating since we're navigating away
       window.location.href = `/dashboard/galleries/new?id=${newGallery.id}`
       
     } catch (error) {

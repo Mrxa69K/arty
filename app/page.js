@@ -302,16 +302,18 @@ async function handleCheckout(plan) {
 
             {/* Premium CTAs */}
             <div className={`flex flex-wrap justify-center gap-4 pt-6 ${heroInView ? 'animate-fadeInUp animation-delay-400' : 'opacity-0'}`}>
-              <Link href="/signup">
-                <button className="group relative h-14 px-8 rounded-full overflow-hidden">
-                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 bg-[length:200%_100%] animate-gradient" />
-                  <div className="relative flex items-center gap-2 text-white font-semibold">
-                    <Sparkles className="w-4 h-4" />
-                    <span>Pay as you go</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </button>
-              </Link>
+              <button
+                onClick={() => handleCheckout('payg')}
+                disabled={isRedirecting || loading}
+                className="group relative h-14 px-8 rounded-full overflow-hidden disabled:opacity-60"
+              >
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 via-violet-600 to-purple-600 bg-[length:200%_100%] animate-gradient" />
+                <div className="relative flex items-center gap-2 text-white font-semibold">
+                  <Sparkles className="w-4 h-4" />
+                  <span>Pay as you go</span>
+                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </button>
               
               <button
                 onClick={() => handleCheckout('trial-gallery')}
