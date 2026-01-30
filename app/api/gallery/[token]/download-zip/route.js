@@ -72,6 +72,11 @@ export async function POST(request, { params }) {
 
     // Create ZIP with batching
     const zip = new JSZip()
+    
+    // Create a folder with the gallery name
+    const folderName = galleryTitle.replace(/[^a-z0-9\s\-_]/gi, '').trim() || 'gallery'
+    const folder = zip.folder(folderName)
+    
     const BATCH_SIZE = 10
 
     for (let i = 0; i < photos.length; i += BATCH_SIZE) {
@@ -93,7 +98,7 @@ export async function POST(request, { params }) {
             const arrayBuffer = await blob.arrayBuffer()
             
             const filename = photo.file_name || `${photo.media_type}-${String(globalIndex + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
-            zip.file(filename, arrayBuffer)
+            folder.file(filename, arrayBuffer)
           } catch (error) {
             console.error(`❌ ZIP: Failed to add ${photo.file_name}:`, error)
           }

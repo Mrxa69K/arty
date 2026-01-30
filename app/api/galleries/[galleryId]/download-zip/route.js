@@ -74,6 +74,10 @@ export async function POST(request, { params }) {
     // Create ZIP
     const zip = new JSZip()
     
+    // Create a folder with the gallery name
+    const folderName = galleryTitle.replace(/[^a-z0-9\s\-_]/gi, '').trim() || 'gallery'
+    const folder = zip.folder(folderName)
+    
     for (let i = 0; i < photos.length; i++) {
       const photo = photos[i]
       const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
@@ -88,7 +92,7 @@ export async function POST(request, { params }) {
         const arrayBuffer = await blob.arrayBuffer()
         
         const filename = photo.file_name || `${photo.media_type}-${String(i + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
-        zip.file(filename, arrayBuffer)
+        folder.file(filename, arrayBuffer)
       } catch (error) {
         console.error(`Failed to add ${photo.file_name}:`, error)
       }
