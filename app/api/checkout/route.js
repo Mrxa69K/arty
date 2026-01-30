@@ -2,40 +2,40 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 
-const stripe = new Stripe(process. env.STRIPE_SECRET_KEY)
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env. SUPABASE_SERVICE_ROLE_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
 export async function POST(request) {
   try {
-    // ✅ FIX 1: Get session from cookies (server-side)
-    const cookieHeader = request.headers.get('cookie')
+    // ✅ Get Authorization header (from Bearer token)
+    const authHeader = request.headers.get('authorization')
     
-    if (!cookieHeader) {
-      console.error('❌ No cookies found in request')
-      return NextResponse. json(
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.error('❌ No authorization header found')
+      return NextResponse.json(
         { error: 'Not authenticated. Please log in.' },
         { status: 401 }
       )
     }
 
-    // ✅ FIX 2: Create Supabase client with cookies
+    // ✅ Create Supabase client with the Authorization header
     const supabaseAuth = createClient(
-      process.env. NEXT_PUBLIC_SUPABASE_URL,
-      process. env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
         global: {
           headers: {
-            cookie: cookieHeader
+            Authorization: authHeader
           }
         }
       }
     )
 
-    // ✅ FIX 3: Get authenticated user
-    const { data: { user }, error:  authError } = await supabaseAuth.auth.getUser()
+    // ✅ Get authenticated user from token
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
 
     if (authError || !user) {
       console.error('❌ Auth error:', authError)
@@ -62,10 +62,11 @@ export async function POST(request) {
     // Get user's email
     const userEmail = user.email
 
-    // Define price IDs based on plan
+    // ✅ Define price IDs - Accept BOTH 'test' AND 'trial-gallery' 
     const priceIds = {
-      'trial-gallery': process.env.STRIPE_PRICE_TRIAL, // €1 trial
-      'payg':  process.env.STRIPE_PRICE_PAYG,           // €4. 90 per gallery
+      'test': process.env.STRIPE_PRICE_TRIAL,          // From PlanSelectionModal
+      'trial-gallery': process.env.STRIPE_PRICE_TRIAL, // From homepage
+      'payg': process.env.STRIPE_PRICE_PAYG,           // €4.90 per gallery
       'studio': process.env.STRIPE_PRICE_STUDIO,       // €19/month
     }
 
@@ -73,10 +74,13 @@ export async function POST(request) {
 
     if (!priceId) {
       return NextResponse.json(
-        { error: `Invalid plan: ${plan}` },
+        { error: `Invalid plan: ${plan}. Available plans: test, trial-gallery, payg, studio` },
         { status: 400 }
       )
     }
+
+    // Normalize plan name for metadata (use 'test' consistently)
+    const normalizedPlan = plan === 'trial-gallery' ? 'test' : plan
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -88,14 +92,13 @@ export async function POST(request) {
           quantity: 1,
         },
       ],
-      mode: plan === 'studio' ? 'subscription' : 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard? session_id={CHECKOUT_SESSION_ID}&success=true`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/? canceled=true`,
+      mode: normalizedPlan === 'studio' ? 'subscription' : 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&success=true`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
       metadata: {
         user_id: user.id,
-        plan: plan,
+        plan: normalizedPlan, // Store normalized plan name
       },
-   
     })
 
     console.log('✅ Checkout session created:', session.id)
