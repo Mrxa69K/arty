@@ -73,8 +73,8 @@ export async function POST(request, { params }) {
     // Create ZIP with batching
     const zip = new JSZip()
     
-    // Create a folder with the gallery name
-    const folderName = galleryTitle.replace(/[^a-z0-9\s\-_]/gi, '').trim() || 'gallery'
+    // Create a folder with the gallery name (preserve Unicode, remove unsafe chars)
+    const folderName = galleryTitle.replace(/[<>:"/\\|?*\x00-\x1F]/g, '').trim() || 'gallery'
     const folder = zip.folder(folderName)
     
     const BATCH_SIZE = 10
