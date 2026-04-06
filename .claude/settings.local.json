@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rm \"/Users/mrxa/Desktop/all/artyBETA-main/app/api/[[...path]]/route.js\")",
+      "Bash(rmdir \"/Users/mrxa/Desktop/all/artyBETA-main/app/api/[[...path]]\")"
+    ]
+  }
+}

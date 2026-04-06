@@ -1,0 +1,73 @@
+import 'dotenv/config';
+
+export default {
+  expo: {
+    name: 'Artydrop',
+    slug: 'artydrop',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/icon.png',
+    userInterfaceStyle: 'light',
+    newArchEnabled: true,
+    splash: {
+      image: './assets/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#F5F0EA',
+    },
+    ios: {
+      supportsTablet: true,
+      bundleIdentifier: 'com.artydrop.app',
+      infoPlist: {
+        NSPhotoLibraryUsageDescription: 'Artydrop needs access to your photo library to upload images to galleries.',
+        NSCameraUsageDescription: 'Artydrop needs camera access to take photos for your galleries.',
+        NSPhotoLibraryAddUsageDescription: 'Artydrop needs permission to save downloaded photos to your library.',
+      },
+    },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: './assets/adaptive-icon.png',
+        backgroundColor: '#F5F0EA',
+      },
+      package: 'com.artydrop.app',
+      permissions: [
+        'CAMERA',
+        'READ_EXTERNAL_STORAGE',
+        'WRITE_EXTERNAL_STORAGE',
+        'READ_MEDIA_IMAGES',
+        'READ_MEDIA_VIDEO',
+      ],
+    },
+    plugins: [
+      [
+        'expo-notifications',
+        {
+          icon: './assets/notification-icon.png',
+          color: '#000000',
+        },
+      ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Artydrop needs access to your photos to upload to galleries.',
+          cameraPermission: 'Artydrop needs camera access to capture photos.',
+        },
+      ],
+      [
+        '@stripe/stripe-react-native',
+        {
+          merchantIdentifier: 'merchant.com.artydrop',
+          enableGooglePay: true,
+        },
+      ],
+    ],
+    extra: {
+      supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
+      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      stripePublishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+      appUrl: process.env.EXPO_PUBLIC_APP_URL,
+      eas: {
+        projectId: 'your-project-id',
+      },
+    },
+  },
+};

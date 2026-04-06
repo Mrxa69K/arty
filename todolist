@@ -1,0 +1,184 @@
+to do list:
+
+-add payement stripe
+-add "next" button steps in the config page for gallery from step one to 3
+-logo
+-less peotic words
+-change color (make it more like cosmos)
+-gallerie issue (not connected with photographer side)
+-link broken
+
+
+
+
+✅ Garder Supabase pour :
+Auth (users, sessions, JWT)
+Database PostgreSQL (galleries, photos metadata, subscriptions)
+Row Level Security pour sécuriser les galeries par owner
+✅ Migrer vers AWS S3 pour :
+Stockage des photos uniquement
+CloudFront CDN pour la diffusion mondiale
+
+
+5/1/26
+
+-select all
+-stay signed in
+-make folders to organise
+-making gallery page is dark
+-Database error saving new user
+
+
+6/1/26
+
+-page login, signup when click on prices before going to checkout
+-when click on pricing and then come back the price buttons are off needs a reload to work
+
+
+-need to fix font color in dahshboard
+
+-need to add "welcome to your gallery 'name' click on start or maybe add a password"
+-🧰 OUTIL DE SUIVI (INTERNE) pour les payements (Bloquer les téléchargements quand crédits = 0, Expiration automatique des galeries, Historique d’usage téléchargeable (PDF/CSV))
+
+
+🎥 Option vidéo (important)
+
+Parce que la vidéo explose la bande passante :
+
+Vidéos HD → inclus
+
+Vidéos 4K → +3 € par galerie
+ou
+
+Limite dédiée (ex : 10 GB max)
+
+detecteur de HD & 4K (tres important)
+
+-link non permantnent, quand la gallerie doit expirer
+
+-need to compress photos, but once they're downloaded the client gets hr photos
+-need to add conditions and how to use, conserve galleries, durations, quakity etc
+
+
+
+
+
+
+
+Here's your dev todolist:
+Pricing & Plans
+
+Set Pay-as-you-go at €3.90/gallery
+Set Pro at €12/month (15 galleries, 30GB, 6 months hosting)
+Set Studio at €24/month (unlimited, 75GB, 12 months hosting)
+Keep €1 trial but cap it at 10 photos max
+
+Payment Security
+
+Tie trial to payment card, not email (block same card from 2nd trial)
+Disable gallery access immediately on chargeback
+Enable Stripe Radar for fraud scoring
+Block promo code stacking (1 code per card)
+
+Storage Logic
+
+Add two date fields per gallery: link_expires_at and storage_deletes_at
+Build automated cleanup job that hard-deletes Supabase files only after storage promise ends (3/6/12 months depending on plan)
+
+Security
+
+Use signed expiring URLs only — never public Supabase bucket URLs
+Add per-IP rate limiting on downloads
+Add download spike detection in analytics
+
+Monetization Nudge
+
+Add upsell banner when pay-as-you-go user spends close to Pro price in a month
+
+
+Photo Protection
+
+Implement server-side watermarking (dynamic, not stored)
+Add floating CSS client-identifier overlay during gallery view
+Disable right-click, drag, and long-press on images
+Serve images in a way that makes direct saving harder
+
+Gallery Extension (Client-side revenue)
+
+Build expired gallery landing page with extension purchase options
+Allow clients to pay Artydrop directly for 7/30/90 day extensions
+Notify photographer when their client extends (good relationship signal)
+Make sure extended galleries don't re-trigger storage delete job
+
+
+
+sec issues: 
+Full audit done. Here's the report:                                                                                
+                                                                                                                   
+  ---                                                                                                                
+  Secrets audit: ✅ Clean                                   
+                                                                                                                     
+  No secrets in the frontend bundle. All sensitive vars are server-only:                                             
+  - SUPABASE_SERVICE_ROLE_KEY → only in API routes and lib/supabase-admin.js                                         
+  - STRIPE_SECRET_KEY, R2_SECRET_ACCESS_KEY, RESEND_API_KEY → only in API routes                                     
+  - NEXT_PUBLIC_* keys (URL, anon key, R2 public URL) are intentionally public — that's expected and safe as long as 
+  Supabase RLS is configured correctly                                                                               
+                                                                                                                     
+  ---                                                                                                                
+  Security analysis — hacker POV                                                                                     
+                                                                                                                     
+  🔴 Critical — fix before going public
+                                                                                                                     
+  1. Unauthenticated gallery dump                           
+                                                                                                                     
+  /api/galleries/[galleryId]/download-zip has zero auth check. Anyone who knows or guesses a gallery ID (UUID, but   
+  still) can POST to it and download all photos, completely bypassing the token/password system. Same pattern in both
+   zip routes — they fall back to accepting a raw gallery ID if the token doesn't match a link.                      
+                                                            
+  2. Photo ID not scoped to its gallery
+
+  /api/gallery/[token]/download-photo verifies allow_download on the link, then fetches any photoId directly. It     
+  never checks that photoId belongs to that gallery. An attacker with a valid token for gallery A can request any
+  photoId from gallery B.                                                                                            
+                                                            
+  3. Forgeble session tokens
+
+  The session token after password verification is base64(galleryToken:timestamp). Since the attacker already has the
+   gallery token in the URL, they can trivially construct a valid session without knowing the password:
+  btoa("their-token:12345"). Password protection is bypassable.                                                      
+                                                            
+  4. Dead wildcard route with old logic
+
+  app/api/[[...path]]/route.js — this old catch-all duplicates business logic with weaker implementations (same      
+  session token flaw). It's unreachable in normal flow but attackable directly. Should be deleted entirely.
+                                                                                                                     
+  ---                                                       
+  🟠 High
+
+  5. No rate limiting on password verification
+
+  /api/gallery/[token]/verify has no brute-force protection. An attacker can script unlimited password attempts.     
+  4-digit codes are broken in seconds.
+                                                                                                                     
+  6. Dashboard zip has no ownership check                                                                            
+  
+  Even if you add auth to the dashboard download, you need to verify the requesting user owns that galleryId.        
+  Otherwise photographer A can download photographer B's gallery.
+                                                                                                                     
+  ---                                                       
+  🟡 Medium
+           
+  7. Internal error details exposed to clients
+  Multiple routes return details: error.message in 500 responses. This leaks stack traces and internal info.         
+                                                                                                                     
+  8. Console logs with sensitive data in production                                                                  
+  Token values, gallery IDs, and photo counts are logged. These appear in Netlify's log dashboard — not a direct vuln
+   but a hygiene issue.                                                                                              
+  
+  ---                                                                                                                
+  🟢 Low                                                    
+                                                                                                                     
+  9. CORS * on some routes                                  
+  Intentional for public gallery endpoints, but [[...path]] has Access-Control-Allow-Credentials: true combined with
+  * origin — that's technically invalid (browsers reject it) but messy.                                              
+  

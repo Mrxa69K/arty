@@ -1,0 +1,136 @@
+{
+  "project_name": "ArtyDrop Redesign",
+  "version": "2.0.0",
+  "design_philosophy": {
+    "core_aesthetic": "Editorial, Cinematic, Dark-First",
+    "key_principles": [
+      "No Startup Gradients: Replace with deep textures and subtle glows",
+      "Content is King: Photos must look expensive",
+      "Typography as Art: High contrast serif headings vs clean sans body",
+      "Negative Space: Luxurious spacing (3x normal)",
+      "Motion: Slow, smooth, parallax",
+      "No Emojis: Use monochrome Lucide icons only"
+    ]
+  },
+  "typography": {
+    "headings": {
+      "family": "Playfair Display, serif",
+      "weights": ["400", "600"],
+      "styles": "italic, normal",
+      "usage": "Hero titles, Section headers, Feature names"
+    },
+    "body": {
+      "family": "Manrope, sans-serif",
+      "weights": ["300", "400", "500"],
+      "usage": "Paragraphs, UI labels, Buttons"
+    },
+    "monospace": {
+      "family": "JetBrains Mono, monospace",
+      "usage": "Technical details, Pricing values"
+    }
+  },
+  "colors": {
+    "theme": "dark",
+    "palette": {
+      "background": {
+        "default": "#0a0a0a",
+        "secondary": "#121212",
+        "card": "#171717",
+        "overlay": "rgba(0,0,0,0.8)"
+      },
+      "foreground": {
+        "default": "#ededed",
+        "muted": "#a1a1aa",
+        "accent": "#ffffff"
+      },
+      "brand": {
+        "primary": "#D4AF37",
+        "secondary": "#C5A028",
+        "hover": "#E6C24A"
+      },
+      "status": {
+        "success": "#10b981",
+        "error": "#ef4444",
+        "warning": "#f59e0b"
+      },
+      "border": {
+        "default": "#27272a",
+        "active": "#3f3f46"
+      }
+    }
+  },
+  "layout_strategies": {
+    "spacing": {
+      "base": "4px",
+      "container_padding": "p-6 md:p-12 lg:p-24",
+      "section_gap": "gap-16 md:gap-32"
+    },
+    "grids": {
+      "gallery": "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-1",
+      "bento": "grid-cols-1 md:grid-cols-4 gap-4",
+      "tetris": "Mix of col-span-1 and col-span-2"
+    }
+  },
+  "visual_enhancers": {
+    "textures": "Noise overlay (opacity 0.03)",
+    "shadows": "0 20px 40px -10px rgba(0,0,0,0.5)",
+    "borders": "1px solid rgba(255,255,255,0.1)",
+    "glassmorphism": "backdrop-blur-xl bg-black/40 border-white/5",
+    "animations": {
+      "fade_up": "opacity-0 translate-y-8 -> opacity-100 translate-y-0",
+      "scale_in": "scale-95 opacity-0 -> scale-100 opacity-100",
+      "parallax": "Scroll-based y-transform"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-white text-black hover:bg-gray-200 rounded-sm font-medium px-8 py-3",
+      "secondary": "border border-white/20 text-white hover:bg-white/5 rounded-sm px-8 py-3",
+      "ghost": "text-white/60 hover:text-white hover:bg-white/5 rounded-sm px-4 py-2"
+    },
+    "inputs": {
+      "default": "bg-transparent border-b border-white/20 focus:border-white outline-none rounded-none px-0 py-4 placeholder:text-white/20 text-lg transition-colors"
+    },
+    "cards": {
+      "default": "bg-[#121212] border border-white/5 p-8 hover:border-white/10 transition-colors"
+    }
+  },
+  "assets": {
+    "icons": "Lucide React (Stroke width 1.5px)",
+    "images": {
+      "hero": {
+        "url": "https://images.unsplash.com/photo-1759003520941-4ed74323274a",
+        "alt": "Editorial fashion portrait in black lace"
+      },
+      "wedding": {
+        "url": "https://images.unsplash.com/photo-1673195577797-d86fd842ade8",
+        "alt": "Cinematic wedding couple"
+      },
+      "architecture": {
+        "url": "https://images.unsplash.com/photo-1622271125051-73022c9deeaa",
+        "alt": "Concrete minimalist architecture"
+      },
+      "fashion": {
+        "url": "https://images.unsplash.com/photo-1768818653161-0ad28dede131",
+        "alt": "Studio fashion shoot"
+      }
+    }
+  },
+  "instructions_to_main_agent": {
+    "step_1": "Update tailwind.config.js to enforce dark mode and add new colors/fonts.",
+    "step_2": "Update globals.css to set root variables to dark theme values (override light defaults). Add noise texture class.",
+    "step_3": "Refactor app/page.js (Landing Page) to remove gradients/blobs and implement the 'Editorial' layout using the new assets.",
+    "step_4": "Update Shadcn components in components/ui to match the 'sharp' and 'minimal' aesthetic (remove heavy roundness).",
+    "step_5": "Ensure all interactive elements have data-testid attributes."
+  },
+  "UNIVERSAL_GUIDELINES": [
+    "Do not use purple/pink gradients.",
+    "Use 'Playfair Display' for all headings.",
+    "Use 'Manrope' for body text.",
+    "Ensure high contrast for text (APCA standard).",
+    "All containers with borders must have internal padding.",
+    "Use 'sonner' for toasts.",
+    "Mobile-first responsive design.",
+    "No emojis in UI."
+  ]
+}
