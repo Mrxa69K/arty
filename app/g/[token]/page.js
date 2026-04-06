@@ -177,22 +177,42 @@ export default function PublicGalleryPage() {
     setIsDownloadingZip(true)
     toast.info('Preparing your archive...')
     try {
-      const response = await fetch(`/api/gallery/${token}/download-zip`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      // Generate zip in the browser — bypasses server timeout entirely
+      const JSZip = (await import('jszip')).default
+      const zip = new JSZip()
+
+      const BATCH = 4
+      for (let i = 0; i < photos.length; i += BATCH) {
+        await Promise.all(
+          photos.slice(i, i + BATCH).map(async (photo) => {
+            const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
+            if (!url) return
+            try {
+              const res = await fetch(url)
+              if (!res.ok) return
+              const blob = await res.blob()
+              zip.file(photo.file_name || `photo-${photo.id}.jpg`, blob)
+            } catch { /* skip failed photo */ }
+          })
+        )
+      }
+
+      const zipBlob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 3 },
       })
-      if (!response.ok) throw new Error('Failed to create archive')
-      const blob = await response.blob()
-      const url = window.URL.createObjectURL(blob)
+
+      const url = URL.createObjectURL(zipBlob)
       const a = document.createElement('a')
       a.href = url
       a.download = gallery?.title ? `${gallery.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip` : 'gallery.zip'
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      window.URL.revokeObjectURL(url)
+      URL.revokeObjectURL(url)
       toast.success('Archive downloaded')
-    } catch (err) {
+    } catch {
       toast.error('Download failed')
     } finally {
       setIsDownloadingZip(false)
