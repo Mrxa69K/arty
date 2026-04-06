@@ -1,14 +1,12 @@
 import { NextResponse } from 'next/server'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
-import { r2Client, R2_BUCKET } from '@/lib/r2'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 
-export const maxDuration = 60
-
 export async function POST(request) {
   const cookieStore = await cookies()
-
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -20,24 +18,21 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const formData = await request.formData()
-  const file = formData.get('file')
-  const fileName = formData.get('fileName')
+  const { fileName, contentType } = await request.json()
 
-  if (!file || !fileName) {
-    return NextResponse.json({ error: 'Missing file or fileName' }, { status: 400 })
+  if (!fileName || !contentType) {
+    return NextResponse.json({ error: 'Missing fileName or contentType' }, { status: 400 })
   }
 
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
-  await r2Client.send(new PutObjectCommand({
+  const command = new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: fileName,
-    Body: buffer,
-    ContentType: file.type,
-  }))
+    ContentType: contentType,
+  })
 
-  const publicUrl = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fileName}`
-  return NextResponse.json({ publicUrl })
+  // URL valid for 10 minutes — enough for any file size
+  const uploadUrl = await getSignedUrl(r2Client, command, { expiresIn: 600 })
+  const publicUrl = `${R2_PUBLIC_URL}/${fileName}`
+
+  return NextResponse.json({ uploadUrl, publicUrl })
 }

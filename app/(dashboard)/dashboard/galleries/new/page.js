@@ -312,33 +312,40 @@ const createDefaultFolders = async (galleryId) => {
 
   const handleFileUpload = async (e) => {
     const files = Array.from(e.target.files)
-    if (! files.length) return
+    if (!files.length) return
 
     setIsUploading(true)
 
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser()
-      
       if (userError || !user) {
         toast.error('Please log in')
-        setIsUploading(false)
         return
       }
 
-      for (const file of files) {
-        const fileExt = file. name.split('.').pop()
+      const uploadOne = async (file) => {
+        const fileExt = file.name.split('.').pop()
         const fileName = `${user.id}/${galleryId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-
         const isVideo = file.type.startsWith('video/')
-        
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('fileName', fileName)
 
-        const uploadRes = await fetch('/api/upload/presign', { method: 'POST', body: fd })
-        if (!uploadRes.ok) throw new Error('Upload failed')
-        const { publicUrl } = await uploadRes.json()
+        // 1. Get presigned URL from server (fast — no file transfer)
+        const presignRes = await fetch('/api/upload/presign', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName, contentType: file.type }),
+        })
+        if (!presignRes.ok) throw new Error('Failed to get upload URL')
+        const { uploadUrl, publicUrl } = await presignRes.json()
 
+        // 2. Upload directly to R2 — bypasses Netlify entirely
+        const r2Res = await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        })
+        if (!r2Res.ok) throw new Error('Upload to storage failed')
+
+        // 3. Save to database
         const { data: photoData, error: dbError } = await supabase
           .from('photos')
           .insert({
@@ -348,14 +355,19 @@ const createDefaultFolders = async (galleryId) => {
             video_url: isVideo ? publicUrl : null,
             media_type: isVideo ? 'video' : 'image',
             file_name: file.name,
-            file_size: file.size
+            file_size: file.size,
           })
           .select()
           .single()
 
         if (dbError) throw dbError
-
         setPhotos(prev => [...prev, photoData])
+      }
+
+      // Upload 4 files at a time in parallel
+      const CONCURRENCY = 4
+      for (let i = 0; i < files.length; i += CONCURRENCY) {
+        await Promise.all(files.slice(i, i + CONCURRENCY).map(uploadOne))
       }
 
       toast.success(`${files.length} file(s) uploaded`)
