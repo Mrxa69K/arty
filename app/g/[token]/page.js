@@ -177,7 +177,7 @@ export default function PublicGalleryPage() {
     setIsDownloadingZip(true)
     toast.info('Preparing your archive...')
     try {
-      // Generate zip in the browser — bypasses server timeout entirely
+      // Generate zip in the browser — each photo fetched via API (avoids CORS and server timeout)
       const JSZip = (await import('jszip')).default
       const zip = new JSZip()
 
@@ -185,10 +185,12 @@ export default function PublicGalleryPage() {
       for (let i = 0; i < photos.length; i += BATCH) {
         await Promise.all(
           photos.slice(i, i + BATCH).map(async (photo) => {
-            const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
-            if (!url) return
             try {
-              const res = await fetch(url)
+              const res = await fetch(`/api/gallery/${token}/download-photo`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ photoId: photo.id }),
+              })
               if (!res.ok) return
               const blob = await res.blob()
               zip.file(photo.file_name || `photo-${photo.id}.jpg`, blob)
