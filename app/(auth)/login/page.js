@@ -68,11 +68,9 @@ export default function LoginPage() {
 
         <div className="relative z-10 space-y-6">
           <blockquote className="font-display text-3xl text-white/80 leading-relaxed">
-            "The simplest way to deliver photos to my clients. Period."
+            "The simplest way to deliver art to your clients."
           </blockquote>
-          <p className="text-sm text-white/40 font-body">
-            — Professional Photographer
-          </p>
+
         </div>
 
         <div className="relative z-10 text-xs text-white/30 font-body flex gap-6">
