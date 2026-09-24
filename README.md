@@ -41,9 +41,19 @@ Create/update `.env` file:
 
 ```env
 NEXT_PUBLIC_BASE_URL=https://your-domain.com
+NEXT_PUBLIC_APP_URL=https://your-domain.com
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Stripe (photographer plans + gallery renewal payments)
+STRIPE_SECRET_KEY=sk_live_or_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+STRIPE_PRICE_TRIAL=price_...   # Free trial plan
+STRIPE_PRICE_PAYG=price_...    # Pay-as-you-go, per gallery
+STRIPE_PRICE_STUDIO=price_...  # Studio subscription
+STRIPE_PRICE_RENEWAL=price_... # Client pays to reopen an expired gallery
+GALLERY_RENEWAL_DAYS=30        # Optional, defaults to 30 — how long renewal extends access
 ```
 
 ### 3. Set Up Supabase Database
@@ -224,6 +234,17 @@ The server performs these checks in order:
 - Password verification happens server-side with bcrypt
 - Session tokens are generated after password verification
 - Expired galleries cannot be accessed even with correct password
+
+### 6. Paid Renewal on Expiry
+
+Photos and videos are never deleted when a gallery expires — only the `expires_at` date blocks access. When a client opens an expired link, they see a **"Renew access"** button instead of a dead end:
+
+1. Client clicks "Renew access" → `POST /api/gallery/[token]/renew-checkout` creates a Stripe Checkout session (price: `STRIPE_PRICE_RENEWAL`)
+2. Client pays → redirected back to `/g/[token]?renewed=true`, which shows a brief "Confirming your payment..." state
+3. Stripe webhook (`checkout.session.completed` with `metadata.type === 'gallery_renewal'`) pushes both `gallery_links.expires_at` and `galleries.expires_at` forward by `GALLERY_RENEWAL_DAYS` (default 30)
+4. The gallery unlocks automatically — no manual resend needed from the photographer
+
+This revenue goes to the platform's Stripe account (same account used for photographer plans), not a per-photographer Stripe Connect account.
 
 ## Coming Soon
 

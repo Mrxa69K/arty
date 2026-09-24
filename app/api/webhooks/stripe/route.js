@@ -21,6 +21,32 @@ export async function POST(req) {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
+
+    if (session.metadata?.type === 'gallery_renewal') {
+      const { link_id, gallery_id, token } = session.metadata
+
+      if (!link_id || !gallery_id) {
+        console.error('Missing link_id or gallery_id in renewal session metadata')
+        return new Response('Missing metadata', { status: 400 })
+      }
+
+      const days = parseInt(process.env.GALLERY_RENEWAL_DAYS || '30', 10)
+      const newExpiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+
+      await supabaseAdmin
+        .from('gallery_links')
+        .update({ expires_at: newExpiresAt })
+        .eq('id', link_id)
+
+      await supabaseAdmin
+        .from('galleries')
+        .update({ expires_at: newExpiresAt })
+        .eq('id', gallery_id)
+
+      console.log(`Gallery ${gallery_id} (token ${token}) renewed until ${newExpiresAt}`)
+      return new Response('ok')
+    }
+
     const userId = session.metadata?.user_id || session.client_reference_id
     const plan = session.metadata?.plan
 

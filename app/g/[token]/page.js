@@ -1,20 +1,34 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FolderCard } from '@/components/FolderCard'
 import {
   Lock, Loader2, Download, X,
   ChevronLeft, ChevronRight, Eye, EyeOff,
-  ArrowLeft, ArrowDownToLine
+  ArrowLeft, ArrowDownToLine, CreditCard
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
 export default function PublicGalleryPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-white/20 animate-spin" strokeWidth={1} />
+      </div>
+    }>
+      <PublicGalleryPageInner />
+    </Suspense>
+  )
+}
+
+function PublicGalleryPageInner() {
   const params = useParams()
+  const searchParams = useSearchParams()
   const token = params.token
+  const justRenewed = searchParams.get('renewed') === 'true'
 
   const [isLoading, setIsLoading] = useState(true)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -28,6 +42,8 @@ export default function PublicGalleryPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [error, setError] = useState(null)
   const [expired, setExpired] = useState(false)
+  const [isRenewing, setIsRenewing] = useState(false)
+  const [confirmingPayment, setConfirmingPayment] = useState(justRenewed)
   const [passwordError, setPasswordError] = useState('')
   const [folders, setFolders] = useState([])
   const [selectedFolder, setSelectedFolder] = useState(null)
@@ -48,6 +64,40 @@ export default function PublicGalleryPage() {
   useEffect(() => {
     if (token) fetchGalleryInfo()
   }, [token])
+
+  // After returning from Stripe, poll briefly for the webhook to lift the expiry
+  useEffect(() => {
+    if (!justRenewed || !expired) return
+    if (confirmingPayment === false) return
+    let attempts = 0
+    const interval = setInterval(() => {
+      attempts += 1
+      if (attempts > 8) {
+        clearInterval(interval)
+        setConfirmingPayment(false)
+        return
+      }
+      fetchGalleryInfo()
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [justRenewed, expired])
+
+  useEffect(() => {
+    if (justRenewed && !expired) setConfirmingPayment(false)
+  }, [justRenewed, expired])
+
+  const handleRenew = async () => {
+    setIsRenewing(true)
+    try {
+      const response = await fetch(`/api/gallery/${token}/renew-checkout`, { method: 'POST' })
+      const data = await response.json()
+      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      window.location.href = data.url
+    } catch (err) {
+      toast.error(err.message || 'Could not start checkout')
+      setIsRenewing(false)
+    }
+  }
 
   useEffect(() => {
     if (isAuthenticated || (!requiresPassword && gallery)) {
@@ -311,10 +361,39 @@ export default function PublicGalleryPage() {
           >
             <div className="w-px h-12 bg-white/10 mx-auto mb-10" />
             <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body mb-6">Access Expired</p>
-            <h1 className="font-display text-3xl text-white mb-4">This collection<br />is no longer available</h1>
-            <p className="text-sm text-white/40 font-body leading-relaxed">
-              The viewing period has ended. Contact your photographer to request a renewed link.
-            </p>
+
+            {confirmingPayment ? (
+              <>
+                <Loader2 className="w-5 h-5 text-white/40 mx-auto mb-6 animate-spin" strokeWidth={1.5} />
+                <h1 className="font-display text-3xl text-white mb-4">Confirming your payment...</h1>
+                <p className="text-sm text-white/40 font-body leading-relaxed">
+                  This only takes a few seconds. Your collection will unlock automatically.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1 className="font-display text-3xl text-white mb-4">This collection<br />is no longer available</h1>
+                <p className="text-sm text-white/40 font-body leading-relaxed mb-8">
+                  The viewing period has ended. Renew access to view and download your photos again.
+                </p>
+                <button
+                  onClick={handleRenew}
+                  disabled={isRenewing}
+                  data-testid="renew-access-btn"
+                  className="w-full h-12 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-30 flex items-center justify-center gap-2"
+                >
+                  {isRenewing
+                    ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
+                    : <CreditCard className="w-4 h-4" strokeWidth={1.5} />
+                  }
+                  {isRenewing ? 'Redirecting...' : 'Renew access'}
+                </button>
+                <p className="text-[11px] text-white/20 font-body mt-4">
+                  Secure payment via Stripe. Instant access on completion.
+                </p>
+              </>
+            )}
+
             <div className="w-px h-12 bg-white/10 mx-auto mt-10" />
             <p className="text-[10px] tracking-[0.3em] uppercase text-white/15 font-body mt-4">ArtyDrop</p>
           </motion.div>
