@@ -1,15 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import bcrypt from 'bcryptjs'
-import { createHmac, timingSafeEqual } from 'crypto'
-
-const SECRET = process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY
-
-export function createSession(galleryToken) {
-  const payload = `${galleryToken}:${Date.now()}`
-  const sig = createHmac('sha256', SECRET).update(payload).digest('hex')
-  return Buffer.from(`${payload}:${sig}`).toString('base64')
-}
+import { createSession } from '@/lib/gallerySession'
 
 export async function POST(request, { params }) {
   try {

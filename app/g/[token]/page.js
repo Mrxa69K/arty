@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { FolderCard } from '@/components/FolderCard'
 import {
   Lock, Loader2, Download, X,
@@ -15,7 +15,7 @@ import { format } from 'date-fns'
 export default function PublicGalleryPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="min-h-screen bg-[#0B0B0C] flex items-center justify-center">
         <Loader2 className="w-5 h-5 text-white/20 animate-spin" strokeWidth={1} />
       </div>
     }>
@@ -56,6 +56,9 @@ function PublicGalleryPageInner() {
   const [photographerName, setPhotographerName] = useState(null)
   const [photographerProfile, setPhotographerProfile] = useState(null)
   const [galleryMessage, setGalleryMessage] = useState(null)
+
+  const [heroSlide, setHeroSlide] = useState(0)
+  const prefersReducedMotion = useReducedMotion()
 
   const heroRef = useRef(null)
   const filmStripRef = useRef(null)
@@ -200,7 +203,7 @@ function PublicGalleryPageInner() {
       const response = await fetch(`/api/gallery/${token}/download-photo`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ photoId: photo.id }),
+        body: JSON.stringify({ photoId: photo.id, session: sessionToken }),
       })
       if (!response.ok) throw new Error('Download failed')
       const blob = await response.blob()
@@ -239,7 +242,7 @@ function PublicGalleryPageInner() {
               const res = await fetch(`/api/gallery/${token}/download-photo`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ photoId: photo.id }),
+                body: JSON.stringify({ photoId: photo.id, session: sessionToken }),
               })
               if (!res.ok) return
               const blob = await res.blob()
@@ -308,19 +311,38 @@ function PublicGalleryPageInner() {
     ? (folders.length > 0 ? photos.filter(p => p.folder_id === null) : photos)
     : photos.filter(p => p.folder_id === selectedFolder)
 
+  // Hero carousel: cycle through the first few frames unless the photographer set an explicit cover
+  const heroSlides = isExplicitCover
+    ? [coverPhoto]
+    : photos.slice(0, 5).map(p => p.image_url).filter(Boolean)
+
+  useEffect(() => {
+    if (prefersReducedMotion || heroSlides.length <= 1) return
+    const interval = setInterval(() => {
+      setHeroSlide((i) => (i + 1) % heroSlides.length)
+    }, 5000)
+    return () => clearInterval(interval)
+  }, [heroSlides.length, prefersReducedMotion])
+
+  useEffect(() => { setHeroSlide(0) }, [heroSlides.length])
+
   const daysUntilExpiry = gallery?.expires_at
     ? Math.ceil((new Date(gallery.expires_at) - new Date()) / (1000 * 60 * 60 * 24))
     : null
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-[#0B0B0C]">
+      <style jsx>{`
+        h1, h2, h3 { font-family: 'Clash Display', 'Playfair Display', Georgia, serif !important; }
+        p, span, button, a, input, label { font-family: 'General Sans', 'Manrope', system-ui, sans-serif !important; }
+      `}</style>
 
       {/* ── IRIS LOADER ── */}
       <AnimatePresence>
         {isLoading && (
           <motion.div
             key="iris"
-            className="fixed inset-0 z-[200] bg-[#0a0a0a] flex items-center justify-center"
+            className="fixed inset-0 z-[200] bg-[#0B0B0C] flex items-center justify-center"
             initial={{ clipPath: 'circle(120% at 50% 50%)' }}
             animate={{ clipPath: 'circle(120% at 50% 50%)' }}
             exit={{ clipPath: 'circle(0% at 50% 50%)' }}
@@ -482,7 +504,7 @@ function PublicGalleryPageInner() {
       <header
         className={`fixed top-0 left-0 right-0 z-50 px-6 md:px-12 h-14 flex items-center justify-between transition-all duration-500 ${
           headerVisible
-            ? 'bg-[#0a0a0a]/95 backdrop-blur-xl border-b border-white/5'
+            ? 'bg-[#0B0B0C]/95 backdrop-blur-xl border-b border-white/5'
             : 'bg-transparent'
         }`}
       >
@@ -626,7 +648,7 @@ function PublicGalleryPageInner() {
                     onClick={() => setCurrentPhotoIndex(i)}
                     className={`flex-shrink-0 w-12 h-12 overflow-hidden transition-all duration-200 ${
                       i === currentPhotoIndex
-                        ? 'opacity-100 ring-1 ring-gold ring-offset-1 ring-offset-black'
+                        ? 'opacity-100 ring-1 ring-[#7AB8CB] ring-offset-1 ring-offset-black'
                         : 'opacity-30 hover:opacity-60'
                     }`}
                   >
@@ -646,26 +668,46 @@ function PublicGalleryPageInner() {
       {/* ── HERO ── */}
       <section ref={heroRef} className="relative h-[65vh] min-h-[420px] flex flex-col justify-end overflow-hidden">
         {/* Background */}
-        <div className="absolute inset-0 bg-[#0a0a0a]" />
-        {heroBg && (
-          <>
+        <div className="absolute inset-0 bg-[#0B0B0C]" />
+
+        {/* Carousel slides */}
+        {heroSlides.map((src, i) => (
+          <div
+            key={src + i}
+            className="absolute inset-0"
+            style={{
+              opacity: i === heroSlide ? (isExplicitCover ? 1 : 0.35) : 0,
+              transition: 'opacity 1100ms ease-in-out',
+            }}
+          >
             <div
               className="absolute inset-0 scale-110"
               style={{
-                backgroundImage: `url(${heroBg})`,
+                backgroundImage: `url(${src})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
                 filter: isExplicitCover ? 'blur(3px)' : 'blur(32px)',
-                opacity: isExplicitCover ? 1 : 0.35,
+                transform: i === heroSlide ? 'scale(1.16)' : 'scale(1.06)',
+                transition: 'transform 6500ms linear',
               }}
             />
-            <div className={`absolute inset-0 bg-gradient-to-t ${
-              isExplicitCover
-                ? 'from-[#0a0a0a] via-[#0a0a0a]/55 to-[#0a0a0a]/15'
-                : 'from-[#0a0a0a]/90 via-[#0a0a0a]/60 to-[#0a0a0a]/40'
-            }`} />
-          </>
+          </div>
+        ))}
+        {heroSlides.length > 0 && (
+          <div className={`absolute inset-0 bg-gradient-to-t ${
+            isExplicitCover
+              ? 'from-[#0B0B0C] via-[#0B0B0C]/55 to-[#0B0B0C]/15'
+              : 'from-[#0B0B0C]/90 via-[#0B0B0C]/60 to-[#0B0B0C]/40'
+          }`} />
         )}
+
+        {/* Accent wash, otomy tokens */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 90% 70% at 15% 0%, rgba(122,184,203,0.14), transparent 60%), radial-gradient(ellipse 70% 60% at 100% 100%, rgba(255,106,61,0.10), transparent 55%)',
+          }}
+        />
 
         {/* Grain overlay */}
         <div
@@ -680,24 +722,61 @@ function PublicGalleryPageInner() {
         {/* Hero content */}
         <div className="relative z-10 px-8 md:px-16 pb-10 md:pb-14">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }}
+            initial="hidden"
+            animate="show"
+            variants={{ show: { transition: { staggerChildren: 0.12, delayChildren: 0.1 } } }}
           >
-            <p className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-5">
+            <motion.p
+              variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-5"
+            >
               {gallery?.client_name ? 'A collection for' : 'Your Collection'}
-            </p>
-            <h1 className="font-display text-5xl sm:text-7xl md:text-8xl text-white leading-[0.9] mb-5 max-w-3xl">
+            </motion.p>
+            <motion.h1
+              variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="font-display text-5xl sm:text-7xl md:text-8xl text-white leading-[0.9] mb-5 max-w-3xl"
+            >
               {gallery?.client_name || gallery?.title}
-            </h1>
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-white/30 font-body">
+            </motion.h1>
+            <motion.div
+              variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
+              transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-wrap items-center gap-x-5 gap-y-1 text-xs text-white/30 font-body"
+            >
               {gallery?.event_date && (
                 <span>{format(new Date(gallery.event_date), 'MMMM d, yyyy')}</span>
               )}
               {!loading && photos.length > 0 && (
                 <span>{photos.length} frames</span>
               )}
-            </div>
+            </motion.div>
+
+            {heroSlides.length > 1 && (
+              <motion.div
+                variants={{ hidden: { opacity: 0 }, show: { opacity: 1 } }}
+                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                className="flex items-center gap-1.5 mt-8"
+              >
+                {heroSlides.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setHeroSlide(i)}
+                    aria-label={`Show frame ${i + 1}`}
+                    className="p-2 -m-2"
+                  >
+                    <span
+                      className="block h-[2px] rounded-full transition-all duration-300"
+                      style={{
+                        width: i === heroSlide ? 28 : 18,
+                        background: i === heroSlide ? '#7AB8CB' : 'rgba(255,255,255,0.25)',
+                      }}
+                    />
+                  </button>
+                ))}
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </section>
@@ -742,7 +821,7 @@ function PublicGalleryPageInner() {
               <button
                 onClick={handleDownloadAllZip}
                 disabled={isDownloadingZip}
-                className="flex-shrink-0 flex items-center gap-2 text-xs font-body px-4 py-2.5 border border-white/15 text-white/50 hover:bg-white hover:text-black transition-all"
+                className="flex-shrink-0 flex items-center gap-2 text-xs font-body px-4 py-2.5 border border-white/15 text-white/50 hover:bg-[#7AB8CB] hover:border-[#7AB8CB] hover:text-[#0B0B0C] active:scale-[0.97] transition-all"
               >
                 {isDownloadingZip ? <Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} /> : <ArrowDownToLine className="w-3 h-3" strokeWidth={1.5} />}
                 {isDownloadingZip ? 'Preparing...' : 'Download everything'}
@@ -854,7 +933,7 @@ function PublicGalleryPageInner() {
                   <div className="relative">
                     <video
                       src={photo.video_url}
-                      className="w-full block"
+                      className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                       muted
                       playsInline
                       preload="metadata"
@@ -871,7 +950,7 @@ function PublicGalleryPageInner() {
                   <img
                     src={photo.image_url}
                     alt={photo.file_name || `Frame ${index + 1}`}
-                    className="w-full block"
+                    className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     loading="lazy"
                   />
                 )}
@@ -922,12 +1001,12 @@ function PublicGalleryPageInner() {
             <button
               onClick={handleDownloadAllZip}
               disabled={isDownloadingZip}
-              className="group flex items-center gap-4 text-white/70 hover:text-white transition-colors"
+              className="group flex items-center gap-4 text-white/70 hover:text-white active:scale-[0.97] transition-all"
             >
               <span className="font-body text-sm">
                 {isDownloadingZip ? 'Preparing archive...' : 'Download everything'}
               </span>
-              <div className="w-12 h-12 border border-white/10 group-hover:border-white/30 flex items-center justify-center transition-colors">
+              <div className="w-12 h-12 border border-white/10 group-hover:border-[#7AB8CB] group-hover:text-[#7AB8CB] flex items-center justify-center transition-colors">
                 {isDownloadingZip
                   ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1} />
                   : <ArrowDownToLine className="w-4 h-4" strokeWidth={1} />
@@ -940,7 +1019,13 @@ function PublicGalleryPageInner() {
 
       {/* ── FOOTER ── */}
       <footer className="py-16 px-8 md:px-16">
-        <div className="max-w-7xl mx-auto border-t border-white/5 pt-12">
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="max-w-7xl mx-auto border-t border-white/5 pt-12"
+        >
           <div className="flex flex-col items-center gap-5 text-center">
             {photographerName && (
               <p className="text-[10px] tracking-[0.35em] uppercase text-white/30 font-body">{photographerName}</p>
@@ -1021,7 +1106,7 @@ function PublicGalleryPageInner() {
 
             <p className="text-[9px] tracking-[0.3em] uppercase text-white/10 font-body mt-4">Delivered via ArtyDrop</p>
           </div>
-        </div>
+        </motion.div>
       </footer>
       </div>
       )}

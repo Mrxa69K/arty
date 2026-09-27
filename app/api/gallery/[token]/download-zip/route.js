@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { validateSession } from '@/lib/gallerySession'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
   try {
     const { token } = await params
+    const { session } = await request.json().catch(() => ({}))
 
     const { data: link, error: linkError } = await supabaseAdmin
       .from('gallery_links')
-      .select('gallery_id, allow_download, expires_at, galleries(title)')
+      .select('gallery_id, allow_download, expires_at, password_hash, galleries(title)')
       .eq('token', token)
       .single()
 
@@ -22,6 +24,10 @@ export async function POST(request, { params }) {
 
     if (link.expires_at && new Date(link.expires_at) < new Date()) {
       return NextResponse.json({ error: 'Link expired' }, { status: 403 })
+    }
+
+    if (link.password_hash && (!session || !validateSession(session, token))) {
+      return NextResponse.json({ error: 'Password required' }, { status: 401 })
     }
 
     const { data: photos, error: photosError } = await supabaseAdmin

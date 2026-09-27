@@ -24,6 +24,10 @@ export async function POST(request) {
 
   const { storagePath } = await request.json()
 
+  if (!storagePath || !storagePath.startsWith(`${user.id}/`)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   await r2Client.send(new DeleteObjectCommand({
     Bucket: R2_BUCKET,
     Key: storagePath,

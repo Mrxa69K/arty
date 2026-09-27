@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { validateSession } from '@/lib/gallerySession'
 
 export async function POST(request, { params }) {
   try {
     const { token } = await params
-    const { photoId } = await request.json()
+    const { photoId, session } = await request.json()
 
     if (!photoId) {
       return NextResponse.json({ error: 'Missing photoId' }, { status: 400 })
@@ -12,7 +13,7 @@ export async function POST(request, { params }) {
 
     const { data: link, error: linkError } = await supabaseAdmin
       .from('gallery_links')
-      .select('gallery_id, allow_download, expires_at')
+      .select('gallery_id, allow_download, expires_at, password_hash')
       .eq('token', token)
       .single()
 
@@ -26,6 +27,10 @@ export async function POST(request, { params }) {
 
     if (link.expires_at && new Date(link.expires_at) < new Date()) {
       return NextResponse.json({ error: 'Link expired' }, { status: 403 })
+    }
+
+    if (link.password_hash && (!session || !validateSession(session, token))) {
+      return NextResponse.json({ error: 'Password required' }, { status: 401 })
     }
 
     // Scope photo to this gallery — prevents cross-gallery photo theft

@@ -24,6 +24,10 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Missing fileName or contentType' }, { status: 400 })
   }
 
+  if (!fileName.startsWith(`${user.id}/`)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const command = new PutObjectCommand({
     Bucket: R2_BUCKET,
     Key: fileName,
