@@ -676,7 +676,7 @@ function PublicGalleryPageInner() {
             key={src + i}
             className="absolute inset-0"
             style={{
-              opacity: i === heroSlide ? (isExplicitCover ? 1 : 0.35) : 0,
+              opacity: i === heroSlide ? 1 : 0,
               transition: 'opacity 1100ms ease-in-out',
             }}
           >
@@ -686,19 +686,15 @@ function PublicGalleryPageInner() {
                 backgroundImage: `url(${src})`,
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                filter: isExplicitCover ? 'blur(3px)' : 'blur(32px)',
-                transform: i === heroSlide ? 'scale(1.16)' : 'scale(1.06)',
+                filter: 'blur(1px)',
+                transform: i === heroSlide ? 'scale(1.1)' : 'scale(1.02)',
                 transition: 'transform 6500ms linear',
               }}
             />
           </div>
         ))}
         {heroSlides.length > 0 && (
-          <div className={`absolute inset-0 bg-gradient-to-t ${
-            isExplicitCover
-              ? 'from-[#0B0B0C] via-[#0B0B0C]/55 to-[#0B0B0C]/15'
-              : 'from-[#0B0B0C]/90 via-[#0B0B0C]/60 to-[#0B0B0C]/40'
-          }`} />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C] via-[#0B0B0C]/45 to-[#0B0B0C]/10" />
         )}
 
         {/* Accent wash, otomy tokens */}
