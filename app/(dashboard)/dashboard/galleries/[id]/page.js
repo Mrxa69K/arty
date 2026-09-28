@@ -120,22 +120,33 @@ export default function GalleryDetailPage() {
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="flex items-start gap-4">
-            <button
-              onClick={() => setCoverModalOpen(true)}
-              className="group relative w-20 h-20 flex-shrink-0 rounded-sm overflow-hidden bg-[#121212] border border-white/10 hover:border-gold/50 transition-colors"
-              title="Change gallery cover"
-            >
-              {displayCover ? (
-                <img src={displayCover} alt="" className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Camera className="w-6 h-6 text-white/15" strokeWidth={1.5} />
+            <div className="flex-shrink-0">
+              <button
+                onClick={() => setCoverModalOpen(true)}
+                className="group relative w-20 h-20 rounded-sm overflow-hidden bg-[#121212] border border-white/10 hover:border-gold/50 transition-colors"
+                title="Change gallery cover"
+              >
+                {displayCover ? (
+                  <img src={displayCover} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Camera className="w-6 h-6 text-white/15" strokeWidth={1.5} />
+                  </div>
+                )}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
+                  <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
                 </div>
-              )}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
-                <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
-              </div>
-            </button>
+                <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-gold flex items-center justify-center">
+                  <Pencil className="w-2.5 h-2.5 text-black" strokeWidth={2} />
+                </div>
+              </button>
+              <button
+                onClick={() => setCoverModalOpen(true)}
+                className="block mt-1.5 text-[10px] text-white/30 hover:text-gold font-body transition-colors"
+              >
+                Change cover
+              </button>
+            </div>
 
             <div>
               <div className="flex items-center gap-3 mb-1">
