@@ -329,71 +329,72 @@ export default function HomePage() {
             </h2>
           </div>
 
-          {/* Browser mockup */}
+          {/* Live product recreation — same nav/hero/grid language as the real /g/[token] gallery page */}
           <div className={`${demoInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
-            <div className="relative mx-auto max-w-5xl">
-              {/* Browser chrome */}
-              <div className="bg-[#1F1F22] border border-white/10 rounded-t-lg px-4 py-3 flex items-center gap-3">
-                <div className="flex gap-2">
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                  <div className="w-3 h-3 rounded-full bg-white/10" />
-                </div>
-                <div className="flex-1 mx-4">
-                  <div className="bg-[#0B0B0C] rounded-chip px-4 py-2 text-xs text-white/40 font-mono text-center">
-                    artydrop.com/g/sarah-wedding-2025
-                  </div>
+            <div className="relative mx-auto max-w-5xl rounded-lg overflow-hidden border border-white/10 bg-[#0B0B0C] shadow-2xl shadow-black/40">
+
+              {/* Mini nav */}
+              <div className="h-14 flex items-center justify-between px-5 md:px-8 border-b border-white/5">
+                <span className="font-display text-white/50 text-sm">Artydrop</span>
+                <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Melissa George Photography</span>
+                <span className="flex items-center gap-1.5 text-xs text-white/40 font-body">
+                  <Download className="w-3 h-3" strokeWidth={1.5} />
+                  Download all
+                </span>
+              </div>
+
+              {/* Mini hero */}
+              <div className="px-6 md:px-10 pt-10 pb-8 text-center md:text-left">
+                <p className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-4">A collection for</p>
+                <h3 className="font-display text-3xl sm:text-4xl md:text-5xl text-white leading-[0.95] mb-4">
+                  Sarah &amp; James
+                </h3>
+                <div className="flex items-center justify-center md:justify-start gap-3 text-xs text-white/30 font-body">
+                  <span className="flex items-center gap-1.5">
+                    <Camera className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    247 photos
+                  </span>
+                  <span className="w-1 h-1 rounded-full bg-white/20" />
+                  <span>June 15, 2025</span>
                 </div>
               </div>
 
-              {/* Gallery content */}
-              <div className="bg-[#161618] border-x border-b border-white/10 rounded-b-lg p-8 md:p-12">
-                {/* Gallery header */}
-                <div className="text-center mb-12">
-                  <h3 className="font-display text-3xl md:text-4xl text-white mb-4">
-                    Sarah & James Wedding
-                  </h3>
-                  <div className="flex items-center justify-center gap-4 text-sm text-white/50 font-body">
-                    <span className="flex items-center gap-2">
-                      <Camera className="w-4 h-4" strokeWidth={1.5} />
-                      247 photos
-                    </span>
-                    <span className="w-1 h-1 rounded-full bg-white/20" />
-                    <span>June 15, 2025</span>
-                  </div>
-                </div>
-
-                {/* Photo grid */}
-                <div className="grid grid-cols-3 gap-2 mb-8">
-                  {[
-                    'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&q=80',
-                    'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400&q=80',
-                    'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&q=80',
-                    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&q=80',
-                    'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400&q=80',
-                    'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=400&q=80',
-                  ].map((src, i) => (
-                    <div 
-                      key={i}
-                      className="aspect-square overflow-hidden rounded-chip image-hover-zoom"
-                    >
-                      <img
-                        src={src}
-                        alt=""
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
+              {/* Masonry grid, matching the real gallery page exactly */}
+              <div className="px-1 pb-1 columns-2 md:columns-3 gap-1">
+                {[
+                  'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
+                  'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=500&q=80',
+                  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=500&q=80',
+                  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&q=80',
+                  'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=500&q=80',
+                  'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=500&q=80',
+                ].map((src, i) => (
+                  <div
+                    key={i}
+                    className="break-inside-avoid mb-1 group relative overflow-hidden"
+                  >
+                    <img
+                      src={src}
+                      alt=""
+                      className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300" />
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <div className="w-7 h-7 bg-black/60 backdrop-blur-sm flex items-center justify-center">
+                        <Download className="w-3 h-3 text-white" strokeWidth={1.5} />
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
+              </div>
 
-                {/* Download button */}
-                <div className="flex justify-center">
-                  <button className="h-12 px-8 bg-white text-black font-body font-medium text-sm rounded-none flex items-center gap-3">
-                    <Download className="w-4 h-4" strokeWidth={1.5} />
-                    Download All Photos
-                  </button>
-                </div>
+              {/* Download all footer */}
+              <div className="flex justify-center p-8 border-t border-white/5">
+                <button className="h-12 px-8 bg-white text-black font-body font-medium text-sm rounded-none flex items-center gap-3">
+                  <Download className="w-4 h-4" strokeWidth={1.5} />
+                  Download All Photos
+                </button>
               </div>
             </div>
           </div>
