@@ -367,6 +367,16 @@ const createDefaultFolders = async (galleryId) => {
 
         if (dbError) throw dbError
         setPhotos(prev => [...prev, photoData])
+
+        // Generate the watermarked preview in the background — doesn't block the upload UX,
+        // and falls back to the unwatermarked image if it fails
+        if (!isVideo) {
+          fetch('/api/photos/watermark', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ photoId: photoData.id }),
+          }).catch(() => {})
+        }
       }
 
       // Upload 4 files at a time in parallel

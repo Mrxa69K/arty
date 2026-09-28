@@ -304,7 +304,7 @@ function PublicGalleryPageInner() {
   }, [lightboxOpen, closeLightbox, nextPhoto, prevPhoto])
 
   const coverPhoto = gallery?.cover_image_url || null
-  const heroBg = coverPhoto || photos[0]?.image_url || null
+  const heroBg = coverPhoto || photos[0]?.preview_url || photos[0]?.image_url || null
   const isExplicitCover = !!gallery?.cover_image_url
   const currentPhoto = photos[currentPhotoIndex]
   const filteredPhotos = selectedFolder === null
@@ -314,7 +314,7 @@ function PublicGalleryPageInner() {
   // Hero carousel: cycle through the first few frames unless the photographer set an explicit cover
   const heroSlides = isExplicitCover
     ? [coverPhoto]
-    : photos.slice(0, 5).map(p => p.image_url).filter(Boolean)
+    : photos.slice(0, 5).map(p => p.preview_url || p.image_url).filter(Boolean)
 
   useEffect(() => {
     if (prefersReducedMotion || heroSlides.length <= 1) return
@@ -631,7 +631,7 @@ function PublicGalleryPageInner() {
                     />
                   ) : (
                     <img
-                      src={currentPhoto.image_url}
+                      src={currentPhoto.preview_url || currentPhoto.image_url}
                       alt={currentPhoto.file_name}
                       className="max-w-full max-h-full object-contain select-none"
                       draggable={false}
@@ -656,7 +656,7 @@ function PublicGalleryPageInner() {
                     }`}
                   >
                     <img
-                      src={photo.image_url}
+                      src={photo.preview_url || photo.image_url}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -948,7 +948,7 @@ function PublicGalleryPageInner() {
                   </div>
                 ) : (
                   <img
-                    src={photo.image_url}
+                    src={photo.preview_url || photo.image_url}
                     alt={photo.file_name || `Frame ${index + 1}`}
                     className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     loading="lazy"
