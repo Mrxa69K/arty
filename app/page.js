@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '@/lib/supabase' 
+import { motion } from 'framer-motion'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -49,6 +50,43 @@ function useInView(options = {}) {
   return [ref, isInView]
 }
 
+// Ambient flowing-line background, two mirrored layers drifting in opposite directions
+function FloatingPaths({ position }) {
+  const paths = Array.from({ length: 36 }, (_, i) => ({
+    id: i,
+    d: `M-${380 - i * 5 * position} -${189 + i * 6}C-${380 - i * 5 * position} -${189 + i * 6} -${312 - i * 5 * position} ${216 - i * 6} ${152 - i * 5 * position} ${343 - i * 6}C${616 - i * 5 * position} ${470 - i * 6} ${684 - i * 5 * position} ${875 - i * 6} ${684 - i * 5 * position} ${875 - i * 6}`,
+    width: 0.5 + i * 0.03,
+  }))
+
+  return (
+    <div className="absolute inset-0 pointer-events-none">
+      <svg className="w-full h-full text-foreground" viewBox="0 0 696 316" fill="none">
+        <title>Background Paths</title>
+        {paths.map((path) => (
+          <motion.path
+            key={path.id}
+            d={path.d}
+            stroke="currentColor"
+            strokeWidth={path.width}
+            strokeOpacity={0.1 + path.id * 0.03}
+            initial={{ pathLength: 0.3, opacity: 0.6 }}
+            animate={{
+              pathLength: 1,
+              opacity: [0.3, 0.6, 0.3],
+              pathOffset: [0, 1, 0],
+            }}
+            transition={{
+              duration: 20 + Math.random() * 10,
+              repeat: Number.POSITIVE_INFINITY,
+              ease: 'linear',
+            }}
+          />
+        ))}
+      </svg>
+    </div>
+  )
+}
+
 export default function HomePage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [billingCycle, setBillingCycle] = useState('monthly')
@@ -57,7 +95,6 @@ export default function HomePage() {
   const { user, loading } = useAuth()
 
   // Animation refs
-  const [heroRef, heroInView] = useInView()
   const [demoRef, demoInView] = useInView()
   const [featuresRef, featuresInView] = useInView()
   const [pricingRef, pricingInView] = useInView()
@@ -188,40 +225,82 @@ export default function HomePage() {
       {/* ============================================
           HERO SECTION
           ============================================ */}
-      <section
-        ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center px-6 lg:px-12 pt-24 overflow-hidden"
-      >
-        <div className="relative z-10 mx-auto max-w-6xl w-full">
-          <div className="lg:flex lg:items-center lg:gap-16">
+      <section className="relative min-h-screen w-full flex items-center justify-center px-6 lg:px-12 pt-24 overflow-hidden">
+        <div className="absolute inset-0">
+          <FloatingPaths position={1} />
+          <FloatingPaths position={-1} />
+        </div>
 
-            {/* Left: copy */}
-            <div className="relative mx-auto max-w-xl text-center lg:ml-0 lg:w-1/2 lg:text-left">
-              {/* Tagline */}
-              <a
-                href="#features"
-                onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) }}
-                className={`mx-auto flex w-fit items-center gap-3 border border-white/15 rounded-lg py-1.5 pl-3 pr-4 hover:border-gold/40 transition-colors lg:ml-0 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}
-              >
-                <span className="text-[11px] tracking-[0.2em] uppercase text-gold font-body font-medium">For Professional Photographers</span>
-                <span className="block h-4 w-px bg-white/15" />
-                <ArrowRight className="w-3.5 h-3.5 text-white/50" />
-              </a>
+        <div className="relative z-10 container mx-auto px-4 md:px-6 text-center">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 2 }}
+            className="max-w-4xl mx-auto"
+          >
+            <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-tight mb-8">
+              <span className="block mb-2">
+                {'Deliver your work'.split(' ').map((word, wordIndex) => (
+                  <span key={wordIndex} className="inline-block mr-4 last:mr-0">
+                    {word.split('').map((letter, letterIndex) => (
+                      <motion.span
+                        key={`l1-${wordIndex}-${letterIndex}`}
+                        initial={{ y: 60, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{
+                          delay: wordIndex * 0.1 + letterIndex * 0.03,
+                          type: 'spring',
+                          stiffness: 150,
+                          damping: 25,
+                        }}
+                        className="inline-block text-white"
+                      >
+                        {letter}
+                      </motion.span>
+                    ))}
+                  </span>
+                ))}
+              </span>
+              <span className="block italic text-gold">
+                {'the way it deserves'.split(' ').map((word, wordIndex) => (
+                  <span key={wordIndex} className="inline-block mr-4 last:mr-0">
+                    {word.split('').map((letter, letterIndex) => (
+                      <motion.span
+                        key={`l2-${wordIndex}-${letterIndex}`}
+                        initial={{ y: 60, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        transition={{
+                          delay: 0.5 + wordIndex * 0.1 + letterIndex * 0.03,
+                          type: 'spring',
+                          stiffness: 150,
+                          damping: 25,
+                        }}
+                        className="inline-block"
+                      >
+                        {letter}
+                      </motion.span>
+                    ))}
+                  </span>
+                ))}
+              </span>
+            </h1>
 
-              {/* Main headline */}
-              <h1 className={`mt-8 font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-8 ${heroInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-                Deliver your work
-                <br />
-                <span className="italic text-gold">the way it deserves</span>
-              </h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.3, duration: 0.8 }}
+              className="font-body text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 leading-relaxed"
+            >
+              Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
+            </motion.p>
 
-              {/* Sub-headline */}
-              <p className={`font-body text-lg text-white/60 mb-10 leading-relaxed ${heroInView ? 'animate-fadeInUp delay-200' : 'opacity-0'}`}>
-                Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
-              </p>
-
-              {/* CTAs — one grouped capsule, two square-cut segments */}
-              <div className={`mx-auto flex w-fit max-w-full overflow-hidden rounded-lg border border-white/15 shadow shadow-black/20 lg:ml-0 ${heroInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 1.5, duration: 0.8 }}
+              className="flex flex-col items-center gap-5"
+            >
+              <div className="inline-block group relative bg-gradient-to-b from-white/15 to-transparent p-px rounded-2xl backdrop-blur-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300">
                 <button
                   onClick={() => {
                     if (user) {
@@ -231,57 +310,23 @@ export default function HomePage() {
                     }
                   }}
                   disabled={isRedirecting || loading}
-                  className="h-14 px-8 bg-white text-black font-body font-semibold text-sm hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
+                  className="rounded-[1.15rem] px-8 py-6 text-lg font-semibold font-body backdrop-blur-md bg-white/95 hover:bg-white text-black transition-all duration-300 group-hover:-translate-y-0.5 border border-black/10 hover:shadow-md disabled:opacity-50 flex items-center btn-press"
                   data-testid="cta-payg"
                 >
-                  Start for 4.90 / gallery
-                  <ArrowRight className="w-4 h-4" />
+                  <span className="opacity-90 group-hover:opacity-100 transition-opacity">Start for 4.90 / gallery</span>
+                  <span className="ml-3 opacity-70 group-hover:opacity-100 group-hover:translate-x-1.5 transition-all duration-300">→</span>
                 </button>
-
-                <div className="w-px bg-white/15" />
-
-                <a
-                  href="#demo"
-                  className="h-14 px-8 bg-background text-white font-body font-medium text-sm hover:bg-white/5 transition-all flex items-center gap-3"
-                  data-testid="cta-demo"
-                >
-                  See a live gallery
-                </a>
               </div>
 
-              {/* Trust indicators */}
-              <div className={`mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 text-sm text-white/40 font-body ${heroInView ? 'animate-fadeInUp delay-400' : 'opacity-0'}`}>
-                <span className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-                  No subscription required
-                </span>
-                <span className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-                  14-day money back
-                </span>
-                <span className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-                  1,200+ galleries delivered
-                </span>
-              </div>
-            </div>
-
-            {/* Right: showcase image, fades into the page rather than sitting in a boxed panel */}
-            <div className={`relative mt-16 lg:mt-0 lg:w-1/2 aspect-[4/5] lg:aspect-[3/4] ${heroInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
-              <img
-                src="/cover.webp"
-                alt="A gallery delivered through ArtyDrop"
-                className="absolute inset-0 w-full h-full object-cover rounded-lg lg:rounded-none"
-              />
-              <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-background from-0% via-transparent via-20% to-transparent hidden lg:block" />
-              <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background from-0% via-transparent via-30% to-transparent" />
-            </div>
-          </div>
-        </div>
-
-        {/* Scroll indicator */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-float hidden lg:block">
-          <ChevronDown className="w-6 h-6 text-white/30" strokeWidth={1} />
+              <a
+                href="#demo"
+                className="text-sm text-white/40 hover:text-white font-body transition-colors"
+                data-testid="cta-demo"
+              >
+                See a live gallery
+              </a>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
