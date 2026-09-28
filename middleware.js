@@ -58,8 +58,8 @@ export async function middleware(request) {
   const pathname = request.nextUrl.pathname
 
   // Public routes - allow everyone
-  const publicPaths = ['/', '/login', '/signup', '/terms', '/privacy', '/faq']
-  const isPublicPath = publicPaths.includes(pathname)
+  const publicPaths = ['/', '/login', '/signup', '/faq']
+  const isPublicPath = publicPaths.includes(pathname) || pathname.startsWith('/legal/')
   const isGalleryLink = pathname.startsWith('/g/')
   const isApiRoute = pathname.startsWith('/api/')
   const isNextInternal = pathname.startsWith('/_next') || pathname.includes('.')
