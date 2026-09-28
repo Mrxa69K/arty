@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { PlanSelectionModal } from '../_components/PlanSelectionModal'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { useAuth } from '@/app/providers'
 import Link from 'next/link'
 import {
@@ -36,6 +37,8 @@ export default function DashboardPage() {
   const [isCreating, setIsCreating] = useState(false)
   const [openMenu, setOpenMenu] = useState(null)
   const [copiedId, setCopiedId] = useState(null)
+  const [deleteTargetId, setDeleteTargetId] = useState(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -144,15 +147,19 @@ export default function DashboardPage() {
     }
   }
 
-  const handleDeleteGallery = async (galleryId) => {
-    if (!confirm('Delete this gallery? This cannot be undone.')) return
+  const handleDeleteGallery = async () => {
+    if (!deleteTargetId) return
+    setIsDeleting(true)
     try {
-      const { error } = await supabase.from('galleries').delete().eq('id', galleryId)
+      const { error } = await supabase.from('galleries').delete().eq('id', deleteTargetId)
       if (error) throw error
-      setGalleries((prev) => prev.filter((g) => g.id !== galleryId))
+      setGalleries((prev) => prev.filter((g) => g.id !== deleteTargetId))
       toast.success('Gallery deleted')
+      setDeleteTargetId(null)
     } catch {
       toast.error('Failed to delete gallery')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -552,7 +559,7 @@ export default function DashboardPage() {
                         )}
                         <div className="my-1 border-t border-white/5" />
                         <button
-                          onClick={() => { handleDeleteGallery(gallery.id); setOpenMenu(null) }}
+                          onClick={() => { setDeleteTargetId(gallery.id); setOpenMenu(null) }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-400/80 font-body hover:bg-red-500/10 hover:text-red-400 transition-colors"
                         >
                           <Trash2 className="w-3 h-3" strokeWidth={1.5} />
@@ -610,6 +617,16 @@ export default function DashboardPage() {
           }
         }}
         userEmail={user?.email}
+      />
+
+      <ConfirmDialog
+        open={!!deleteTargetId}
+        onOpenChange={(open) => { if (!open) setDeleteTargetId(null) }}
+        title="Delete this gallery?"
+        description="This action cannot be undone. All photos, videos, and the share link will be permanently removed."
+        confirmText="Delete gallery"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteGallery}
       />
     </div>
   )
