@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
 
     const { data: link, error: linkError } = await supabaseAdmin
       .from('gallery_links')
-      .select('gallery_id, allow_download, expires_at, password_hash, galleries(title)')
+      .select('id, gallery_id, allow_download, expires_at, password_hash, galleries(title)')
       .eq('token', token)
       .single()
 
@@ -67,6 +67,18 @@ export async function POST(request, { params }) {
 
     const galleryTitle = link.galleries?.title || 'gallery'
     const filename = `${galleryTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.zip`
+
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : null
+    try {
+      await supabaseAdmin.from('gallery_downloads').insert({
+        gallery_id: link.gallery_id,
+        gallery_link_id: link.id,
+        photo_id: null,
+        type: 'zip',
+        ip,
+      })
+    } catch { /* tracking failure shouldn't block the actual download */ }
 
     return new NextResponse(zipBuffer, {
       status: 200,

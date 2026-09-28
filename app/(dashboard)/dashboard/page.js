@@ -178,20 +178,23 @@ export default function DashboardPage() {
 
       let photosCount = 0
       let viewsCount = 0
+      let downloadsCount = 0
       if (galleryIds.length > 0) {
-        const [{ count: photos }, { count: views }] = await Promise.all([
+        const [{ count: photos }, { count: views }, { count: downloads }] = await Promise.all([
           supabase.from('photos').select('*', { count: 'exact', head: true }).in('gallery_id', galleryIds),
           supabase.from('gallery_views').select('*', { count: 'exact', head: true }).in('gallery_id', galleryIds),
+          supabase.from('gallery_downloads').select('*', { count: 'exact', head: true }).in('gallery_id', galleryIds),
         ])
         photosCount = photos || 0
         viewsCount = views || 0
+        downloadsCount = downloads || 0
       }
 
       setStats({
         galleries: galleriesCount || 0,
         photos: photosCount,
         views: viewsCount,
-        downloads: 0
+        downloads: downloadsCount
       })
     } catch (error) {
       console.error('Error fetching stats:', error)

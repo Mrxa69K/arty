@@ -13,7 +13,7 @@ export async function POST(request, { params }) {
 
     const { data: link, error: linkError } = await supabaseAdmin
       .from('gallery_links')
-      .select('gallery_id, allow_download, expires_at, password_hash')
+      .select('id, gallery_id, allow_download, expires_at, password_hash')
       .eq('token', token)
       .single()
 
@@ -53,6 +53,18 @@ export async function POST(request, { params }) {
 
     const arrayBuffer = await response.arrayBuffer()
     const filename = photo.file_name || `photo-${photoId}.jpg`
+
+    const forwarded = request.headers.get('x-forwarded-for')
+    const ip = forwarded ? forwarded.split(',')[0].trim() : null
+    try {
+      await supabaseAdmin.from('gallery_downloads').insert({
+        gallery_id: link.gallery_id,
+        gallery_link_id: link.id,
+        photo_id: photoId,
+        type: 'photo',
+        ip,
+      })
+    } catch { /* tracking failure shouldn't block the actual download */ }
 
     return new NextResponse(arrayBuffer, {
       status: 200,
