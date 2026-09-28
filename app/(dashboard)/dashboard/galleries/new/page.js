@@ -1175,26 +1175,21 @@ const handlePublish = async () => {
               </Button>
             ) : (
               <Button
-                onClick={() => router.push('/dashboard')}
-
-                
+                onClick={handlePublish}
                 disabled={isPublishing}
                 className="rounded-sm px-8 bg-white text-black hover:bg-white/90"
               >
                 {isPublishing ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Going back to dashboard
+                    Publishing...
                   </>
                 ) : (
                   <>
-                    
-                    Back to Dashboard
+                    Publish Gallery
                   </>
                 )}
               </Button>
-
-              
             )}
           </div>
 
