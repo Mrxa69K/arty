@@ -29,6 +29,7 @@ function PublicGalleryPageInner() {
   const searchParams = useSearchParams()
   const token = params.token
   const justRenewed = searchParams.get('renewed') === 'true'
+  const justTipped = searchParams.get('tipped') === 'true'
 
   const [isLoading, setIsLoading] = useState(true)
   const [isVerifying, setIsVerifying] = useState(false)
@@ -71,6 +72,10 @@ function PublicGalleryPageInner() {
   useEffect(() => {
     if (token) fetchGalleryInfo()
   }, [token])
+
+  useEffect(() => {
+    if (justTipped) toast.success('Thank you for the tip! ☕')
+  }, [justTipped])
 
   // After returning from Stripe, poll briefly for the webhook to lift the expiry
   useEffect(() => {

@@ -24,7 +24,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'Gallery not found' }, { status: 404 })
     }
 
-    if (!link.allow_download) {
+    if (link.allow_download === false) {
       return NextResponse.json({ error: 'Tips are only available on open galleries' }, { status: 400 })
     }
 
