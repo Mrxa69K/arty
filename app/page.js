@@ -289,7 +289,7 @@ export default function HomePage() {
 
               <div className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10 image-hover-zoom">
                 <img
-                  src="/hands.jpg"
+                  src="https://images.unsplash.com/photo-1758712508646-49eb3ced4e89?w=1200&q=80&auto=format&fit=crop"
                   alt="Wedding rings delivered in an ArtyDrop gallery"
                   className="w-full h-full object-cover"
                 />
