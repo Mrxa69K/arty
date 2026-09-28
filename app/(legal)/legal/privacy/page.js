@@ -1,84 +1,84 @@
 export const metadata = {
-  title: 'Politique de confidentialité — ArtyDrop',
+  title: 'Privacy Policy — ArtyDrop',
 }
 
 export default function PrivacyPage() {
   return (
     <article className="prose prose-invert prose-sm max-w-none">
-      <p className="text-[10px] tracking-[0.35em] uppercase text-white/25 font-body mb-4">Confidentialité</p>
-      <h1 className="font-display text-3xl text-white mb-2">Politique de confidentialité</h1>
-      <p className="text-xs text-white/25 font-body mb-12">Dernière mise à jour : avril 2026 — Conforme au RGPD</p>
+      <p className="text-[10px] tracking-[0.35em] uppercase text-white/25 font-body mb-4">Privacy</p>
+      <h1 className="font-display text-3xl text-white mb-2">Privacy Policy</h1>
+      <p className="text-xs text-white/25 font-body mb-12">Last updated: April 2026 — GDPR compliant</p>
 
-      <Section title="1. Responsable du traitement">
-        <p>Le responsable du traitement des données personnelles collectées via ArtyDrop est l'Éditeur du service (photographe indépendant opérant la plateforme). Pour exercer vos droits, contactez-nous via les coordonnées disponibles dans les <a href="/legal/mentions-legales" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">mentions légales</a>.</p>
+      <Section title="1. Data controller">
+        <p>The data controller for personal data collected through ArtyDrop is the Publisher of the service (the independent photographer operating the platform). To exercise your rights, contact us using the details in the <a href="/legal/mentions-legales" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">Legal Notice</a>.</p>
       </Section>
 
-      <Section title="2. Données collectées">
-        <p>Nous collectons les données suivantes :</p>
+      <Section title="2. Data we collect">
+        <p>We collect the following data:</p>
         <ul>
-          <li><strong>Données de compte (photographes) :</strong> adresse e-mail, nom complet, informations de profil public (bio, liens sociaux).</li>
-          <li><strong>Données de paiement :</strong> gérées exclusivement par Stripe. ArtyDrop ne stocke aucune donnée bancaire.</li>
-          <li><strong>Données de consultation des galeries :</strong> horodatage de la visite, type d'appareil (mobile/desktop), adresse IP (anonymisée après traitement).</li>
-          <li><strong>Données de navigation :</strong> cookies techniques nécessaires au fonctionnement du service (session, authentification).</li>
+          <li><strong>Account data (photographers):</strong> email address, full name, public profile information (bio, social links).</li>
+          <li><strong>Payment data:</strong> handled exclusively by Stripe. ArtyDrop never stores any banking details.</li>
+          <li><strong>Gallery viewing data:</strong> visit timestamp, device type (mobile/desktop), IP address (anonymized after processing).</li>
+          <li><strong>Browsing data:</strong> technical cookies needed for the service to work (session, authentication).</li>
         </ul>
       </Section>
 
-      <Section title="3. Finalités du traitement">
-        <p>Vos données sont utilisées pour :</p>
+      <Section title="3. Why we process this data">
+        <p>Your data is used to:</p>
         <ul>
-          <li>Fournir le service de livraison de galeries photos</li>
-          <li>Gérer les comptes photographes et les abonnements</li>
-          <li>Produire des statistiques de consultation anonymes (pour les photographes)</li>
-          <li>Assurer la sécurité et la stabilité du service</li>
-          <li>Respecter nos obligations légales</li>
+          <li>Provide the photo gallery delivery service</li>
+          <li>Manage photographer accounts and subscriptions</li>
+          <li>Generate anonymous viewing statistics (for photographers)</li>
+          <li>Keep the service secure and stable</li>
+          <li>Meet our legal obligations</li>
         </ul>
       </Section>
 
-      <Section title="4. Base légale du traitement">
+      <Section title="4. Legal basis for processing">
         <ul>
-          <li><strong>Exécution du contrat</strong> : pour les données nécessaires à la fourniture du service.</li>
-          <li><strong>Intérêt légitime</strong> : pour les données statistiques de consultation.</li>
-          <li><strong>Obligation légale</strong> : pour la conservation de certaines données de facturation.</li>
+          <li><strong>Contract performance:</strong> for data needed to provide the service.</li>
+          <li><strong>Legitimate interest:</strong> for gallery-viewing statistics.</li>
+          <li><strong>Legal obligation:</strong> for retaining certain billing records.</li>
         </ul>
       </Section>
 
-      <Section title="5. Durée de conservation">
+      <Section title="5. How long we keep your data">
         <ul>
-          <li>Données de compte : conservées tant que le compte est actif, puis supprimées sous 30 jours après demande de suppression.</li>
-          <li>Galeries et photos : supprimées à l'expiration de la galerie ou après 90 jours sans activité sur un compte supprimé.</li>
-          <li>Données de consultation : conservées 12 mois.</li>
-          <li>Données de facturation : 10 ans (obligation légale française).</li>
+          <li>Account data: kept for as long as the account is active, then deleted within 30 days of a deletion request.</li>
+          <li>Galleries and photos: deleted once the gallery expires, or after 90 days of inactivity on a deleted account.</li>
+          <li>Viewing data: kept for 12 months.</li>
+          <li>Billing data: 10 years (French legal requirement).</li>
         </ul>
       </Section>
 
-      <Section title="6. Sous-traitants">
-        <p>ArtyDrop fait appel aux sous-traitants suivants, chacun soumis à des garanties RGPD :</p>
+      <Section title="6. Subprocessors">
+        <p>ArtyDrop relies on the following subprocessors, each bound by GDPR-compliant safeguards:</p>
         <ul>
-          <li><strong>Supabase</strong> (base de données et authentification) — USA/EU, DPA disponible</li>
-          <li><strong>Cloudflare R2</strong> (stockage des fichiers) — USA/EU, DPA disponible</li>
-          <li><strong>Stripe</strong> (paiements) — USA/EU, DPA disponible</li>
-          <li><strong>Netlify</strong> (hébergement) — USA, DPA disponible</li>
+          <li><strong>Supabase</strong> (database and authentication) — USA/EU, DPA available</li>
+          <li><strong>Cloudflare R2</strong> (file storage) — USA/EU, DPA available</li>
+          <li><strong>Stripe</strong> (payments) — USA/EU, DPA available</li>
+          <li><strong>Netlify</strong> (hosting) — USA, DPA available</li>
         </ul>
       </Section>
 
-      <Section title="7. Vos droits">
-        <p>Conformément au RGPD, vous disposez des droits suivants :</p>
+      <Section title="7. Your rights">
+        <p>Under the GDPR, you have the right to:</p>
         <ul>
-          <li><strong>Droit d'accès</strong> : obtenir une copie de vos données</li>
-          <li><strong>Droit de rectification</strong> : corriger vos données inexactes</li>
-          <li><strong>Droit à l'effacement</strong> : demander la suppression de vos données</li>
-          <li><strong>Droit à la portabilité</strong> : recevoir vos données dans un format structuré</li>
-          <li><strong>Droit d'opposition</strong> : vous opposer à certains traitements</li>
+          <li><strong>Access</strong> — obtain a copy of your data</li>
+          <li><strong>Rectification</strong> — correct inaccurate data</li>
+          <li><strong>Erasure</strong> — request that your data be deleted</li>
+          <li><strong>Portability</strong> — receive your data in a structured format</li>
+          <li><strong>Object</strong> — object to certain uses of your data</li>
         </ul>
-        <p>Pour exercer ces droits, contactez-nous via les coordonnées disponibles dans les mentions légales. Vous pouvez également introduire une réclamation auprès de la <strong>CNIL</strong> (cnil.fr).</p>
+        <p>To exercise these rights, contact us using the details in the Legal Notice. You can also file a complaint with <strong>CNIL</strong>, the French data protection authority (cnil.fr).</p>
       </Section>
 
       <Section title="8. Cookies">
-        <p>ArtyDrop utilise uniquement des cookies strictement nécessaires au fonctionnement du service (gestion de session, authentification). Ces cookies ne requièrent pas de consentement selon la directive ePrivacy. Aucun cookie publicitaire ou de suivi tiers n'est utilisé.</p>
+        <p>ArtyDrop only uses cookies that are strictly necessary for the service to work (session handling, authentication). These don't require consent under the ePrivacy directive. We never use advertising or third-party tracking cookies.</p>
       </Section>
 
-      <Section title="9. Sécurité">
-        <p>Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement en transit (HTTPS), stockage sécurisé des mots de passe (hachage), accès restreint aux données sensibles.</p>
+      <Section title="9. Security">
+        <p>We use appropriate technical and organizational measures to protect your data: encryption in transit (HTTPS), secure password storage (hashing), and restricted access to sensitive data.</p>
       </Section>
     </article>
   )

@@ -1,55 +1,56 @@
 export const metadata = {
-  title: "Conditions Générales d'Utilisation — ArtyDrop",
+  title: "Terms of Service — ArtyDrop",
 }
 
 export default function TermsPage() {
   return (
     <article className="prose prose-invert prose-sm max-w-none">
-      <p className="text-[10px] tracking-[0.35em] uppercase text-white/25 font-body mb-4">Conditions générales</p>
-      <h1 className="font-display text-3xl text-white mb-2">Conditions Générales d'Utilisation</h1>
-      <p className="text-xs text-white/25 font-body mb-12">Dernière mise à jour : avril 2026</p>
+      <p className="text-[10px] tracking-[0.35em] uppercase text-white/25 font-body mb-4">Terms of Service</p>
+      <h1 className="font-display text-3xl text-white mb-2">Terms of Service</h1>
+      <p className="text-xs text-white/25 font-body mb-12">Last updated: April 2026</p>
 
-      <Section title="1. Présentation du service">
-        <p>ArtyDrop est une plateforme en ligne permettant aux photographes professionnels de livrer des galeries photos à leurs clients de manière sécurisée. Le service est accessible à l'adresse <strong>artydrop.netlify.app</strong> et est opéré par un photographe indépendant (ci-après « l'Éditeur »).</p>
+      <Section title="1. Service overview">
+        <p>ArtyDrop is an online platform that lets professional photographers securely deliver photo galleries to their clients. The service is available at <strong>artydrop.netlify.app</strong> and is operated by an independent photographer (referred to below as "the Publisher").</p>
       </Section>
 
-      <Section title="2. Acceptation des conditions">
-        <p>L'utilisation du service ArtyDrop implique l'acceptation pleine et entière des présentes conditions générales d'utilisation. Ces conditions s'appliquent à toute personne accédant au service, qu'elle soit photographe (utilisateur inscrit) ou client final (destinataire d'un lien de galerie).</p>
+      <Section title="2. Acceptance of these terms">
+        <p>Using the ArtyDrop service means you fully accept these Terms of Service. These terms apply to anyone accessing the service, whether a photographer (registered user) or a client (recipient of a gallery link).</p>
       </Section>
 
-      <Section title="3. Accès au service">
-        <p>ArtyDrop propose deux modes d'accès :</p>
+      <Section title="3. Accessing the service">
+        <p>ArtyDrop offers two ways to access the service:</p>
         <ul>
-          <li><strong>Photographes :</strong> Accès par inscription avec adresse e-mail et mot de passe. Un abonnement ou des crédits peuvent être requis pour créer des galeries.</li>
-          <li><strong>Clients :</strong> Accès aux galeries via un lien unique (token) fourni par le photographe, avec ou sans mot de passe.</li>
+          <li><strong>Photographers:</strong> access by registering with an email address and password. A subscription or credits may be required to create galleries.</li>
+          <li><strong>Clients:</strong> access to galleries through a unique link (token) provided by the photographer, with or without a password.</li>
         </ul>
-        <p>L'Éditeur se réserve le droit de suspendre ou de supprimer tout compte en cas de violation des présentes conditions.</p>
+        <p>The Publisher reserves the right to suspend or delete any account that violates these terms.</p>
       </Section>
 
-      <Section title="4. Contenu et propriété intellectuelle">
-        <p>Les photographies téléversées sur ArtyDrop restent la propriété exclusive du photographe qui les publie. ArtyDrop ne revendique aucun droit de propriété sur les contenus déposés.</p>
-        <p>Le photographe garantit qu'il dispose des droits nécessaires sur les contenus publiés et qu'ils ne violent aucun droit de tiers (droit à l'image, droits d'auteur, etc.).</p>
+      <Section title="4. Content and intellectual property">
+        <p>Photos uploaded to ArtyDrop remain the exclusive property of the photographer who publishes them. ArtyDrop claims no ownership rights over any uploaded content.</p>
+        <p>The photographer warrants that they hold the necessary rights to the content they publish, and that it doesn't infringe on any third party's rights (image rights, copyright, etc.).</p>
       </Section>
 
-      <Section title="5. Durée de conservation des galeries">
-        <p>Les galeries sont accessibles pendant une durée définie par le photographe ou par son plan tarifaire. À l'expiration, les galeries sont désactivées. L'Éditeur ne garantit pas la conservation des fichiers au-delà de cette période.</p>
-        <p>Il est fortement recommandé aux clients de télécharger leurs photos avant l'expiration du lien.</p>
+      <Section title="5. How long galleries stay available">
+        <p>Galleries remain accessible for a period set by the photographer or determined by their pricing plan. Once that period ends, the gallery is deactivated and can no longer be viewed or downloaded through the original link.</p>
+        <p>Clients whose gallery has expired can regain access by purchasing a renewal directly from the expired gallery page, which reopens viewing and downloading for a further period. The Publisher does not guarantee that renewal will remain available indefinitely, nor that gallery files are kept beyond their original or renewed access period.</p>
+        <p>Clients are strongly encouraged to download their photos before their gallery link expires.</p>
       </Section>
 
-      <Section title="6. Responsabilité">
-        <p>ArtyDrop est un outil de livraison. L'Éditeur décline toute responsabilité quant au contenu des galeries publiées par les photographes. La responsabilité de l'Éditeur ne saurait être engagée en cas de perte de données due à une défaillance technique, à l'expiration d'une galerie, ou à un acte malveillant de tiers.</p>
+      <Section title="6. Liability">
+        <p>ArtyDrop is a delivery tool. The Publisher accepts no responsibility for the content of galleries published by photographers. The Publisher cannot be held liable for data loss caused by technical failure, gallery expiration, or malicious action by a third party.</p>
       </Section>
 
-      <Section title="7. Modification des conditions">
-        <p>L'Éditeur se réserve le droit de modifier les présentes conditions à tout moment. Les utilisateurs seront informés de toute modification substantielle par e-mail ou via le tableau de bord.</p>
+      <Section title="7. Changes to these terms">
+        <p>The Publisher reserves the right to modify these terms at any time. Users will be notified of any material change by email or through the dashboard.</p>
       </Section>
 
-      <Section title="8. Droit applicable">
-        <p>Les présentes conditions sont régies par le droit français. En cas de litige, les parties s'engagent à rechercher une solution amiable avant tout recours judiciaire.</p>
+      <Section title="8. Governing law">
+        <p>These terms are governed by French law. In the event of a dispute, both parties agree to seek an amicable resolution before pursuing any legal action.</p>
       </Section>
 
       <Section title="9. Contact">
-        <p>Pour toute question relative aux présentes conditions, vous pouvez nous contacter à l'adresse indiquée dans les mentions légales.</p>
+        <p>If you have any questions about these terms, you can reach us at the address listed in the Legal Notice.</p>
       </Section>
     </article>
   )

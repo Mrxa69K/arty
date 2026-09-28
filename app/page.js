@@ -669,13 +669,13 @@ export default function HomePage() {
             
             <div className="flex items-center gap-8 text-sm font-body">
               <Link href="/legal/terms" className="text-white/40 hover:text-white transition-colors">
-                CGU
+                Terms
               </Link>
               <Link href="/legal/privacy" className="text-white/40 hover:text-white transition-colors">
-                Confidentialité
+                Privacy
               </Link>
               <Link href="/legal/mentions-legales" className="text-white/40 hover:text-white transition-colors">
-                Mentions légales
+                Legal Notice
               </Link>
             </div>
           </div>
