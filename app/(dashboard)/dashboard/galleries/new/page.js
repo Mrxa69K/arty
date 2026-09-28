@@ -741,11 +741,30 @@ const handlePublish = async () => {
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                         {photos.map(photo => (
                           <div key={photo.id} className="relative group">
-                            <img
-                              src={photo.image_url || photo.video_url}
-                              alt=""
-                              className="w-full h-32 object-cover rounded-sm"
-                            />
+                            {photo.media_type === 'video' ? (
+                              <div className="relative">
+                                <video
+                                  src={photo.video_url}
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                  className="w-full h-32 object-cover rounded-sm"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                  <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
+                                    <svg className="w-3.5 h-3.5 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <img
+                                src={photo.image_url}
+                                alt=""
+                                className="w-full h-32 object-cover rounded-sm"
+                              />
+                            )}
                             <button
                               onClick={() => deletePhoto(photo.id)}
                               className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1087,12 +1106,31 @@ const handlePublish = async () => {
                       <h3 className="font-semibold text-white/80 mb-3">Photos Preview</h3>
                       <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                         {photos.slice(0, 8).map(photo => (
-                          <img
-                            key={photo.id}
-                            src={photo. image_url || photo.video_url}
-                            alt=""
-                            className="w-full h-24 object-cover rounded-sm"
-                          />
+                          photo.media_type === 'video' ? (
+                            <div key={photo.id} className="relative">
+                              <video
+                                src={photo.video_url}
+                                muted
+                                playsInline
+                                preload="metadata"
+                                className="w-full h-24 object-cover rounded-sm"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-7 h-7 rounded-full bg-white/90 flex items-center justify-center">
+                                  <svg className="w-3 h-3 text-black ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M8 5v14l11-7z" />
+                                  </svg>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <img
+                              key={photo.id}
+                              src={photo.image_url}
+                              alt=""
+                              className="w-full h-24 object-cover rounded-sm"
+                            />
+                          )
                         ))}
                         {photos.length > 8 && (
                           <div className="w-full h-24 bg-white/10 rounded-sm flex items-center justify-center">
