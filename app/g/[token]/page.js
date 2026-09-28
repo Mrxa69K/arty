@@ -624,7 +624,9 @@ function PublicGalleryPageInner() {
                     <video
                       src={currentPhoto.video_url}
                       controls
+                      controlsList="nodownload"
                       autoPlay
+                      onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (
@@ -633,6 +635,7 @@ function PublicGalleryPageInner() {
                       alt={currentPhoto.file_name}
                       className="max-w-full max-h-full object-contain select-none"
                       draggable={false}
+                      onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
                     />
                   )}
                 </motion.div>
@@ -933,6 +936,7 @@ function PublicGalleryPageInner() {
                       muted
                       playsInline
                       preload="metadata"
+                      onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
                     />
                     <div className="absolute inset-0 flex items-center justify-center">
                       <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center">
@@ -948,6 +952,8 @@ function PublicGalleryPageInner() {
                     alt={photo.file_name || `Frame ${index + 1}`}
                     className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     loading="lazy"
+                    draggable={false}
+                    onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
                   />
                 )}
 
