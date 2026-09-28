@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { PlanSelectionModal } from '../_components/PlanSelectionModal'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { GalleryCoverModal } from '../_components/GalleryCoverModal'
 import { useAuth } from '@/app/providers'
 import Link from 'next/link'
 import {
@@ -22,6 +23,7 @@ import {
   Check,
   Pencil,
   ExternalLink,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -39,6 +41,7 @@ export default function DashboardPage() {
   const [copiedId, setCopiedId] = useState(null)
   const [deleteTargetId, setDeleteTargetId] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [coverModalGallery, setCoverModalGallery] = useState(null)
 
   useEffect(() => {
     if (!user) return
@@ -145,6 +148,14 @@ export default function DashboardPage() {
     } catch (error) {
       console.error('Error fetching galleries:', error)
     }
+  }
+
+  const openCoverPicker = async (gallery) => {
+    const { data: photos } = await supabase
+      .from('photos')
+      .select('id, image_url, video_url, media_type')
+      .eq('gallery_id', gallery.id)
+    setCoverModalGallery({ id: gallery.id, photos: photos || [], currentCover: gallery.cover_image_url || null })
   }
 
   const handleDeleteGallery = async () => {
@@ -545,6 +556,13 @@ export default function DashboardPage() {
                           <Pencil className="w-3 h-3" strokeWidth={1.5} />
                           Edit gallery
                         </Link>
+                        <button
+                          onClick={() => { openCoverPicker(gallery); setOpenMenu(null) }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/70 font-body hover:bg-white/5 hover:text-white transition-colors"
+                        >
+                          <ImageIcon className="w-3 h-3" strokeWidth={1.5} />
+                          Change cover
+                        </button>
                         {gallery.token && (
                           <a
                             href={`/g/${gallery.token}`}
@@ -628,6 +646,23 @@ export default function DashboardPage() {
         isLoading={isDeleting}
         onConfirm={handleDeleteGallery}
       />
+
+      {coverModalGallery && (
+        <GalleryCoverModal
+          open={!!coverModalGallery}
+          onClose={() => setCoverModalGallery(null)}
+          galleryId={coverModalGallery.id}
+          photos={coverModalGallery.photos}
+          currentCover={coverModalGallery.currentCover}
+          onCoverUpdated={(url) => {
+            setGalleries((prev) => prev.map((g) =>
+              g.id === coverModalGallery.id
+                ? { ...g, cover_image_url: url, thumbnail: url, thumbnailIsVideo: false }
+                : g
+            ))
+          }}
+        />
+      )}
     </div>
   )
 }

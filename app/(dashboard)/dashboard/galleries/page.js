@@ -6,10 +6,11 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { GalleryCoverModal } from '@/app/(dashboard)/_components/GalleryCoverModal'
 import {
   Images, Plus, Search, MoreVertical, Trash2,
   ExternalLink, Calendar, User, Camera, ArrowUpRight,
-  Loader2, Copy, Check,
+  Loader2, Copy, Check, Image as ImageIcon,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { useAuth } from '@/app/providers'
@@ -23,6 +24,7 @@ export default function GalleriesPage() {
   const [copiedId, setCopiedId] = useState(null)
   const [deleteTargetId, setDeleteTargetId] = useState(null)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [coverModalGallery, setCoverModalGallery] = useState(null)
   const { user } = useAuth()
   const router = useRouter()
 
@@ -131,6 +133,14 @@ export default function GalleriesPage() {
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const openCoverPicker = async (gallery) => {
+    const { data: photos } = await supabase
+      .from('photos')
+      .select('id, image_url, video_url, media_type')
+      .eq('gallery_id', gallery.id)
+    setCoverModalGallery({ id: gallery.id, photos: photos || [], currentCover: gallery.cover_image_url || null })
   }
 
   const handleCopyLink = (gallery) => {
@@ -326,6 +336,13 @@ export default function GalleriesPage() {
                                   <ExternalLink className="w-3 h-3" strokeWidth={1.5} />
                                   Edit gallery
                                 </Link>
+                                <button
+                                  onClick={() => { openCoverPicker(gallery); setShowMenu(null) }}
+                                  className="w-full flex items-center gap-2 px-3 py-2 text-xs text-white/70 font-body hover:bg-white/5 hover:text-white transition-colors"
+                                >
+                                  <ImageIcon className="w-3 h-3" strokeWidth={1.5} />
+                                  Change cover
+                                </button>
                                 {gallery.gallery_links?.[0]?.token && (
                                   <a
                                     href={`/g/${gallery.gallery_links[0].token}`}
@@ -397,6 +414,23 @@ export default function GalleriesPage() {
         isLoading={isDeleting}
         onConfirm={handleDelete}
       />
+
+      {coverModalGallery && (
+        <GalleryCoverModal
+          open={!!coverModalGallery}
+          onClose={() => setCoverModalGallery(null)}
+          galleryId={coverModalGallery.id}
+          photos={coverModalGallery.photos}
+          currentCover={coverModalGallery.currentCover}
+          onCoverUpdated={(url) => {
+            setGalleries((prev) => prev.map((g) =>
+              g.id === coverModalGallery.id
+                ? { ...g, cover_image_url: url, thumbnail: url, thumbnailIsVideo: false }
+                : g
+            ))
+          }}
+        />
+      )}
     </div>
   )
 }
