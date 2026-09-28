@@ -188,86 +188,97 @@ export default function HomePage() {
       {/* ============================================
           HERO SECTION
           ============================================ */}
-      <section 
+      <section
         ref={heroRef}
-        className="relative min-h-screen flex items-center justify-center px-6 lg:px-12 pt-24"
+        className="relative min-h-screen flex items-center justify-center px-6 lg:px-12 pt-24 overflow-hidden"
       >
-        {/* Hero background image */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=1920&q=80"
-            alt=""
-            className="w-full h-full object-cover opacity-40"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0B0C] via-[#0B0B0C]/70 to-[#0B0B0C]" />
-        </div>
+        <div className="relative z-10 mx-auto max-w-6xl w-full">
+          <div className="lg:flex lg:items-center lg:gap-16">
 
-        <div className="relative z-10 max-w-5xl mx-auto text-center">
-          {/* Tagline */}
-          <div className={`mb-8 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-            <span className="inline-block px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium border border-gold/30 rounded-chip">
-              For Professional Photographers
-            </span>
-          </div>
+            {/* Left: copy */}
+            <div className="relative mx-auto max-w-xl text-center lg:ml-0 lg:w-1/2 lg:text-left">
+              {/* Tagline */}
+              <a
+                href="#features"
+                onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) }}
+                className={`mx-auto flex w-fit items-center gap-2 border border-gold/30 rounded-chip px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium hover:bg-gold/10 transition-colors lg:ml-0 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}
+              >
+                For Professional Photographers
+                <ArrowRight className="w-3.5 h-3.5" />
+              </a>
 
-          {/* Main headline */}
-          <h1 className={`font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-tight mb-8 ${heroInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-            Deliver your work
-            <br />
-            <span className="italic text-gold">the way it deserves</span>
-          </h1>
+              {/* Main headline */}
+              <h1 className={`mt-8 font-display text-5xl sm:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-8 ${heroInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
+                Deliver your work
+                <br />
+                <span className="italic text-gold">the way it deserves</span>
+              </h1>
 
-          {/* Sub-headline */}
-          <p className={`font-body text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 leading-relaxed ${heroInView ? 'animate-fadeInUp delay-200' : 'opacity-0'}`}>
-            Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
-          </p>
+              {/* Sub-headline */}
+              <p className={`font-body text-lg text-white/60 mb-10 leading-relaxed ${heroInView ? 'animate-fadeInUp delay-200' : 'opacity-0'}`}>
+                Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
+              </p>
 
-          {/* CTAs */}
-          <div className={`flex flex-col sm:flex-row items-center justify-center gap-4 ${heroInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
-            <button
-              onClick={() => {
-                if (user) {
-                  handleCheckout('payg')
-                } else {
-                  router.push('/signup')
-                }
-              }}
-              disabled={isRedirecting || loading}
-              className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-none hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
-              data-testid="cta-payg"
-            >
-              Start for 4.90 / gallery
-              <ArrowRight className="w-4 h-4" />
-            </button>
-            
-            <a 
-              href="#demo"
-              className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all flex items-center gap-3"
-              data-testid="cta-demo"
-            >
-              See a live gallery
-            </a>
-          </div>
+              {/* CTAs */}
+              <div className={`flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 ${heroInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
+                <button
+                  onClick={() => {
+                    if (user) {
+                      handleCheckout('payg')
+                    } else {
+                      router.push('/signup')
+                    }
+                  }}
+                  disabled={isRedirecting || loading}
+                  className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-none hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
+                  data-testid="cta-payg"
+                >
+                  Start for 4.90 / gallery
+                  <ArrowRight className="w-4 h-4" />
+                </button>
 
-          {/* Trust indicators */}
-          <div className={`mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-white/40 font-body ${heroInView ? 'animate-fadeInUp delay-400' : 'opacity-0'}`}>
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              No subscription required
-            </span>
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              14-day money back
-            </span>
-            <span className="flex items-center gap-2">
-              <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              1,200+ galleries delivered
-            </span>
+                <a
+                  href="#demo"
+                  className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all flex items-center gap-3"
+                  data-testid="cta-demo"
+                >
+                  See a live gallery
+                </a>
+              </div>
+
+              {/* Trust indicators */}
+              <div className={`mt-12 flex flex-wrap items-center justify-center lg:justify-start gap-x-6 gap-y-3 text-sm text-white/40 font-body ${heroInView ? 'animate-fadeInUp delay-400' : 'opacity-0'}`}>
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
+                  No subscription required
+                </span>
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
+                  14-day money back
+                </span>
+                <span className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
+                  1,200+ galleries delivered
+                </span>
+              </div>
+            </div>
+
+            {/* Right: showcase image */}
+            <div className={`relative mt-16 lg:mt-0 lg:w-1/2 ${heroInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
+              <div className="relative aspect-[4/5] lg:aspect-[3/4] rounded-lg overflow-hidden border border-white/10">
+                <img
+                  src="/cover.webp"
+                  alt="A gallery delivered through ArtyDrop"
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/50 via-transparent to-transparent" />
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Scroll indicator */}
-        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-float">
+        <div className="absolute bottom-12 left-1/2 -translate-x-1/2 animate-float hidden lg:block">
           <ChevronDown className="w-6 h-6 text-white/30" strokeWidth={1} />
         </div>
       </section>
