@@ -1114,7 +1114,7 @@ const handlePublish = async () => {
               onClick={goToPreviousStep}
               disabled={currentStep === 1}
               variant="outline"
-              className="rounded-sm px-6 text-white"
+              className="rounded-sm px-6 text-foreground"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Previous
