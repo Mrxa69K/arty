@@ -77,6 +77,6 @@ export async function POST(request) {
     return NextResponse.json({ ok: true, previewUrl })
   } catch (error) {
     console.error('Watermark generation error:', error)
-    return NextResponse.json({ error: 'Failed to generate watermark', debug: error.message, stack: error.stack }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to generate watermark' }, { status: 500 })
   }
 }
