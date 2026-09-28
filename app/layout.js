@@ -11,17 +11,22 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="dark" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
-        {/* Playfair Display + Manrope + JetBrains Mono */}
+        {/* Cairo + IBM Plex Sans Arabic + Geist Mono (Arabic swap handled via CSS vars in globals.css) */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=Geist+Mono:wght@400;500;600&display=swap"
           rel="stylesheet"
         />
+        {/* Clash Display + General Sans */}
+        <link
+          rel="stylesheet"
+          href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&f[]=general-sans@400,500,600&display=swap"
+        />
       </head>
-      <body className="antialiased bg-[#0a0a0a] text-[#ededed] min-h-screen">
+      <body className="antialiased bg-background text-foreground min-h-screen">
         {/* Noise texture overlay */}
         <div className="noise-overlay" aria-hidden="true" />
         
@@ -32,9 +37,9 @@ export default function RootLayout({ children }) {
           position="top-right" 
           toastOptions={{
             style: {
-              background: '#171717',
-              border: '1px solid rgba(255,255,255,0.1)',
-              color: '#ededed',
+              background: '#161618',
+              border: '1px solid rgba(237,235,230,0.1)',
+              color: '#EDEBE6',
             },
           }}
         />

@@ -140,7 +140,7 @@ export default function HomePage() {
   ]
 
   return (
-    <main className="min-h-screen bg-[#0a0a0a] text-[#ededed] relative overflow-hidden">
+    <main className="min-h-screen bg-[#0B0B0C] text-[#ededed] relative overflow-hidden">
       
       {/* ============================================
           HEADER
@@ -164,7 +164,7 @@ export default function HomePage() {
               <div className="w-20 h-9 bg-white/5 rounded animate-pulse" />
             ) : user ? (
               <Link href="/dashboard" data-testid="dashboard-link">
-                <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-sm font-body text-sm font-medium">
+                <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-none font-body text-sm font-medium">
                   Dashboard
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -175,7 +175,7 @@ export default function HomePage() {
                   Log in
                 </Link>
                 <Link href="/signup" data-testid="signup-link">
-                  <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-sm font-body text-sm font-medium">
+                  <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-none font-body text-sm font-medium">
                     Get started
                   </Button>
                 </Link>
@@ -199,13 +199,13 @@ export default function HomePage() {
             alt=""
             className="w-full h-full object-cover opacity-40"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0a] via-[#0a0a0a]/70 to-[#0a0a0a]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#0B0B0C] via-[#0B0B0C]/70 to-[#0B0B0C]" />
         </div>
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           {/* Tagline */}
           <div className={`mb-8 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-            <span className="inline-block px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium border border-gold/30 rounded-sm">
+            <span className="inline-block px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium border border-gold/30 rounded-chip">
               For Professional Photographers
             </span>
           </div>
@@ -233,7 +233,7 @@ export default function HomePage() {
                 }
               }}
               disabled={isRedirecting || loading}
-              className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-sm hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
+              className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-none hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
               data-testid="cta-payg"
             >
               Start for 4.90 / gallery
@@ -242,7 +242,7 @@ export default function HomePage() {
             
             <a 
               href="#demo"
-              className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-sm hover:bg-white/5 transition-all flex items-center gap-3"
+              className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all flex items-center gap-3"
               data-testid="cta-demo"
             >
               See a live gallery
@@ -296,7 +296,7 @@ export default function HomePage() {
             </div>
             
             <div className="relative">
-              <div className="aspect-[4/3] rounded-sm overflow-hidden border border-white/10">
+              <div className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10">
                 <img
                   src="https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&q=80"
                   alt="Wedding photography"
@@ -304,7 +304,7 @@ export default function HomePage() {
                 />
               </div>
               {/* Floating stat card */}
-              <div className="absolute -bottom-6 -left-6 bg-[#121212] border border-white/10 p-6 rounded-sm">
+              <div className="absolute -bottom-6 -left-6 bg-[#161618] border border-white/10 p-6 rounded-lg">
                 <p className="text-3xl font-display text-gold mb-1">4.90</p>
                 <p className="text-sm text-white/50 font-body">per gallery, no subscription</p>
               </div>
@@ -319,7 +319,7 @@ export default function HomePage() {
       <section 
         ref={demoRef}
         id="demo"
-        className="py-32 px-6 lg:px-12 bg-[#080808]"
+        className="py-32 px-6 lg:px-12 bg-[#0B0B0C]"
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -335,21 +335,21 @@ export default function HomePage() {
           <div className={`${demoInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
             <div className="relative mx-auto max-w-5xl">
               {/* Browser chrome */}
-              <div className="bg-[#1a1a1a] border border-white/10 rounded-t-sm px-4 py-3 flex items-center gap-3">
+              <div className="bg-[#1F1F22] border border-white/10 rounded-t-lg px-4 py-3 flex items-center gap-3">
                 <div className="flex gap-2">
                   <div className="w-3 h-3 rounded-full bg-white/10" />
                   <div className="w-3 h-3 rounded-full bg-white/10" />
                   <div className="w-3 h-3 rounded-full bg-white/10" />
                 </div>
                 <div className="flex-1 mx-4">
-                  <div className="bg-[#0a0a0a] rounded-sm px-4 py-2 text-xs text-white/40 font-mono text-center">
+                  <div className="bg-[#0B0B0C] rounded-chip px-4 py-2 text-xs text-white/40 font-mono text-center">
                     artydrop.com/g/sarah-wedding-2025
                   </div>
                 </div>
               </div>
 
               {/* Gallery content */}
-              <div className="bg-[#0f0f0f] border-x border-b border-white/10 rounded-b-sm p-8 md:p-12">
+              <div className="bg-[#161618] border-x border-b border-white/10 rounded-b-lg p-8 md:p-12">
                 {/* Gallery header */}
                 <div className="text-center mb-12">
                   <h3 className="font-display text-3xl md:text-4xl text-white mb-4">
@@ -377,7 +377,7 @@ export default function HomePage() {
                   ].map((src, i) => (
                     <div 
                       key={i}
-                      className="aspect-square overflow-hidden rounded-sm image-hover-zoom"
+                      className="aspect-square overflow-hidden rounded-chip image-hover-zoom"
                     >
                       <img
                         src={src}
@@ -391,7 +391,7 @@ export default function HomePage() {
 
                 {/* Download button */}
                 <div className="flex justify-center">
-                  <button className="h-12 px-8 bg-white text-black font-body font-medium text-sm rounded-sm flex items-center gap-3">
+                  <button className="h-12 px-8 bg-white text-black font-body font-medium text-sm rounded-none flex items-center gap-3">
                     <Download className="w-4 h-4" strokeWidth={1.5} />
                     Download All Photos
                   </button>
@@ -409,7 +409,7 @@ export default function HomePage() {
             ].map((item, i) => (
               <div 
                 key={i}
-                className={`flex items-center gap-3 px-5 py-3 bg-[#121212] border border-white/10 rounded-sm ${demoInView ? 'animate-fadeInUp' : 'opacity-0'}`}
+                className={`flex items-center gap-3 px-5 py-3 bg-[#161618] border border-white/10 rounded-chip ${demoInView ? 'animate-fadeInUp' : 'opacity-0'}`}
                 style={{ animationDelay: `${300 + i * 100}ms` }}
               >
                 <item.icon className="w-4 h-4 text-gold" strokeWidth={1.5} />
@@ -463,7 +463,7 @@ export default function HomePage() {
             ].map((feature, i) => (
               <div 
                 key={i}
-                className={`p-8 md:p-10 bg-[#121212] border border-white/5 rounded-sm hover:border-white/10 transition-colors ${featuresInView ? 'animate-fadeInUp' : 'opacity-0'}`}
+                className={`p-8 md:p-10 bg-[#161618] border border-white/5 rounded-lg hover:border-white/10 transition-colors ${featuresInView ? 'animate-fadeInUp' : 'opacity-0'}`}
                 style={{ animationDelay: `${200 + i * 100}ms` }}
               >
                 <feature.icon className="w-6 h-6 text-gold mb-6" strokeWidth={1.5} />
@@ -481,7 +481,7 @@ export default function HomePage() {
       <section 
         ref={pricingRef}
         id="pricing"
-        className="py-32 px-6 lg:px-12 bg-[#080808]"
+        className="py-32 px-6 lg:px-12 bg-[#0B0B0C]"
       >
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -499,10 +499,10 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Pay as you go - HIGHLIGHTED */}
             <div className={`relative lg:col-span-2 ${pricingInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
-              <div className="absolute -inset-px bg-gradient-to-b from-gold/30 to-transparent rounded-sm" />
-              <div className="relative bg-[#0f0f0f] border border-gold/30 rounded-sm p-8 md:p-10 h-full">
+              <div className="absolute -inset-px bg-gradient-to-b from-gold/30 to-transparent rounded-lg" />
+              <div className="relative bg-[#161618] border border-gold/30 rounded-lg p-8 md:p-10 h-full">
                 <div className="flex items-center gap-3 mb-6">
-                  <span className="px-3 py-1 text-xs tracking-wider uppercase bg-gold/20 text-gold rounded-sm font-body font-medium">
+                  <span className="px-3 py-1 text-xs tracking-wider uppercase bg-coral/20 text-coral rounded-chip font-body font-medium">
                     Most Popular
                   </span>
                 </div>
@@ -536,7 +536,7 @@ export default function HomePage() {
                 <button
   onClick={() => handleCheckout('payg')}
   disabled={isRedirecting || loading}
-  className="w-full h-14 bg-white text-black border border-gray-300 font-body font-semibold text-sm rounded-sm hover:bg-gray-100 transition-all disabled:opacity-50 btn-press"
+  className="w-full h-14 bg-white text-black border border-gray-300 font-body font-semibold text-sm rounded-none hover:bg-gray-100 transition-all disabled:opacity-50 btn-press"
   data-testid="pricing-payg-btn"
 >
   Get started
@@ -546,7 +546,7 @@ export default function HomePage() {
 
             {/* Studio Plan */}
             <div className={`${pricingInView ? 'animate-fadeInUp delay-400' : 'opacity-0'}`}>
-              <div className="bg-[#121212] border border-white/10 rounded-sm p-8 h-full flex flex-col">
+              <div className="bg-[#161618] border border-white/10 rounded-lg p-8 h-full flex flex-col">
                 <h3 className="font-display text-2xl mb-2">Studio</h3>
                 
                 <div className="flex items-baseline gap-2 mb-6">
@@ -576,7 +576,7 @@ export default function HomePage() {
                 <button
                   onClick={() => handleCheckout('studio')}
                   disabled={isRedirecting || loading}
-                  className="w-full h-12 border border-white/20 text-white font-body font-medium text-sm rounded-sm hover:bg-white/5 transition-all disabled:opacity-50"
+                  className="w-full h-12 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all disabled:opacity-50"
                   data-testid="pricing-studio-btn"
                 >
                   Subscribe
@@ -587,7 +587,7 @@ export default function HomePage() {
 
           {/* Test drive option */}
           <div className={`mt-8 ${pricingInView ? 'animate-fadeInUp delay-500' : 'opacity-0'}`}>
-            <div className="bg-[#121212] border border-white/5 rounded-sm p-6 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="bg-[#161618] border border-white/5 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
                 <h4 className="font-display text-lg mb-2">Not sure yet?</h4>
                 <p className="text-sm text-white/50 font-body">
@@ -597,7 +597,7 @@ export default function HomePage() {
               <button
   onClick={() => handleCheckout('trial-gallery')}
   disabled={isRedirecting || loading}
-  className="h-11 px-6 bg-white text-black border border-gray-300 font-body text-sm rounded-sm hover:bg-gray-100 transition-all whitespace-nowrap disabled:opacity-50"
+  className="h-11 px-6 bg-white text-black border border-gray-300 font-body text-sm rounded-none hover:bg-gray-100 transition-all whitespace-nowrap disabled:opacity-50"
   data-testid="pricing-trial-btn"
 >
   Try for 1€
@@ -659,7 +659,7 @@ export default function HomePage() {
       {/* ============================================
           FOOTER
           ============================================ */}
-      <footer className="py-16 px-6 lg:px-12 border-t border-white/5 bg-[#080808]">
+      <footer className="py-16 px-6 lg:px-12 border-t border-white/5 bg-[#0B0B0C]">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             <div>

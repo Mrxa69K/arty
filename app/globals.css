@@ -3,37 +3,79 @@
 @tailwind utilities;
 
 /* ============================================
-   ARTYDROP - DARK EDITORIAL DESIGN SYSTEM
+   ARTYDROP - ENGINEERED NOIR DESIGN SYSTEM
    ============================================ */
 
 @layer base {
   :root {
     /* Dark Theme - Default */
-    --background: 0 0% 4%;
-    --foreground: 0 0% 93%;
-    --card: 0 0% 7%;
-    --card-foreground: 0 0% 93%;
-    --popover: 0 0% 7%;
-    --popover-foreground: 0 0% 93%;
-    --primary: 45 67% 52%;
-    --primary-foreground: 0 0% 4%;
-    --secondary: 0 0% 9%;
-    --secondary-foreground: 0 0% 93%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 240 5% 65%;
-    --accent: 45 67% 52%;
-    --accent-foreground: 0 0% 4%;
+    --background: 240 4% 5%;
+    --foreground: 42 16% 92%;
+    --card: 240 4% 9%;
+    --card-foreground: 42 16% 92%;
+    --popover: 240 5% 13%;
+    --popover-foreground: 42 16% 92%;
+    --primary: 194 44% 64%;
+    --primary-foreground: 240 4% 5%;
+    --secondary: 240 5% 13%;
+    --secondary-foreground: 42 16% 92%;
+    --muted: 240 5% 13%;
+    --muted-foreground: 42 6% 58%;
+    --accent: 194 44% 64%;
+    --accent-foreground: 240 4% 5%;
+    --accent-2: 14 100% 62%;
+    --accent-2-foreground: 240 4% 5%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 15%;
-    --input: 0 0% 15%;
-    --ring: 45 67% 52%;
-    --radius: 0.25rem;
-    
-    /* Brand Colors */
-    --gold: 45 67% 52%;
-    --gold-hover: 45 70% 58%;
-    --gold-muted: 45 40% 35%;
+    --border: 240 4% 15%;
+    --input: 240 4% 15%;
+    --ring: 194 44% 64%;
+    --radius: 12px;
+
+    /* Brand accent (kept as `gold` for existing usages sitewide, now steel blue) */
+    --gold: 194 44% 64%;
+    --gold-hover: 194 48% 70%;
+    --gold-muted: 194 30% 40%;
+
+    /* Fonts — swapped for Arabic under html[lang="ar"] below */
+    --font-display: 'Clash Display', Georgia, serif;
+    --font-body: 'General Sans', system-ui, sans-serif;
+    --font-mono: 'Geist Mono', 'JetBrains Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --background: 42 31% 94%;
+      --foreground: 240 4% 5%;
+      --card: 42 20% 91%;
+      --card-foreground: 240 4% 5%;
+      --popover: 42 20% 91%;
+      --popover-foreground: 240 4% 5%;
+      --primary: 194 44% 48%;
+      --primary-foreground: 42 31% 96%;
+      --secondary: 42 15% 88%;
+      --secondary-foreground: 240 4% 5%;
+      --muted: 42 15% 88%;
+      --muted-foreground: 42 6% 40%;
+      --accent: 194 44% 48%;
+      --accent-foreground: 42 31% 96%;
+      --accent-2: 14 90% 52%;
+      --accent-2-foreground: 42 31% 96%;
+      --destructive: 0 74% 48%;
+      --destructive-foreground: 0 0% 100%;
+      --border: 42 12% 82%;
+      --input: 42 12% 82%;
+      --ring: 194 44% 48%;
+
+      --gold: 194 44% 48%;
+      --gold-hover: 194 48% 42%;
+      --gold-muted: 194 30% 60%;
+    }
+  }
+
+  html[lang="ar"] {
+    --font-display: 'Cairo', sans-serif;
+    --font-body: 'IBM Plex Sans Arabic', sans-serif;
   }
 
   * {
@@ -46,14 +88,14 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Manrope', system-ui, sans-serif;
+    font-family: var(--font-body);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   /* Typography */
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', Georgia, serif;
-    font-weight: 400;
+    font-family: var(--font-display);
+    font-weight: 600;
     letter-spacing: -0.02em;
   }
 }
@@ -67,7 +109,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #0a0a0a;
+  background: #0B0B0C;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -150,8 +192,8 @@
 }
 
 @keyframes pulse-gold {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
-  50% { box-shadow: 0 0 20px 5px rgba(212, 175, 55, 0.2); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(122, 184, 203, 0.4); }
+  50% { box-shadow: 0 0 20px 5px rgba(122, 184, 203, 0.2); }
 }
 
 /* Animation Classes */
@@ -202,20 +244,20 @@
    TYPOGRAPHY UTILITIES
    ============================================ */
 .font-display {
-  font-family: 'Playfair Display', Georgia, serif;
+  font-family: var(--font-display);
 }
 
 .font-body {
-  font-family: 'Manrope', system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .font-mono {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
 }
 
 /* Text gradient */
 .text-gradient-gold {
-  background: linear-gradient(135deg, #D4AF37 0%, #E6C24A 50%, #D4AF37 100%);
+  background: linear-gradient(135deg, #7AB8CB 0%, #96C7D6 50%, #7AB8CB 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -227,24 +269,24 @@
 
 /* Glass effect for dark theme */
 .glass {
-  background: rgba(10, 10, 10, 0.8);
+  background: rgba(11, 11, 12, 0.8);
   backdrop-filter: blur(20px);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .glass-card {
-  background: rgba(18, 18, 18, 0.9);
+  background: rgba(22, 22, 24, 0.9);
   backdrop-filter: blur(16px);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Gold glow */
+/* Accent glow */
 .glow-gold {
-  box-shadow: 0 0 40px -10px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 40px -10px rgba(122, 184, 203, 0.3);
 }
 
 .glow-gold-sm {
-  box-shadow: 0 0 20px -5px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 20px -5px rgba(122, 184, 203, 0.2);
 }
 
 /* Border utilities */
@@ -288,7 +330,7 @@
    SELECTION STYLES
    ============================================ */
 ::selection {
-  background-color: rgba(212, 175, 55, 0.3);
+  background-color: rgba(122, 184, 203, 0.3);
   color: #ffffff;
 }
 
@@ -297,7 +339,7 @@
    ============================================ */
 .focus-gold:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.5);
+  box-shadow: 0 0 0 2px rgba(122, 184, 203, 0.5);
 }
 
 /* ============================================

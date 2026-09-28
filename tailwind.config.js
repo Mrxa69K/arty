@@ -18,9 +18,9 @@ module.exports = {
     },
     extend: {
       fontFamily: {
-        display: ['Playfair Display', 'Georgia', 'serif'],
-        body: ['Manrope', 'system-ui', 'sans-serif'],
-        mono: ['JetBrains Mono', 'monospace'],
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -57,16 +57,23 @@ module.exports = {
           foreground: 'hsl(var(--card-foreground))'
         },
         gold: {
-          DEFAULT: '#D4AF37',
-          light: '#E6C24A',
-          dark: '#B8962F',
-          muted: 'rgba(212, 175, 55, 0.2)',
+          DEFAULT: '#7AB8CB',
+          light: '#96C7D6',
+          dark: '#5A96A9',
+          muted: 'rgba(122, 184, 203, 0.2)',
+        },
+        coral: {
+          DEFAULT: '#FF6A3D',
+          light: '#FF8C63',
+          dark: '#D9522A',
+          muted: 'rgba(255, 106, 61, 0.2)',
         },
       },
       borderRadius: {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
-        sm: 'calc(var(--radius) - 4px)'
+        sm: 'calc(var(--radius) - 4px)',
+        chip: '3px',
       },
       keyframes: {
         'accordion-down': {
