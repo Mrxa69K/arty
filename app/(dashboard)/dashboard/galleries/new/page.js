@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { GalleryCoverModal } from '@/app/(dashboard)/_components/GalleryCoverModal'
 import { toast } from 'sonner'
 import bcrypt from 'bcryptjs'
 import { format } from 'date-fns'
@@ -45,6 +46,8 @@ export default function NewGalleryWizard() {
   const [photos, setPhotos] = useState([])
   const [isUploading, setIsUploading] = useState(false)
   const [folders, setFolders] = useState([])
+  const [coverImageUrl, setCoverImageUrl] = useState(null)
+  const [coverModalOpen, setCoverModalOpen] = useState(false)
   
   // Details state
   const [details, setDetails] = useState({
@@ -216,6 +219,7 @@ export default function NewGalleryWizard() {
         eventDate: gallery.event_date || '',
         notes: gallery.notes || ''
       })
+      setCoverImageUrl(gallery.cover_image_url || null)
 
       const { data: photos } = await supabase
         . from('photos')
@@ -647,6 +651,9 @@ const handlePublish = async () => {
   }
 }
 
+  const stillPhotos = photos.filter(p => p.media_type !== 'video' && p.image_url)
+  const displayCover = coverImageUrl || stillPhotos[0]?.image_url || null
+
   if (! galleryId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -785,6 +792,37 @@ const handlePublish = async () => {
                   <div>
                     <h2 className="text-2xl font-semibold text-white mb-2">Gallery Details</h2>
                     <p className="text-sm text-white/60">Add information about this gallery. </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-white/80 mb-2">
+                      Gallery Cover
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={() => setCoverModalOpen(true)}
+                        className="group relative w-20 h-20 flex-shrink-0 rounded-sm overflow-hidden bg-white/5 border border-white/10 hover:border-gold/50 transition-colors"
+                      >
+                        {displayCover ? (
+                          <img src={displayCover} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-white/15" strokeWidth={1.5} />
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
+                          <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCoverModalOpen(true)}
+                        className="text-sm text-white/60 hover:text-gold transition-colors"
+                      >
+                        Change cover
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-4">
@@ -1195,6 +1233,15 @@ const handlePublish = async () => {
 
         </div>
       </div>
+
+      <GalleryCoverModal
+        open={coverModalOpen}
+        onClose={() => setCoverModalOpen(false)}
+        galleryId={galleryId}
+        photos={photos}
+        currentCover={displayCover}
+        onCoverUpdated={(url) => setCoverImageUrl(url)}
+      />
 
       {/* SUCCESS MODAL */}
       {showSuccessModal && (
