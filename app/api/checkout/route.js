@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { hasUsedTestPlan } from '@/lib/planValidation'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -81,6 +82,19 @@ export async function POST(request) {
 
     // Normalize plan name for metadata (use 'test' consistently)
     const normalizedPlan = plan === 'trial-gallery' ? 'test' : plan
+
+    if (normalizedPlan === 'test') {
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('stripe_customer_id')
+        .eq('id', user.id)
+        .single()
+
+      const { used, reason } = await hasUsedTestPlan(user.id, existingProfile?.stripe_customer_id)
+      if (used) {
+        return NextResponse.json({ error: reason || 'Test plan already used' }, { status: 403 })
+      }
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
