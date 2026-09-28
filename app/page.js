@@ -57,6 +57,7 @@ export default function HomePage() {
   const { user, loading } = useAuth()
 
   // Animation refs
+  const [whatRef, whatInView] = useInView()
   const [demoRef, demoInView] = useInView()
   const [featuresRef, featuresInView] = useInView()
   const [pricingRef, pricingInView] = useInView()
@@ -258,10 +259,10 @@ export default function HomePage() {
       {/* ============================================
           WHAT IS ARTYDROP SECTION
           ============================================ */}
-      <section className="py-32 px-6 lg:px-12 border-t border-white/5">
+      <section ref={whatRef} className="py-32 px-6 lg:px-12 border-t border-white/5 overflow-hidden">
         <div className="max-w-6xl mx-auto">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
+            <div className={whatInView ? 'animate-slideInLeft' : 'opacity-0'}>
               <p className="text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6">
                 What is ArtyDrop?
               </p>
@@ -277,19 +278,33 @@ export default function HomePage() {
                 </p>
               </div>
             </div>
-            
-            <div className="relative">
-              <div className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10">
+
+            <div className={`relative ${whatInView ? 'animate-slideInRight delay-100' : 'opacity-0'}`}>
+              {/* Ambient glow behind the frame */}
+              <div
+                aria-hidden
+                className="absolute -inset-8 -z-10 opacity-60"
+                style={{ background: 'radial-gradient(ellipse 70% 70% at 50% 50%, rgba(122,184,203,0.16), transparent 70%)' }}
+              />
+
+              <div className="aspect-[4/3] rounded-lg overflow-hidden border border-white/10 image-hover-zoom">
                 <img
-                  src="https://images.unsplash.com/photo-1606800052052-a08af7148866?w=800&q=80"
-                  alt="Wedding photography"
+                  src="/hands.jpg"
+                  alt="Wedding rings delivered in an ArtyDrop gallery"
                   className="w-full h-full object-cover"
                 />
               </div>
-              {/* Floating stat card */}
-              <div className="absolute -bottom-6 -left-6 bg-[#161618] border border-white/10 p-6 rounded-lg">
-                <p className="text-3xl font-display text-gold mb-1">4.90</p>
+
+              {/* Floating price card */}
+              <div className="absolute -bottom-6 -left-6 bg-[#161618] border border-white/10 p-6 rounded-lg card-lift">
+                <p className="text-3xl font-display text-gold mb-1">4.90€</p>
                 <p className="text-sm text-white/50 font-body">per gallery, no subscription</p>
+              </div>
+
+              {/* Floating trust badge */}
+              <div className="absolute -top-5 -right-5 hidden sm:flex items-center gap-2 bg-[#161618] border border-white/10 px-4 py-2.5 rounded-chip card-lift">
+                <Lock className="w-3.5 h-3.5 text-gold" strokeWidth={1.5} />
+                <span className="text-xs text-white/70 font-body">Password protected</span>
               </div>
             </div>
           </div>
