@@ -9,8 +9,9 @@ import { toast } from 'sonner'
 import { format, subDays, startOfDay } from 'date-fns'
 import {
   ArrowLeft, Eye, Camera, Monitor, Smartphone, Tablet,
-  Copy, Check, ExternalLink, Pencil, Loader2, Clock, CalendarDays
+  Copy, Check, ExternalLink, Pencil, Loader2, Clock, CalendarDays, ImageIcon
 } from 'lucide-react'
+import { GalleryCoverModal } from '@/app/(dashboard)/_components/GalleryCoverModal'
 
 export default function GalleryDetailPage() {
   const { id } = useParams()
@@ -21,8 +22,10 @@ export default function GalleryDetailPage() {
   const [gallery, setGallery] = useState(null)
   const [galleryLink, setGalleryLink] = useState(null)
   const [photoCount, setPhotoCount] = useState(0)
+  const [photos, setPhotos] = useState([])
   const [views, setViews] = useState([])
   const [copied, setCopied] = useState(false)
+  const [coverModalOpen, setCoverModalOpen] = useState(false)
 
   useEffect(() => {
     if (user && id) fetchAll()
@@ -33,12 +36,12 @@ export default function GalleryDetailPage() {
       const [
         { data: galleryData },
         { data: linkData },
-        { count: photos },
+        { data: photosData },
         { data: viewsData },
       ] = await Promise.all([
         supabase.from('galleries').select('*').eq('id', id).eq('owner_id', user.id).single(),
         supabase.from('gallery_links').select('token, expires_at, allow_download, password_hash').eq('gallery_id', id).order('created_at', { ascending: false }).limit(1).single(),
-        supabase.from('photos').select('*', { count: 'exact', head: true }).eq('gallery_id', id),
+        supabase.from('photos').select('id, image_url, video_url, media_type').eq('gallery_id', id),
         supabase.from('gallery_views').select('viewed_at, device').eq('gallery_id', id).order('viewed_at', { ascending: false }),
       ])
 
@@ -46,7 +49,8 @@ export default function GalleryDetailPage() {
 
       setGallery(galleryData)
       setGalleryLink(linkData)
-      setPhotoCount(photos || 0)
+      setPhotos(photosData || [])
+      setPhotoCount(photosData?.length || 0)
       setViews(viewsData || [])
     } catch (err) {
       toast.error('Failed to load gallery')
@@ -98,6 +102,8 @@ export default function GalleryDetailPage() {
   if (!gallery) return null
 
   const isExpired = gallery.expires_at && new Date(gallery.expires_at) < new Date()
+  const stillPhotos = photos.filter(p => p.media_type !== 'video' && p.image_url)
+  const displayCover = gallery.cover_image_url || stillPhotos[0]?.image_url || null
 
   return (
     <div className="space-y-10 max-w-4xl">
@@ -113,23 +119,42 @@ export default function GalleryDetailPage() {
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-body font-medium rounded-sm ${
-                gallery.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-white/40'
-              }`}>
-                {gallery.status}
-              </span>
-              {isExpired && (
-                <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-body font-medium rounded-sm bg-red-500/15 text-red-400">
-                  Expired
+          <div className="flex items-start gap-4">
+            <button
+              onClick={() => setCoverModalOpen(true)}
+              className="group relative w-20 h-20 flex-shrink-0 rounded-sm overflow-hidden bg-[#121212] border border-white/10 hover:border-gold/50 transition-colors"
+              title="Change gallery cover"
+            >
+              {displayCover ? (
+                <img src={displayCover} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <Camera className="w-6 h-6 text-white/15" strokeWidth={1.5} />
+                </div>
+              )}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-colors flex items-center justify-center">
+                <ImageIcon className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" strokeWidth={1.5} />
+              </div>
+            </button>
+
+            <div>
+              <div className="flex items-center gap-3 mb-1">
+                <span className={`px-2 py-0.5 text-[10px] uppercase tracking-wider font-body font-medium rounded-sm ${
+                  gallery.status === 'active' ? 'bg-green-500/15 text-green-400' : 'bg-white/8 text-white/40'
+                }`}>
+                  {gallery.status}
                 </span>
+                {isExpired && (
+                  <span className="px-2 py-0.5 text-[10px] uppercase tracking-wider font-body font-medium rounded-sm bg-red-500/15 text-red-400">
+                    Expired
+                  </span>
+                )}
+              </div>
+              <h1 className="font-display text-3xl text-white">{gallery.title || 'Untitled'}</h1>
+              {gallery.client_name && (
+                <p className="text-sm text-white/40 font-body mt-1">for {gallery.client_name}</p>
               )}
             </div>
-            <h1 className="font-display text-3xl text-white">{gallery.title || 'Untitled'}</h1>
-            {gallery.client_name && (
-              <p className="text-sm text-white/40 font-body mt-1">for {gallery.client_name}</p>
-            )}
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
@@ -267,6 +292,15 @@ export default function GalleryDetailPage() {
           </div>
         </section>
       )}
+
+      <GalleryCoverModal
+        open={coverModalOpen}
+        onClose={() => setCoverModalOpen(false)}
+        galleryId={id}
+        photos={photos}
+        currentCover={displayCover}
+        onCoverUpdated={(url) => setGallery((prev) => ({ ...prev, cover_image_url: url }))}
+      />
 
     </div>
   )
