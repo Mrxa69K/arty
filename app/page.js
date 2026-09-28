@@ -201,10 +201,11 @@ export default function HomePage() {
               <a
                 href="#features"
                 onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) }}
-                className={`mx-auto flex w-fit items-center gap-2 border border-gold/30 rounded-chip px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium hover:bg-gold/10 transition-colors lg:ml-0 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}
+                className={`mx-auto flex w-fit items-center gap-3 border border-white/15 rounded-lg py-1.5 pl-3 pr-4 hover:border-gold/40 transition-colors lg:ml-0 ${heroInView ? 'animate-fadeInUp' : 'opacity-0'}`}
               >
-                For Professional Photographers
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span className="text-[11px] tracking-[0.2em] uppercase text-gold font-body font-medium">For Professional Photographers</span>
+                <span className="block h-4 w-px bg-white/15" />
+                <ArrowRight className="w-3.5 h-3.5 text-white/50" />
               </a>
 
               {/* Main headline */}
@@ -219,8 +220,8 @@ export default function HomePage() {
                 Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
               </p>
 
-              {/* CTAs */}
-              <div className={`flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 ${heroInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
+              {/* CTAs — one grouped capsule, two square-cut segments */}
+              <div className={`mx-auto flex w-fit max-w-full overflow-hidden rounded-lg border border-white/15 shadow shadow-black/20 lg:ml-0 ${heroInView ? 'animate-fadeInUp delay-300' : 'opacity-0'}`}>
                 <button
                   onClick={() => {
                     if (user) {
@@ -230,16 +231,18 @@ export default function HomePage() {
                     }
                   }}
                   disabled={isRedirecting || loading}
-                  className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-none hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
+                  className="h-14 px-8 bg-white text-black font-body font-semibold text-sm hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
                   data-testid="cta-payg"
                 >
                   Start for 4.90 / gallery
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
+                <div className="w-px bg-white/15" />
+
                 <a
                   href="#demo"
-                  className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all flex items-center gap-3"
+                  className="h-14 px-8 bg-background text-white font-body font-medium text-sm hover:bg-white/5 transition-all flex items-center gap-3"
                   data-testid="cta-demo"
                 >
                   See a live gallery
@@ -263,16 +266,15 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Right: showcase image */}
-            <div className={`relative mt-16 lg:mt-0 lg:w-1/2 ${heroInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
-              <div className="relative aspect-[4/5] lg:aspect-[3/4] rounded-lg overflow-hidden border border-white/10">
-                <img
-                  src="/cover.webp"
-                  alt="A gallery delivered through ArtyDrop"
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0B0B0C]/50 via-transparent to-transparent" />
-              </div>
+            {/* Right: showcase image, fades into the page rather than sitting in a boxed panel */}
+            <div className={`relative mt-16 lg:mt-0 lg:w-1/2 aspect-[4/5] lg:aspect-[3/4] ${heroInView ? 'animate-scaleIn delay-200' : 'opacity-0'}`}>
+              <img
+                src="/cover.webp"
+                alt="A gallery delivered through ArtyDrop"
+                className="absolute inset-0 w-full h-full object-cover rounded-lg lg:rounded-none"
+              />
+              <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-background from-0% via-transparent via-20% to-transparent hidden lg:block" />
+              <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-background from-0% via-transparent via-30% to-transparent" />
             </div>
           </div>
         </div>
