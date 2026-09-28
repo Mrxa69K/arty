@@ -11,7 +11,7 @@ const nextConfig = {
     appDir: true,          
   },
 */
-  serverExternalPackages: ['mongodb', 'stripe'],
+  serverExternalPackages: ['mongodb', 'stripe', 'sharp'],
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',
