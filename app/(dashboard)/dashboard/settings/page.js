@@ -1,15 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers'
 import { toast } from 'sonner'
-import { Loader2, Instagram, Globe, Facebook, Save, User, Link2 } from 'lucide-react'
+import { Loader2, Instagram, Globe, Facebook, Save, User, Link2, CreditCard, CheckCircle2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
+  const searchParams = useSearchParams()
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+
+  const [connectStatus, setConnectStatus] = useState(null)
+  const [isLoadingConnect, setIsLoadingConnect] = useState(true)
+  const [isConnecting, setIsConnecting] = useState(false)
 
   const [form, setForm] = useState({
     full_name: '',
@@ -24,6 +30,44 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) fetchProfile()
   }, [user])
+
+  useEffect(() => {
+    if (user) fetchConnectStatus()
+  }, [user, searchParams])
+
+  const fetchConnectStatus = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const res = await fetch('/api/stripe/connect/status', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (res.ok) setConnectStatus(data)
+    } catch (err) {
+      console.error('Failed to load Stripe Connect status', err)
+    } finally {
+      setIsLoadingConnect(false)
+    }
+  }
+
+  const handleConnectStripe = async () => {
+    setIsConnecting(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/stripe/connect/onboard', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      window.location.href = data.url
+    } catch (err) {
+      toast.error(err.message || 'Failed to start Stripe onboarding')
+      setIsConnecting(false)
+    }
+  }
 
   const fetchProfile = async () => {
     try {
@@ -228,6 +272,59 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        <div className="border-t border-white/5" />
+
+        {/* ── Payments ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <CreditCard className="w-3.5 h-3.5 text-white/25" strokeWidth={1.5} />
+            <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Payments</p>
+          </div>
+
+          {isLoadingConnect ? (
+            <div className="flex items-center gap-2 px-4 py-4 bg-white/[0.02] border border-white/5 rounded-sm">
+              <Loader2 className="w-4 h-4 text-white/20 animate-spin" strokeWidth={1.5} />
+              <p className="text-xs text-white/30 font-body">Checking status...</p>
+            </div>
+          ) : connectStatus?.payoutsEnabled ? (
+            <div className="flex items-center gap-3 px-4 py-4 bg-white/[0.02] border border-white/5 rounded-sm">
+              <CheckCircle2 className="w-5 h-5 text-[#7AB8CB] flex-shrink-0" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm text-white/70 font-body">Stripe connected</p>
+                <p className="text-[11px] text-white/30 font-body mt-0.5">
+                  You can now sell individual photos and receive tips directly to your bank account.
+                </p>
+              </div>
+            </div>
+          ) : connectStatus?.connected && connectStatus?.detailsSubmitted ? (
+            <div className="px-4 py-4 bg-white/[0.02] border border-white/5 rounded-sm">
+              <p className="text-sm text-white/60 font-body">Verification pending</p>
+              <p className="text-[11px] text-white/30 font-body mt-1">
+                Stripe is reviewing your details — this usually finishes within a few minutes.
+              </p>
+            </div>
+          ) : (
+            <div className="px-4 py-5 bg-white/[0.02] border border-white/5 rounded-sm">
+              <p className="text-sm text-white/60 font-body mb-1">Not connected</p>
+              <p className="text-[11px] text-white/30 font-body mb-4">
+                Connect Stripe to sell individual photos and accept tips from clients. Takes about 5 minutes — Stripe handles identity verification and payouts.
+              </p>
+              <button
+                type="button"
+                onClick={handleConnectStripe}
+                disabled={isConnecting}
+                className="flex items-center gap-2.5 h-10 px-5 bg-white/[0.06] border border-white/10 text-white text-sm font-body font-medium hover:bg-white/10 transition-colors rounded-sm disabled:opacity-50"
+              >
+                {isConnecting
+                  ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />
+                  : <CreditCard className="w-4 h-4" strokeWidth={2} />
+                }
+                {isConnecting ? 'Redirecting...' : 'Connect Stripe'}
+              </button>
+            </div>
+          )}
         </section>
 
         <div className="border-t border-white/5" />

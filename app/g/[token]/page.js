@@ -56,6 +56,10 @@ function PublicGalleryPageInner() {
   const [photographerName, setPhotographerName] = useState(null)
   const [photographerProfile, setPhotographerProfile] = useState(null)
   const [galleryMessage, setGalleryMessage] = useState(null)
+  const [tipModalOpen, setTipModalOpen] = useState(false)
+  const [tipAmount, setTipAmount] = useState(500)
+  const [customTip, setCustomTip] = useState('')
+  const [isTipping, setIsTipping] = useState(false)
 
   const [heroSlide, setHeroSlide] = useState(0)
   const prefersReducedMotion = useReducedMotion()
@@ -99,6 +103,28 @@ function PublicGalleryPageInner() {
     } catch (err) {
       toast.error(err.message || 'Could not start checkout')
       setIsRenewing(false)
+    }
+  }
+
+  const handleSendTip = async () => {
+    const amountCents = customTip ? Math.round(parseFloat(customTip) * 100) : tipAmount
+    if (!amountCents || amountCents < 100 || Number.isNaN(amountCents)) {
+      toast.error('Enter at least €1')
+      return
+    }
+    setIsTipping(true)
+    try {
+      const response = await fetch(`/api/gallery/${token}/tip-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amountCents }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      window.location.href = data.url
+    } catch (err) {
+      toast.error(err.message || 'Could not start checkout')
+      setIsTipping(false)
     }
   }
 
@@ -674,6 +700,82 @@ function PublicGalleryPageInner() {
         )}
       </AnimatePresence>
 
+      {/* ── TIP MODAL ── */}
+      <AnimatePresence>
+        {tipModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-sm flex items-center justify-center p-6"
+            onClick={() => !isTipping && setTipModalOpen(false)}
+            data-testid="tip-modal"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-sm bg-[#0B0B0C] border border-white/10 p-8"
+            >
+              <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-2">Buy a coffee</p>
+              <h3 className="font-display text-2xl text-white mb-6">
+                Tip {photographerName || 'the photographer'}
+              </h3>
+
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {[300, 500, 1000].map((cents) => (
+                  <button
+                    key={cents}
+                    onClick={() => { setTipAmount(cents); setCustomTip('') }}
+                    className={`h-11 text-sm font-body transition-colors border ${
+                      !customTip && tipAmount === cents
+                        ? 'border-[#7AB8CB] text-[#7AB8CB] bg-[#7AB8CB]/10'
+                        : 'border-white/10 text-white/50 hover:border-white/25 hover:text-white'
+                    }`}
+                  >
+                    €{cents / 100}
+                  </button>
+                ))}
+              </div>
+
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={customTip}
+                onChange={(e) => setCustomTip(e.target.value)}
+                placeholder="Or enter a custom amount (€)"
+                className="w-full h-11 bg-white/[0.03] border border-white/10 px-4 text-sm text-white placeholder:text-white/20 font-body focus:outline-none focus:border-[#7AB8CB] transition-colors mb-2"
+              />
+              <p className="text-[11px] text-white/20 font-body mb-6">
+                100% goes to {photographerName || 'the photographer'} — Stripe's small processing fee applies.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setTipModalOpen(false)}
+                  disabled={isTipping}
+                  className="flex-1 h-11 border border-white/10 text-white/50 text-sm font-body hover:text-white hover:border-white/25 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSendTip}
+                  disabled={isTipping}
+                  className="flex-1 h-11 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  data-testid="send-tip-btn"
+                >
+                  {isTipping ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : 'Send tip'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ── HERO ── */}
       <section ref={heroRef} className="relative h-[65vh] min-h-[420px] flex flex-col justify-end overflow-hidden">
         {/* Background */}
@@ -1022,6 +1124,17 @@ function PublicGalleryPageInner() {
               </div>
             </button>
           </div>
+          {photographerProfile?.tips_enabled && (
+            <div className="max-w-7xl mx-auto mt-6 flex justify-end">
+              <button
+                onClick={() => setTipModalOpen(true)}
+                className="text-xs text-white/30 hover:text-[#7AB8CB] font-body transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-[#7AB8CB]"
+                data-testid="open-tip-modal"
+              >
+                Like these photos? Buy {photographerName || 'the photographer'} a coffee ☕
+              </button>
+            </div>
+          )}
         </motion.section>
       )}
 

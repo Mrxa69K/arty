@@ -19,8 +19,59 @@ export async function POST(req) {
     return new Response(`Webhook Error: ${err.message}`, { status: 400 })
   }
 
+  // Requires "Listen to events on connected accounts" enabled on this webhook
+  // endpoint in the Stripe Dashboard — same endpoint/secret, no separate one needed.
+  if (event.type === 'account.updated') {
+    const account = event.data.object
+
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id, stripe_connect_onboarded_at')
+      .eq('stripe_connect_account_id', account.id)
+      .single()
+
+    if (profile) {
+      const updates = {
+        stripe_connect_charges_enabled: account.charges_enabled,
+        stripe_connect_payouts_enabled: account.payouts_enabled,
+      }
+      if (account.charges_enabled && account.payouts_enabled && !profile.stripe_connect_onboarded_at) {
+        updates.stripe_connect_onboarded_at = new Date().toISOString()
+      }
+      await supabaseAdmin.from('profiles').update(updates).eq('id', profile.id)
+    }
+
+    return new Response('ok')
+  }
+
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object
+
+    if (session.metadata?.type === 'tip') {
+      const { gallery_id, gallery_link_id, photographer_id } = session.metadata
+
+      const { error: tipError } = await supabaseAdmin
+        .from('tips')
+        .upsert(
+          {
+            stripe_checkout_session_id: session.id,
+            gallery_id,
+            gallery_link_id,
+            photographer_id,
+            buyer_email: session.customer_details?.email || null,
+            amount_cents: session.amount_total,
+          },
+          { onConflict: 'stripe_checkout_session_id', ignoreDuplicates: true }
+        )
+
+      if (tipError) {
+        console.error('Failed to record tip:', tipError)
+        return new Response('DB error', { status: 500 })
+      }
+
+      console.log(`Tip recorded for photographer ${photographer_id}`)
+      return new Response('ok')
+    }
 
     if (session.metadata?.type === 'gallery_renewal') {
       const { link_id, gallery_id, token } = session.metadata

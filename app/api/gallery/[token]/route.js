@@ -35,7 +35,7 @@ export async function GET(request, { params }) {
 
     const { data: profileData } = await supabaseAdmin
       .from('profiles')
-      .select('full_name, bio, website_url, instagram_url, tiktok_url, facebook_url, contact_email')
+      .select('full_name, bio, website_url, instagram_url, tiktok_url, facebook_url, contact_email, stripe_connect_payouts_enabled')
       .eq('id', galleryData.owner_id)
       .single()
 
@@ -61,6 +61,7 @@ export async function GET(request, { params }) {
         tiktok_url: profileData?.tiktok_url || null,
         facebook_url: profileData?.facebook_url || null,
         contact_email: profileData?.contact_email || null,
+        tips_enabled: !!profileData?.stripe_connect_payouts_enabled,
       },
       message: linkData.message || null,
       requires_password: !!linkData.password_hash,
