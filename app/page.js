@@ -336,7 +336,7 @@ export default function HomePage() {
               {/* Mini nav */}
               <div className="h-14 flex items-center justify-between px-5 md:px-8 border-b border-white/5">
                 <span className="font-display text-white/50 text-sm">Artydrop</span>
-                <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Melissa George Photography</span>
+                <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Melissa Photography Paris</span>
                 <span className="flex items-center gap-1.5 text-xs text-white/40 font-body">
                   <Download className="w-3 h-3" strokeWidth={1.5} />
                   Download all
@@ -362,12 +362,11 @@ export default function HomePage() {
               {/* Masonry grid, matching the real gallery page exactly */}
               <div className="px-1 pb-1 columns-2 md:columns-3 gap-1">
                 {[
-                  'https://images.unsplash.com/photo-1519741497674-611481863552?w=500&q=80',
-                  'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=500&q=80',
-                  'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=500&q=80',
-                  'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&q=80',
-                  'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=500&q=80',
-                  'https://images.unsplash.com/photo-1537633552985-df8429e8048b?w=500&q=80',
+                  '/demo-vows.jpg',
+                  '/demo-family.jpg',
+                  '/demo-eiffel-night.jpg',
+                  '/demo-proposal.jpg',
+                  '/demo-garden.jpg',
                 ].map((src, i) => (
                   <div
                     key={i}
