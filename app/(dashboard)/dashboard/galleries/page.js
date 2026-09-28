@@ -86,12 +86,14 @@ export default function GalleriesPage() {
               .select('image_url, video_url, media_type')
               .eq('gallery_id', gallery.id)
               .order('sort_order', { ascending: true })
-              .limit(1)
+              .limit(10)
 
-            const thumbnail = photos?.[0]
+            // Prefer an actual photo for the cover; only fall back to a video still if the gallery has no photos at all
+            const thumbnail = photos?.find(p => p.media_type !== 'video') || photos?.[0]
             return {
               ...gallery,
-              thumbnail: gallery.cover_image_url || thumbnail?.image_url || thumbnail?.video_url || null
+              thumbnail: gallery.cover_image_url || thumbnail?.image_url || thumbnail?.video_url || null,
+              thumbnailIsVideo: !gallery.cover_image_url && !thumbnail?.image_url && !!thumbnail?.video_url,
             }
           })
         )
@@ -232,11 +234,21 @@ export default function GalleriesPage() {
                     className="w-20 h-20 sm:w-24 sm:h-24 rounded-sm bg-[#1a1a1a] overflow-hidden flex-shrink-0 relative image-hover-zoom"
                   >
                     {gallery.thumbnail ? (
-                      <img
-                        src={gallery.thumbnail}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                      gallery.thumbnailIsVideo ? (
+                        <video
+                          src={gallery.thumbnail}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <img
+                          src={gallery.thumbnail}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      )
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <Camera className="w-8 h-8 text-white/10" strokeWidth={1} />

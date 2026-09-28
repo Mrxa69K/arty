@@ -125,12 +125,14 @@ export default function DashboardPage() {
             .select('image_url, video_url, media_type')
             .eq('gallery_id', gallery.id)
             .order('sort_order', { ascending: true })
-            .limit(1)
+            .limit(10)
 
-          const thumbnail = photos?.[0]
+          // Prefer an actual photo for the cover; only fall back to a video still if the gallery has no photos at all
+          const thumbnail = photos?.find(p => p.media_type !== 'video') || photos?.[0]
           return {
             ...gallery,
             thumbnail: thumbnail?.image_url || thumbnail?.video_url || null,
+            thumbnailIsVideo: !thumbnail?.image_url && !!thumbnail?.video_url,
             token: gallery.gallery_links?.[0]?.token || null,
           }
         })
@@ -460,11 +462,21 @@ export default function DashboardPage() {
               >
                 {/* Thumbnail */}
                 {gallery.cover_image_url || gallery.thumbnail ? (
-                  <img
-                    src={gallery.cover_image_url || gallery.thumbnail}
-                    alt={gallery.title || 'Gallery'}
-                    className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
-                  />
+                  gallery.thumbnailIsVideo && !gallery.cover_image_url ? (
+                    <video
+                      src={gallery.thumbnail}
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    />
+                  ) : (
+                    <img
+                      src={gallery.cover_image_url || gallery.thumbnail}
+                      alt={gallery.title || 'Gallery'}
+                      className="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-500"
+                    />
+                  )
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Camera className="w-12 h-12 text-white/10" strokeWidth={1} />
