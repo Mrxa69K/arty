@@ -96,6 +96,10 @@ module.exports = {
           from: { opacity: '0', transform: 'scale(0.95)' },
           to: { opacity: '1', transform: 'scale(1)' }
         },
+        'ping-slow': {
+          '0%': { transform: 'scale(1)', opacity: '0.6' },
+          '75%, 100%': { transform: 'scale(1.6)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -103,6 +107,7 @@ module.exports = {
         'fade-in': 'fade-in 0.5s ease-out forwards',
         'fade-up': 'fade-up 0.6s ease-out forwards',
         'scale-in': 'scale-in 0.4s ease-out forwards',
+        'ping-slow': 'ping-slow 2.4s cubic-bezier(0, 0, 0.2, 1) infinite',
       },
       boxShadow: {
         'gold': '0 0 40px -10px rgba(212, 175, 55, 0.3)',

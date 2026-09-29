@@ -589,14 +589,25 @@ function PublicGalleryPageInner() {
         {/* Right: actions */}
         <div className="flex items-center gap-5">
           {allowDownload && photographerProfile?.tips_enabled && !loading && photos.length > 0 && (
-            <button
+            <motion.button
               onClick={() => setTipModalOpen(true)}
               data-testid="open-tip-modal"
-              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-[#7AB8CB] font-body transition-colors"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.5, duration: 0.4 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.96 }}
+              className="relative flex items-center gap-1.5 pl-2.5 pr-3.5 py-1.5 rounded-full bg-[#7AB8CB]/10 border border-[#7AB8CB]/40 hover:bg-[#7AB8CB]/20 hover:border-[#7AB8CB] text-[#7AB8CB] transition-colors"
             >
-              <Heart className="w-3 h-3" strokeWidth={1.5} />
-              <span className="hidden sm:inline">Leave a tip</span>
-            </button>
+              <span className="absolute inset-0 rounded-full border border-[#7AB8CB]/40 animate-ping-slow" aria-hidden="true" />
+              <motion.span
+                animate={{ scale: [1, 1.2, 1] }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
+              >
+                <Heart className="w-3.5 h-3.5 fill-[#7AB8CB]/20" strokeWidth={1.75} />
+              </motion.span>
+              <span className="text-xs font-body font-medium">Leave a tip</span>
+            </motion.button>
           )}
           {allowDownload && !loading && photos.length > 0 && (
             <button
