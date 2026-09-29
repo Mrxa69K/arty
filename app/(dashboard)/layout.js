@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { NotificationBell } from './_components/NotificationBell'
 import {
   LayoutDashboard,
   Images,
@@ -128,6 +129,8 @@ export default function DashboardLayout({ children }) {
                   New gallery
                 </Button>
               </Link>
+
+              <NotificationBell userId={user?.id} />
 
               {/* User menu */}
               <div className="relative">

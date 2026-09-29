@@ -79,23 +79,37 @@ export async function POST(req) {
       // unique-constraint no-op — .select() after an ignoreDuplicates upsert
       // returns no row when the conflict was silently skipped.
       if (insertedTip && insertedTip.length > 0) {
+        const { data: profile } = await supabaseAdmin
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', photographer_id)
+          .single()
+
+        const { data: gallery } = await supabaseAdmin
+          .from('galleries')
+          .select('title')
+          .eq('id', gallery_id)
+          .single()
+
+        const amountFormatted = (session.amount_total / 100).toFixed(2)
+
         try {
-          const { data: profile } = await supabaseAdmin
-            .from('profiles')
-            .select('full_name, email')
-            .eq('id', photographer_id)
-            .single()
+          await supabaseAdmin.from('notifications').insert({
+            user_id: photographer_id,
+            type: 'tip_received',
+            title: `You received a €${amountFormatted} tip`,
+            body: gallery?.title ? `On "${gallery.title}"${buyerEmail ? ` from ${buyerEmail}` : ''}` : (buyerEmail || null),
+            link_url: '/dashboard',
+          })
+        } catch (notifError) {
+          console.error('Failed to create in-app notification (non-critical):', notifError)
+        }
 
-          const { data: gallery } = await supabaseAdmin
-            .from('galleries')
-            .select('title')
-            .eq('id', gallery_id)
-            .single()
-
+        try {
           if (profile?.email) {
             const { subject, html } = emailTemplates.tipReceived({
               photographerName: profile.full_name,
-              amount: (session.amount_total / 100).toFixed(2),
+              amount: amountFormatted,
               galleryTitle: gallery?.title || null,
               buyerEmail,
               dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
