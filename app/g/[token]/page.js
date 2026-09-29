@@ -7,7 +7,7 @@ import { FolderCard } from '@/components/FolderCard'
 import {
   Lock, Loader2, Download, X,
   ChevronLeft, ChevronRight, Eye, EyeOff,
-  ArrowLeft, ArrowDownToLine, CreditCard, Heart
+  ArrowLeft, ArrowDownToLine, CreditCard, Heart, Check, ShoppingBag
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -61,6 +61,8 @@ function PublicGalleryPageInner() {
   const [tipAmount, setTipAmount] = useState(500)
   const [customTip, setCustomTip] = useState('')
   const [isTipping, setIsTipping] = useState(false)
+  const [selectedForPurchase, setSelectedForPurchase] = useState(new Set())
+  const [isCheckingOut, setIsCheckingOut] = useState(false)
 
   const [heroSlide, setHeroSlide] = useState(0)
   const prefersReducedMotion = useReducedMotion()
@@ -130,6 +132,33 @@ function PublicGalleryPageInner() {
     } catch (err) {
       toast.error(err.message || 'Could not start checkout')
       setIsTipping(false)
+    }
+  }
+
+  const togglePhotoSelection = (photoId) => {
+    setSelectedForPurchase((prev) => {
+      const next = new Set(prev)
+      if (next.has(photoId)) next.delete(photoId)
+      else next.add(photoId)
+      return next
+    })
+  }
+
+  const handlePurchaseCheckout = async () => {
+    if (selectedForPurchase.size === 0) return
+    setIsCheckingOut(true)
+    try {
+      const response = await fetch(`/api/gallery/${token}/purchase-checkout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoIds: [...selectedForPurchase] }),
+      })
+      const data = await response.json()
+      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      window.location.href = data.url
+    } catch (err) {
+      toast.error(err.message || 'Could not start checkout')
+      setIsCheckingOut(false)
     }
   }
 
@@ -1087,6 +1116,21 @@ function PublicGalleryPageInner() {
                     </div>
                   </div>
                 )}
+                {gallery?.sale_mode_enabled && photo.media_type !== 'video' && (
+                  <div
+                    className="absolute top-3 left-3 opacity-100 transition-all duration-200"
+                    onClick={(e) => { e.stopPropagation(); togglePhotoSelection(photo.id) }}
+                    data-testid={`select-photo-${photo.id}`}
+                  >
+                    <div className={`w-7 h-7 flex items-center justify-center border-2 transition-colors ${
+                      selectedForPurchase.has(photo.id)
+                        ? 'bg-[#7AB8CB] border-[#7AB8CB]'
+                        : 'bg-black/40 backdrop-blur-sm border-white/50 hover:border-white'
+                    }`}>
+                      {selectedForPurchase.has(photo.id) && <Check className="w-4 h-4 text-black" strokeWidth={3} />}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
@@ -1097,6 +1141,44 @@ function PublicGalleryPageInner() {
           <div className="py-24 text-center">
             <p className="text-white/20 text-sm font-body">No photos in this collection</p>
           </div>
+        )}
+
+        {/* ── CART BAR ── */}
+        {gallery?.sale_mode_enabled && selectedForPurchase.size > 0 && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed bottom-0 left-0 right-0 z-[150] bg-[#0B0B0C]/95 backdrop-blur-xl border-t border-white/10"
+            data-testid="cart-bar"
+          >
+            <div className="max-w-7xl mx-auto px-6 md:px-16 h-20 flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <ShoppingBag className="w-4 h-4 text-[#7AB8CB]" strokeWidth={1.5} />
+                <p className="text-sm text-white font-body">
+                  {selectedForPurchase.size} photo{selectedForPurchase.size > 1 ? 's' : ''} selected
+                  <span className="text-white/40"> · €{((gallery?.price_per_photo_cents || 0) * selectedForPurchase.size / 100).toFixed(2)}</span>
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setSelectedForPurchase(new Set())}
+                  className="text-xs text-white/40 hover:text-white font-body transition-colors hidden sm:block"
+                >
+                  Clear
+                </button>
+                <button
+                  onClick={handlePurchaseCheckout}
+                  disabled={isCheckingOut}
+                  className="flex items-center gap-2 h-11 px-6 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-50"
+                  data-testid="checkout-btn"
+                >
+                  {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : 'Checkout'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
       </div>
 

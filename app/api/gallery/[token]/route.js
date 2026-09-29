@@ -21,7 +21,7 @@ export async function GET(request, { params }) {
 
     const { data: galleryData, error: galleryError } = await supabaseAdmin
       .from('galleries')
-      .select('title, client_name, event_date, expires_at, cover_image_url, owner_id')
+      .select('title, client_name, event_date, expires_at, cover_image_url, owner_id, sale_mode_enabled, price_per_photo_cents')
       .eq('id', linkData.gallery_id)
       .single()
 
@@ -52,6 +52,8 @@ export async function GET(request, { params }) {
         event_date: galleryData.event_date,
         cover_image_url: galleryData.cover_image_url || null,
         expires_at: effectiveExpiry,
+        sale_mode_enabled: !!galleryData.sale_mode_enabled,
+        price_per_photo_cents: galleryData.price_per_photo_cents || null,
       },
       photographer_name: profileData?.full_name || null,
       photographer: {
@@ -62,6 +64,7 @@ export async function GET(request, { params }) {
         facebook_url: profileData?.facebook_url || null,
         contact_email: profileData?.contact_email || null,
         tips_enabled: !!profileData?.stripe_connect_payouts_enabled,
+        sale_ready: !!profileData?.stripe_connect_payouts_enabled,
       },
       message: linkData.message || null,
       requires_password: !!linkData.password_hash,

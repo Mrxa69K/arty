@@ -26,7 +26,8 @@ import {
   Share2,
   X,
   Mail,
-  EyeOff
+  EyeOff,
+  CreditCard
 } from 'lucide-react'
 
 export default function NewGalleryWizard() {
@@ -64,8 +65,11 @@ export default function NewGalleryWizard() {
     password: '',
     expiresAt: '',
     allowDownload: true,
-    message: ''
+    message: '',
+    saleModeEnabled: false,
+    pricePerPhoto: ''
   })
+  const [connectPayoutsEnabled, setConnectPayoutsEnabled] = useState(false)
 
   const [galleryLink, setGalleryLink] = useState(null)
   const [isGeneratingLink, setIsGeneratingLink] = useState(false)
@@ -79,6 +83,22 @@ export default function NewGalleryWizard() {
     { number: 3, name:  'Settings & Publish', icon: Lock },
     { number: 4, name: 'Review', icon: Eye }
   ]
+
+  // Fetch once whether this photographer can receive payouts — gates the
+  // "Sell individual photos" toggle
+  useEffect(() => {
+    const fetchConnectStatus = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('stripe_connect_payouts_enabled')
+        .eq('id', user.id)
+        .single()
+      setConnectPayoutsEnabled(!!profile?.stripe_connect_payouts_enabled)
+    }
+    fetchConnectStatus()
+  }, [])
 
   // Auto-save draft every 30 seconds
   useEffect(() => {
@@ -243,16 +263,19 @@ export default function NewGalleryWizard() {
         .eq('gallery_id', id)
         .single()
 
-      if (link) {
-        setSharing({
+      setSharing((s) => ({
+        ...s,
+        ...(link ? {
           hasPassword: !!link.password_hash,
           password: '',
           expiresAt: link.expires_at ? format(new Date(link.expires_at), 'yyyy-MM-dd') : '',
           allowDownload: link.allow_download !== false,
-          message: link.message || ''
-        })
-        setGalleryLink(link)
-      }
+          message: link.message || '',
+        } : {}),
+        saleModeEnabled: !!gallery.sale_mode_enabled,
+        pricePerPhoto: gallery.price_per_photo_cents ? (gallery.price_per_photo_cents / 100).toString() : '',
+      }))
+      if (link) setGalleryLink(link)
 
       if (photos && photos.length > 0) {
         setCurrentStep(2)
@@ -423,9 +446,28 @@ const createDefaultFolders = async (galleryId) => {
 
   // Generate share link
   const handleGenerateLink = async () => {
+    if (sharing.saleModeEnabled) {
+      const price = parseFloat(sharing.pricePerPhoto)
+      if (!price || price <= 0) {
+        toast.error('Set a price per photo to enable selling')
+        return
+      }
+    }
+
     setIsGeneratingLink(true)
-    
+
     try {
+      const priceCents = sharing.saleModeEnabled ? Math.round(parseFloat(sharing.pricePerPhoto) * 100) : null
+      const { error: galleryUpdateError } = await supabase
+        .from('galleries')
+        .update({
+          sale_mode_enabled: sharing.saleModeEnabled,
+          price_per_photo_cents: priceCents,
+        })
+        .eq('id', galleryId)
+
+      if (galleryUpdateError) throw galleryUpdateError
+
       let passwordHash = null
       if (sharing.hasPassword && sharing.password) {
         passwordHash = await bcrypt.hash(sharing.password, 10)
@@ -1012,21 +1054,66 @@ const handlePublish = async () => {
 
                     {/* Allow Downloads */}
                     <div className="border border-white/10 rounded-sm p-4">
-                      <label className="flex items-center justify-between cursor-pointer">
+                      <label className={`flex items-center justify-between ${sharing.saleModeEnabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
                         <div className="flex items-center gap-3">
                           <ImageIcon className="w-5 h-5 text-white/60" />
                           <div>
                             <p className="font-medium text-white/80">Allow Downloads</p>
-                            <p className="text-xs text-white/50">Let clients download photos</p>
+                            <p className="text-xs text-white/50">
+                              {sharing.saleModeEnabled ? 'Disabled while selling individual photos' : 'Let clients download photos'}
+                            </p>
                           </div>
                         </div>
                         <input
                           type="checkbox"
                           checked={sharing.allowDownload}
+                          disabled={sharing.saleModeEnabled}
                           onChange={(e) => setSharing({ ...sharing, allowDownload: e.target.checked })}
                           className="w-5 h-5 rounded accent-gold"
                         />
                       </label>
+                    </div>
+
+                    {/* Sell individual photos */}
+                    <div className="border border-white/10 rounded-sm p-4">
+                      <label className={`flex items-center justify-between ${!connectPayoutsEnabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}>
+                        <div className="flex items-center gap-3">
+                          <CreditCard className="w-5 h-5 text-white/60" />
+                          <div>
+                            <p className="font-medium text-white/80">Sell Individual Photos</p>
+                            <p className="text-xs text-white/50">
+                              {connectPayoutsEnabled
+                                ? 'Clients pick and pay for the photos they want'
+                                : 'Connect Stripe in Settings to enable this'}
+                            </p>
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={sharing.saleModeEnabled}
+                          disabled={!connectPayoutsEnabled}
+                          onChange={(e) => setSharing({
+                            ...sharing,
+                            saleModeEnabled: e.target.checked,
+                            allowDownload: e.target.checked ? false : sharing.allowDownload,
+                          })}
+                          className="w-5 h-5 rounded accent-gold"
+                        />
+                      </label>
+                      {sharing.saleModeEnabled && (
+                        <div className="mt-4 pl-8">
+                          <label className="block text-xs text-white/50 mb-1.5">Price per photo (€)</label>
+                          <input
+                            type="number"
+                            min="0.5"
+                            step="0.5"
+                            value={sharing.pricePerPhoto}
+                            onChange={(e) => setSharing({ ...sharing, pricePerPhoto: e.target.value })}
+                            placeholder="e.g. 5"
+                            className="w-32 px-4 py-2 rounded-sm border border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold/30"
+                          />
+                        </div>
+                      )}
                     </div>
 
                     {/* Personal message */}
@@ -1124,6 +1211,13 @@ const handlePublish = async () => {
                           <span className="text-white/60">Downloads:</span>
                           <span className="font-medium text-white">{sharing.allowDownload ?  'Allowed' : 'Disabled'}</span>
                         </div>
+
+                        {sharing.saleModeEnabled && (
+                          <div className="flex justify-between">
+                            <span className="text-white/60">Selling photos:</span>
+                            <span className="font-medium text-white">€{sharing.pricePerPhoto} / photo</span>
+                          </div>
+                        )}
 
                         {sharing.expiresAt && (
                           <div className="flex justify-between">

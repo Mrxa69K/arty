@@ -124,6 +124,96 @@ export async function POST(req) {
       return new Response('ok')
     }
 
+    if (session.metadata?.type === 'photo_purchase') {
+      const { pending_purchase_id } = session.metadata
+
+      const { data: pending, error: pendingFetchError } = await supabaseAdmin
+        .from('pending_purchases')
+        .select('*')
+        .eq('id', pending_purchase_id)
+        .single()
+
+      if (pendingFetchError || !pending) {
+        console.error('Unknown pending purchase for session', session.id)
+        return new Response('Unknown pending purchase', { status: 400 })
+      }
+
+      const buyerEmail = session.customer_details?.email || null
+      const rows = pending.photo_ids.map((photoId) => ({
+        stripe_checkout_session_id: session.id,
+        pending_purchase_id: pending.id,
+        gallery_id: pending.gallery_id,
+        gallery_link_id: pending.gallery_link_id,
+        photo_id: photoId,
+        buyer_email: buyerEmail,
+        amount_cents: pending.price_per_photo_cents,
+      }))
+
+      // Real DB failure here must NOT be swallowed — unlike best-effort
+      // tracking inserts elsewhere, this row IS the unlock grant. A genuine
+      // error returns 500 so Stripe retries; a conflict (already processed)
+      // is silently ignored by the upsert itself.
+      const { data: insertedPurchases, error: upsertError } = await supabaseAdmin
+        .from('photo_purchases')
+        .upsert(rows, { onConflict: 'stripe_checkout_session_id,photo_id', ignoreDuplicates: true })
+        .select()
+
+      if (upsertError) {
+        console.error('Failed to record photo purchases:', upsertError)
+        return new Response('DB error', { status: 500 })
+      }
+
+      console.log(`Photo purchase recorded: ${pending.photo_ids.length} photo(s) for session ${session.id}`)
+
+      // Same guard as tips: only notify on the actual insert, not a webhook
+      // retry hitting the unique-constraint no-op.
+      if (insertedPurchases && insertedPurchases.length > 0) {
+        try {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: pending.photographer_id,
+            type: 'photo_sale',
+            title: `${pending.photo_ids.length} photo${pending.photo_ids.length > 1 ? 's' : ''} sold — €${(pending.subtotal_cents / 100).toFixed(2)}`,
+            body: buyerEmail ? `Bought by ${buyerEmail}` : null,
+            link_url: `/dashboard/galleries/${pending.gallery_id}`,
+          })
+        } catch (notifError) {
+          console.error('Failed to create sale notification (non-critical):', notifError)
+        }
+      }
+
+      // Atomically claim the email send so a session with many photo rows
+      // still only triggers one confirmation, even under a webhook retry.
+      const { data: claimed } = await supabaseAdmin
+        .from('pending_purchases')
+        .update({ email_sent_at: new Date().toISOString() })
+        .eq('id', pending.id)
+        .is('email_sent_at', null)
+        .select()
+        .single()
+
+      if (claimed && buyerEmail) {
+        try {
+          const { data: gallery } = await supabaseAdmin
+            .from('galleries')
+            .select('title')
+            .eq('id', pending.gallery_id)
+            .single()
+
+          const { subject, html } = emailTemplates.photoPurchaseConfirmation({
+            galleryTitle: gallery?.title || null,
+            photoCount: pending.photo_ids.length,
+            amount: (pending.subtotal_cents / 100).toFixed(2),
+            successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/g/${session.metadata.token}/purchase-success?session_id=${session.id}`,
+          })
+          await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: buyerEmail, subject, html })
+        } catch (emailError) {
+          console.error('Failed to send purchase confirmation email (non-critical):', emailError)
+        }
+      }
+
+      return new Response('ok')
+    }
+
     if (session.metadata?.type === 'gallery_renewal') {
       const { link_id, gallery_id, token } = session.metadata
 
