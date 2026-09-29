@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, Settings, Bell, Lock, Trash2 } from 'lucide-react'
 
@@ -19,6 +20,7 @@ export default function ClientSettingsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   
   // Settings
   const [marketingEmails, setMarketingEmails] = useState(false)
@@ -125,14 +127,7 @@ export default function ClientSettingsPage() {
 
 
   const handleDeleteAccount = async () => {
-    if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-      return
-    }
-
-    if (!confirm('This will permanently delete all your data. Are you absolutely sure?')) {
-      return
-    }
-
+    setDeleteDialogOpen(false)
     setIsDeleting(true)
     try {
       // Delete user profile
@@ -385,7 +380,7 @@ export default function ClientSettingsPage() {
                     Once you delete your account, All your data will be permanently removed.
                   </p>
                   <Button
-                    onClick={handleDeleteAccount}
+                    onClick={() => setDeleteDialogOpen(true)}
                     disabled={isDeleting}
                     variant="destructive"
                     className="w-full h-10 rounded-full bg-red-600 text-white hover:bg-red-700 text-sm"
@@ -399,6 +394,15 @@ export default function ClientSettingsPage() {
                       'Delete account'
                     )}
                   </Button>
+                  <ConfirmDialog
+                    open={deleteDialogOpen}
+                    onOpenChange={setDeleteDialogOpen}
+                    title="Delete your account?"
+                    description="This permanently removes your account and all your data. This action cannot be undone."
+                    confirmText="Delete account"
+                    isLoading={isDeleting}
+                    onConfirm={handleDeleteAccount}
+                  />
                 </div>
               </CardContent>
             </Card>

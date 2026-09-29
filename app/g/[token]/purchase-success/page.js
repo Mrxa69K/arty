@@ -5,6 +5,7 @@ import { useParams, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { Loader2, ArrowDownToLine, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { saveFileToDevice } from '@/lib/downloadFile'
 
 export default function PurchaseSuccessPage() {
   return (
@@ -69,14 +70,7 @@ function PurchaseSuccessInner() {
       })
       if (!res.ok) throw new Error()
       const blob = await res.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = photo.file_name || `photo-${photo.id}.jpg`
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-      setTimeout(() => { document.body.removeChild(link); window.URL.revokeObjectURL(blobUrl) }, 100)
+      await saveFileToDevice(blob, photo.file_name || `photo-${photo.id}.jpg`)
     } catch {
       toast.error('Download failed')
     } finally {

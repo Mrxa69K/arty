@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { saveFileToDevice } from '@/lib/downloadFile'
 
 export default function PublicGalleryPage() {
   return (
@@ -267,15 +268,9 @@ function PublicGalleryPageInner() {
       })
       if (!response.ok) throw new Error('Download failed')
       const blob = await response.blob()
-      const blobUrl = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = blobUrl
-      link.download = photo.file_name || `photo-${photo.id}.jpg`
-      link.style.display = 'none'
-      document.body.appendChild(link)
-      link.click()
-      setTimeout(() => { document.body.removeChild(link); window.URL.revokeObjectURL(blobUrl) }, 100)
-      if (showToast) toast.success('Downloaded')
+      const result = await saveFileToDevice(blob, photo.file_name || `photo-${photo.id}.jpg`)
+      if (result === 'cancelled') return false
+      if (showToast) toast.success(result === 'shared' ? 'Saved' : 'Downloaded')
       return true
     } catch (err) {
       if (showToast) toast.error('Download failed')
