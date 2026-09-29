@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { saveFileToDevice } from '@/lib/downloadFile'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function PublicGalleryPage() {
   return (
@@ -28,6 +29,7 @@ export default function PublicGalleryPage() {
 function PublicGalleryPageInner() {
   const params = useParams()
   const searchParams = useSearchParams()
+  const { lang, setLang, t } = useLanguage()
   const token = params.token
   const justRenewed = searchParams.get('renewed') === 'true'
   const justTipped = searchParams.get('tipped') === 'true'
@@ -77,7 +79,7 @@ function PublicGalleryPageInner() {
   }, [token])
 
   useEffect(() => {
-    if (justTipped) toast.success('Thank you for the tip!')
+    if (justTipped) toast.success(t('gallery.tipThanks'))
   }, [justTipped])
 
   // After returning from Stripe, poll briefly for the webhook to lift the expiry
@@ -106,10 +108,10 @@ function PublicGalleryPageInner() {
     try {
       const response = await fetch(`/api/gallery/${token}/renew-checkout`, { method: 'POST' })
       const data = await response.json()
-      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      if (!response.ok || !data.url) throw new Error(data.error || t('gallery.checkoutFailed'))
       window.location.href = data.url
     } catch (err) {
-      toast.error(err.message || 'Could not start checkout')
+      toast.error(err.message || t('gallery.checkoutFailed'))
       setIsRenewing(false)
     }
   }
@@ -117,7 +119,7 @@ function PublicGalleryPageInner() {
   const handleSendTip = async () => {
     const amountCents = customTip ? Math.round(parseFloat(customTip) * 100) : tipAmount
     if (!amountCents || amountCents < 100 || Number.isNaN(amountCents)) {
-      toast.error('Enter at least €1')
+      toast.error(t('gallery.tipMinimum'))
       return
     }
     setIsTipping(true)
@@ -128,10 +130,10 @@ function PublicGalleryPageInner() {
         body: JSON.stringify({ amountCents }),
       })
       const data = await response.json()
-      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      if (!response.ok || !data.url) throw new Error(data.error || t('gallery.checkoutFailed'))
       window.location.href = data.url
     } catch (err) {
-      toast.error(err.message || 'Could not start checkout')
+      toast.error(err.message || t('gallery.checkoutFailed'))
       setIsTipping(false)
     }
   }
@@ -155,10 +157,10 @@ function PublicGalleryPageInner() {
         body: JSON.stringify({ photoIds: [...selectedForPurchase] }),
       })
       const data = await response.json()
-      if (!response.ok || !data.url) throw new Error(data.error || 'Failed to start checkout')
+      if (!response.ok || !data.url) throw new Error(data.error || t('gallery.checkoutFailed'))
       window.location.href = data.url
     } catch (err) {
-      toast.error(err.message || 'Could not start checkout')
+      toast.error(err.message || t('gallery.checkoutFailed'))
       setIsCheckingOut(false)
     }
   }
@@ -190,7 +192,7 @@ function PublicGalleryPageInner() {
       const data = await response.json()
       if (!response.ok) {
         if (data.expired) setExpired(true)
-        else setError(data.error || 'Gallery not found')
+        else setError(data.error || t('gallery.galleryNotFound'))
         return
       }
       setGallery(data.gallery)
@@ -203,7 +205,7 @@ function PublicGalleryPageInner() {
       // Track view (fire and forget)
       fetch(`/api/gallery/${token}/view`, { method: 'POST' }).catch(() => {})
     } catch (err) {
-      setError('Failed to load gallery')
+      setError(t('gallery.loadFailed'))
     } finally {
       setIsLoading(false)
     }
@@ -245,14 +247,14 @@ function PublicGalleryPageInner() {
       const data = await response.json()
       if (!response.ok) {
         if (data.expired) { setExpired(true); return }
-        setPasswordError(data.error || 'Invalid password')
+        setPasswordError(data.error || t('gallery.invalidPassword'))
         return
       }
       setSessionToken(data.session)
       setIsAuthenticated(true)
       setAllowDownload(data.allow_download)
     } catch (err) {
-      setPasswordError('An error occurred. Please try again.')
+      setPasswordError(t('gallery.genericError'))
     } finally {
       setIsVerifying(false)
     }
@@ -266,14 +268,14 @@ function PublicGalleryPageInner() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ photoId: photo.id, session: sessionToken }),
       })
-      if (!response.ok) throw new Error('Download failed')
+      if (!response.ok) throw new Error(t('gallery.downloadFailed'))
       const blob = await response.blob()
       const result = await saveFileToDevice(blob, photo.file_name || `photo-${photo.id}.jpg`)
       if (result === 'cancelled') return false
-      if (showToast) toast.success(result === 'shared' ? 'Saved' : 'Downloaded')
+      if (showToast) toast.success(result === 'shared' ? t('gallery.saved') : t('gallery.downloaded'))
       return true
     } catch (err) {
-      if (showToast) toast.error('Download failed')
+      if (showToast) toast.error(t('gallery.downloadFailed'))
       return false
     } finally {
       setDownloadingId(null)
@@ -283,7 +285,7 @@ function PublicGalleryPageInner() {
   const handleDownloadAllZip = async () => {
     if (photos.length === 0) return
     setIsDownloadingZip(true)
-    toast.info('Preparing your archive...')
+    toast.info(t('gallery.preparingArchive'))
     try {
       // Generate zip in the browser — each photo fetched via API (avoids CORS and server timeout)
       const JSZip = (await import('jszip')).default
@@ -321,9 +323,9 @@ function PublicGalleryPageInner() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-      toast.success('Archive downloaded')
+      toast.success(t('gallery.archiveDownloaded'))
     } catch {
-      toast.error('Download failed')
+      toast.error(t('gallery.downloadFailed'))
     } finally {
       setIsDownloadingZip(false)
     }
@@ -443,21 +445,21 @@ function PublicGalleryPageInner() {
             className="max-w-sm w-full text-center"
           >
             <div className="w-px h-12 bg-white/10 mx-auto mb-10" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body mb-6">Access Expired</p>
+            <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body mb-6">{t('gallery.accessExpired')}</p>
 
             {confirmingPayment ? (
               <>
                 <Loader2 className="w-5 h-5 text-white/40 mx-auto mb-6 animate-spin" strokeWidth={1.5} />
-                <h1 className="font-display text-3xl text-white mb-4">Confirming your payment...</h1>
+                <h1 className="font-display text-3xl text-white mb-4">{t('gallery.confirmingPayment')}</h1>
                 <p className="text-sm text-white/40 font-body leading-relaxed">
-                  This only takes a few seconds. Your collection will unlock automatically.
+                  {t('gallery.confirmingPaymentBody')}
                 </p>
               </>
             ) : (
               <>
-                <h1 className="font-display text-3xl text-white mb-4">This collection<br />is no longer available</h1>
+                <h1 className="font-display text-3xl text-white mb-4 whitespace-pre-line">{t('gallery.noLongerAvailableTitle')}</h1>
                 <p className="text-sm text-white/40 font-body leading-relaxed mb-8">
-                  The viewing period has ended. Renew access to view and download your photos again.
+                  {t('gallery.noLongerAvailableBody')}
                 </p>
                 <button
                   onClick={handleRenew}
@@ -469,10 +471,10 @@ function PublicGalleryPageInner() {
                     ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.5} />
                     : <CreditCard className="w-4 h-4" strokeWidth={1.5} />
                   }
-                  {isRenewing ? 'Redirecting...' : 'Renew access'}
+                  {isRenewing ? t('gallery.redirecting') : t('gallery.renewAccess')}
                 </button>
                 <p className="text-[11px] text-white/20 font-body mt-4">
-                  Secure payment via Stripe. Instant access on completion.
+                  {t('gallery.securePayment')}
                 </p>
               </>
             )}
@@ -492,10 +494,10 @@ function PublicGalleryPageInner() {
             className="max-w-sm w-full text-center"
           >
             <div className="w-px h-12 bg-white/10 mx-auto mb-10" />
-            <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body mb-6">Not Found</p>
-            <h1 className="font-display text-3xl text-white mb-4">Gallery<br />Unavailable</h1>
+            <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body mb-6">{t('gallery.notFound')}</p>
+            <h1 className="font-display text-3xl text-white mb-4 whitespace-pre-line">{t('gallery.unavailableTitle')}</h1>
             <p className="text-sm text-white/40 font-body leading-relaxed">
-              This link may be incorrect or the collection has been removed.
+              {t('gallery.unavailableBody')}
             </p>
             <div className="w-px h-12 bg-white/10 mx-auto mt-10" />
             <p className="text-[10px] tracking-[0.3em] uppercase text-white/15 font-body mt-4">ArtyDrop</p>
@@ -514,10 +516,10 @@ function PublicGalleryPageInner() {
             <div className="mb-12 text-center">
               <div className="w-px h-10 bg-white/10 mx-auto mb-8" />
               <Lock className="w-5 h-5 text-white/30 mx-auto mb-6" strokeWidth={1} />
-              <h1 className="font-display text-3xl text-white mb-2">Private Collection</h1>
-              <p className="text-sm text-white/40 font-body">Enter your access code to continue</p>
+              <h1 className="font-display text-3xl text-white mb-2">{t('gallery.privateCollection')}</h1>
+              <p className="text-sm text-white/40 font-body">{t('gallery.enterAccessCode')}</p>
               {photographerName && (
-                <p className="text-[10px] tracking-[0.3em] uppercase text-white/20 font-body mt-3">by {photographerName}</p>
+                <p className="text-[10px] tracking-[0.3em] uppercase text-white/20 font-body mt-3">{t('gallery.byPhotographer', { name: photographerName })}</p>
               )}
             </div>
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -526,7 +528,7 @@ function PublicGalleryPageInner() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Access code"
+                  placeholder={t('gallery.accessCodePlaceholder')}
                   data-testid="password-input"
                   className="w-full h-14 bg-transparent border-b border-white/10 text-white placeholder:text-white/20 text-sm font-body focus:outline-none focus:border-white/30 transition-colors pr-12"
                 />
@@ -549,7 +551,7 @@ function PublicGalleryPageInner() {
                 data-testid="unlock-btn"
                 className="w-full h-12 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-30 mt-2"
               >
-                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin mx-auto" strokeWidth={1.5} /> : 'Enter Gallery'}
+                {isVerifying ? <Loader2 className="w-4 h-4 animate-spin mx-auto" strokeWidth={1.5} /> : t('gallery.enterGallery')}
               </button>
             </form>
             <p className="text-center text-[10px] tracking-[0.3em] uppercase text-white/15 font-body mt-12">ArtyDrop</p>
@@ -593,14 +595,21 @@ function PublicGalleryPageInner() {
                 ? <Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />
                 : <ArrowDownToLine className="w-3 h-3" strokeWidth={1.5} />
               }
-              {isDownloadingZip ? 'Preparing...' : 'Download all'}
+              {isDownloadingZip ? t('gallery.preparing') : t('gallery.downloadAll')}
             </button>
           )}
+          <button
+            onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+            className="text-[10px] tracking-[0.2em] uppercase text-white/30 hover:text-white font-body transition-colors"
+            data-testid="language-toggle"
+          >
+            {lang === 'en' ? 'FR' : 'EN'}
+          </button>
           <a
             href="/login"
             className="text-[10px] tracking-[0.2em] uppercase text-white/30 hover:text-white font-body transition-colors"
           >
-            Sign in
+            {t('gallery.signIn')}
           </a>
         </div>
       </header>
@@ -633,7 +642,7 @@ function PublicGalleryPageInner() {
                       ? <Loader2 className="w-3.5 h-3.5 animate-spin" strokeWidth={1.5} />
                       : <Download className="w-3.5 h-3.5" strokeWidth={1.5} />
                     }
-                    Save
+                    {t('gallery.save')}
                   </button>
                 )}
                 <button
@@ -749,9 +758,9 @@ function PublicGalleryPageInner() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm bg-[#0B0B0C] border border-white/10 p-8"
             >
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-2">Leave a tip</p>
+              <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-2">{t('gallery.leaveATip')}</p>
               <h3 className="font-display text-2xl text-white mb-6">
-                For {photographerName || 'the photographer'}
+                {t('gallery.forPhotographer', { name: photographerName || t('gallery.thePhotographer') })}
               </h3>
 
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -776,11 +785,11 @@ function PublicGalleryPageInner() {
                 step="1"
                 value={customTip}
                 onChange={(e) => setCustomTip(e.target.value)}
-                placeholder="Or enter a custom amount (€)"
+                placeholder={t('gallery.customAmountPlaceholder')}
                 className="w-full h-11 bg-white/[0.03] border border-white/10 px-4 text-sm text-white placeholder:text-white/20 font-body focus:outline-none focus:border-[#7AB8CB] transition-colors mb-2"
               />
               <p className="text-[11px] text-white/20 font-body mb-6">
-                100% goes to {photographerName || 'the photographer'}. Stripe's small processing fee applies.
+                {t('gallery.tipFeeDisclaimer', { name: photographerName || t('gallery.thePhotographer') })}
               </p>
 
               <div className="flex gap-3">
@@ -789,7 +798,7 @@ function PublicGalleryPageInner() {
                   disabled={isTipping}
                   className="flex-1 h-11 border border-white/10 text-white/50 text-sm font-body hover:text-white hover:border-white/25 transition-colors disabled:opacity-50"
                 >
-                  Cancel
+                  {t('gallery.cancel')}
                 </button>
                 <button
                   onClick={handleSendTip}
@@ -797,7 +806,7 @@ function PublicGalleryPageInner() {
                   className="flex-1 h-11 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                   data-testid="send-tip-btn"
                 >
-                  {isTipping ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : 'Send tip'}
+                  {isTipping ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : t('gallery.sendTip')}
                 </button>
               </div>
             </motion.div>
@@ -867,7 +876,7 @@ function PublicGalleryPageInner() {
               transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
               className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-5"
             >
-              {gallery?.client_name ? 'A collection for' : 'Your Collection'}
+              {gallery?.client_name ? t('gallery.collectionFor') : t('gallery.yourCollection')}
             </motion.p>
             <motion.h1
               variants={{ hidden: { opacity: 0, y: 18 }, show: { opacity: 1, y: 0 } }}
@@ -885,7 +894,7 @@ function PublicGalleryPageInner() {
                 <span>{format(new Date(gallery.event_date), 'MMMM d, yyyy')}</span>
               )}
               {!loading && photos.length > 0 && (
-                <span>{photos.length} frames</span>
+                <span>{t('gallery.framesCount', { count: photos.length })}</span>
               )}
             </motion.div>
 
@@ -935,14 +944,14 @@ function PublicGalleryPageInner() {
                 <Heart className="w-4 h-4 text-[#7AB8CB]" strokeWidth={1.5} />
               </div>
               <div>
-                <p className="text-sm text-white font-body font-medium">Love your photos?</p>
+                <p className="text-sm text-white font-body font-medium">{t('gallery.loveYourPhotos')}</p>
                 <p className="text-sm text-white/50 font-body mt-0.5">
-                  Send {photographerName || 'the photographer'} a tip. It goes straight to them, no cut taken.
+                  {t('gallery.tipCardBody', { name: photographerName || t('gallery.thePhotographer') })}
                 </p>
               </div>
             </div>
             <span className="flex-shrink-0 flex items-center gap-2 h-10 px-5 bg-[#7AB8CB] text-[#0B0B0C] text-sm font-body font-semibold group-hover:bg-white transition-colors">
-              Leave a tip
+              {t('gallery.leaveATip')}
             </span>
           </button>
         </motion.div>
@@ -960,10 +969,10 @@ function PublicGalleryPageInner() {
             <div className="flex items-start gap-3">
               <ShoppingBag className="w-4 h-4 text-[#7AB8CB] mt-0.5 flex-shrink-0" strokeWidth={1.5} />
               <div>
-                <p className="text-sm text-white font-body font-medium">Choose your favorites</p>
+                <p className="text-sm text-white font-body font-medium">{t('gallery.chooseYourFavorites')}</p>
                 <p className="text-sm text-white/50 font-body leading-relaxed mt-1">
-                  This gallery is free to browse. When you find photos you love, tap the circle in the corner to select them, then check out.
-                  Each photo is <span className="text-white">€{((gallery?.price_per_photo_cents || 0) / 100).toFixed(2)}</span>, full resolution, no watermark once purchased.
+                  {t('gallery.saleModeBody')}{' '}
+                  {t('gallery.saleModePriceBody', { price: `€${((gallery?.price_per_photo_cents || 0) / 100).toFixed(2)}` })}
                 </p>
               </div>
             </div>
@@ -995,16 +1004,16 @@ function PublicGalleryPageInner() {
                   : 'text-white/55'
               }`}>
                 {daysUntilExpiry === null
-                  ? 'This gallery is available for a limited time. Download your photos to keep them.'
+                  ? t('gallery.expiresUnknown')
                   : daysUntilExpiry <= 0
-                  ? `This gallery has expired. Contact your photographer to recover your photos.`
+                  ? t('gallery.expiredContact')
                   : daysUntilExpiry === 1
-                  ? `Your gallery expires tomorrow (${format(new Date(gallery.expires_at), 'MMMM d, yyyy')}). Download everything before it's gone.`
-                  : `Your gallery expires in ${daysUntilExpiry} days, on ${format(new Date(gallery.expires_at), 'MMMM d, yyyy')}. Make sure to download everything before then.`
+                  ? t('gallery.expiresTomorrow', { date: format(new Date(gallery.expires_at), 'MMMM d, yyyy') })
+                  : t('gallery.expiresInDays', { days: daysUntilExpiry, date: format(new Date(gallery.expires_at), 'MMMM d, yyyy') })
                 }
               </p>
               <p className="text-[11px] text-white/20 font-body">
-                After expiration, recovering your photos requires a renewal fee.
+                {t('gallery.renewalFeeNotice')}
               </p>
             </div>
             {allowDownload && !loading && photos.length > 0 && daysUntilExpiry !== 0 && (
@@ -1014,7 +1023,7 @@ function PublicGalleryPageInner() {
                 className="flex-shrink-0 flex items-center gap-2 text-xs font-body px-4 py-2.5 border border-white/15 text-white/50 hover:bg-[#7AB8CB] hover:border-[#7AB8CB] hover:text-[#0B0B0C] active:scale-[0.97] transition-all"
               >
                 {isDownloadingZip ? <Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} /> : <ArrowDownToLine className="w-3 h-3" strokeWidth={1.5} />}
-                {isDownloadingZip ? 'Preparing...' : 'Download everything'}
+                {isDownloadingZip ? t('gallery.preparing') : t('gallery.downloadEverything')}
               </button>
             )}
           </div>
@@ -1060,7 +1069,7 @@ function PublicGalleryPageInner() {
                   data-testid="back-to-folders"
                 >
                   <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.5} />
-                  All collections
+                  {t('gallery.allCollections')}
                 </button>
                 <h2 className="font-display text-2xl text-white mt-4">
                   {folders.find(f => f.id === selectedFolder)?.name}
@@ -1068,7 +1077,7 @@ function PublicGalleryPageInner() {
               </div>
             ) : (
               <div className="space-y-8">
-                <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body">Collections</p>
+                <p className="text-[10px] tracking-[0.3em] uppercase text-white/30 font-body">{t('gallery.collections')}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {folders.map((folder, i) => {
                     const folderPhotos = photos.filter(p => p.folder_id === folder.id)
@@ -1188,7 +1197,7 @@ function PublicGalleryPageInner() {
         {/* Empty state */}
         {!loading && filteredPhotos.length === 0 && photos.length > 0 && (
           <div className="py-24 text-center">
-            <p className="text-white/20 text-sm font-body">No photos in this collection</p>
+            <p className="text-white/20 text-sm font-body">{t('gallery.noPhotos')}</p>
           </div>
         )}
 
@@ -1206,7 +1215,7 @@ function PublicGalleryPageInner() {
               <div className="flex items-center gap-3">
                 <ShoppingBag className="w-4 h-4 text-[#7AB8CB]" strokeWidth={1.5} />
                 <p className="text-sm text-white font-body">
-                  {selectedForPurchase.size} photo{selectedForPurchase.size > 1 ? 's' : ''} selected
+                  {t('gallery.photosSelected', { count: selectedForPurchase.size })}
                   <span className="text-white/40"> · €{((gallery?.price_per_photo_cents || 0) * selectedForPurchase.size / 100).toFixed(2)}</span>
                 </p>
               </div>
@@ -1215,7 +1224,7 @@ function PublicGalleryPageInner() {
                   onClick={() => setSelectedForPurchase(new Set())}
                   className="text-xs text-white/40 hover:text-white font-body transition-colors hidden sm:block"
                 >
-                  Clear
+                  {t('gallery.clear')}
                 </button>
                 <button
                   onClick={handlePurchaseCheckout}
@@ -1223,7 +1232,7 @@ function PublicGalleryPageInner() {
                   className="flex items-center gap-2 h-11 px-6 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-50"
                   data-testid="checkout-btn"
                 >
-                  {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : 'Checkout'}
+                  {isCheckingOut ? <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} /> : t('gallery.checkout')}
                 </button>
               </div>
             </div>
@@ -1241,9 +1250,9 @@ function PublicGalleryPageInner() {
         >
           <div className="max-w-7xl mx-auto border-t border-white/5 pt-16 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
             <div>
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/20 font-body mb-4">Your collection</p>
-              <h2 className="font-display text-3xl md:text-4xl text-white leading-tight">
-                {photos.length} frames,<br />ready to keep.
+              <p className="text-[10px] tracking-[0.3em] uppercase text-white/20 font-body mb-4">{t('gallery.yourCollectionLabel')}</p>
+              <h2 className="font-display text-3xl md:text-4xl text-white leading-tight whitespace-pre-line">
+                {t('gallery.framesReadyToKeep', { count: photos.length })}
               </h2>
             </div>
             <button
@@ -1252,7 +1261,7 @@ function PublicGalleryPageInner() {
               className="group flex items-center gap-4 text-white/70 hover:text-white active:scale-[0.97] transition-all"
             >
               <span className="font-body text-sm">
-                {isDownloadingZip ? 'Preparing archive...' : 'Download everything'}
+                {isDownloadingZip ? t('gallery.preparingArchiveShort') : t('gallery.downloadEverything')}
               </span>
               <div className="w-12 h-12 border border-white/10 group-hover:border-[#7AB8CB] group-hover:text-[#7AB8CB] flex items-center justify-center transition-colors">
                 {isDownloadingZip
@@ -1348,11 +1357,11 @@ function PublicGalleryPageInner() {
                 rel="noopener noreferrer"
                 className="mt-2 inline-flex items-center gap-2 text-[10px] tracking-[0.25em] uppercase text-white/20 hover:text-white/50 font-body border border-white/8 hover:border-white/20 px-5 py-2.5 transition-all"
               >
-                Book a session
+                {t('gallery.bookASession')}
               </a>
             )}
 
-            <p className="text-[9px] tracking-[0.3em] uppercase text-white/10 font-body mt-4">Delivered via ArtyDrop</p>
+            <p className="text-[9px] tracking-[0.3em] uppercase text-white/10 font-body mt-4">{t('gallery.deliveredVia')}</p>
           </div>
         </motion.div>
       </footer>

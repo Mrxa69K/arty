@@ -1,6 +1,7 @@
 import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from './providers'
+import { LanguageProvider } from '@/lib/i18n/LanguageContext'
 
 export const metadata = {
   title: 'ArtyDrop - Premium Photo Gallery Delivery for Photographers',
@@ -30,9 +31,11 @@ export default function RootLayout({ children }) {
         {/* Noise texture overlay */}
         <div className="noise-overlay" aria-hidden="true" />
         
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </LanguageProvider>
         <Toaster 
           position="top-right" 
           toastOptions={{
