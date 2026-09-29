@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
+import { resend } from '@/lib/resend'
+import { emailTemplates } from '@/lib/emailTemplates'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -49,8 +51,9 @@ export async function POST(req) {
 
     if (session.metadata?.type === 'tip') {
       const { gallery_id, gallery_link_id, photographer_id } = session.metadata
+      const buyerEmail = session.customer_details?.email || null
 
-      const { error: tipError } = await supabaseAdmin
+      const { data: insertedTip, error: tipError } = await supabaseAdmin
         .from('tips')
         .upsert(
           {
@@ -58,11 +61,12 @@ export async function POST(req) {
             gallery_id,
             gallery_link_id,
             photographer_id,
-            buyer_email: session.customer_details?.email || null,
+            buyer_email: buyerEmail,
             amount_cents: session.amount_total,
           },
           { onConflict: 'stripe_checkout_session_id', ignoreDuplicates: true }
         )
+        .select()
 
       if (tipError) {
         console.error('Failed to record tip:', tipError)
@@ -70,6 +74,39 @@ export async function POST(req) {
       }
 
       console.log(`Tip recorded for photographer ${photographer_id}`)
+
+      // Only notify on the actual insert, not on a webhook retry hitting the
+      // unique-constraint no-op — .select() after an ignoreDuplicates upsert
+      // returns no row when the conflict was silently skipped.
+      if (insertedTip && insertedTip.length > 0) {
+        try {
+          const { data: profile } = await supabaseAdmin
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', photographer_id)
+            .single()
+
+          const { data: gallery } = await supabaseAdmin
+            .from('galleries')
+            .select('title')
+            .eq('id', gallery_id)
+            .single()
+
+          if (profile?.email) {
+            const { subject, html } = emailTemplates.tipReceived({
+              photographerName: profile.full_name,
+              amount: (session.amount_total / 100).toFixed(2),
+              galleryTitle: gallery?.title || null,
+              buyerEmail,
+              dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+            })
+            await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: profile.email, subject, html })
+          }
+        } catch (emailError) {
+          console.error('Failed to send tip notification email (non-critical):', emailError)
+        }
+      }
+
       return new Response('ok')
     }
 
