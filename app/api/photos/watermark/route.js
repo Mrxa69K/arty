@@ -55,7 +55,7 @@ export async function POST(request) {
     if (!sourceRes.ok) throw new Error('Failed to fetch source image')
     const sourceBuffer = Buffer.from(await sourceRes.arrayBuffer())
 
-    const watermarkedBuffer = await applyDiagonalWatermark(sourceBuffer, watermarkText)
+    const { buffer: watermarkedBuffer, width, height } = await applyDiagonalWatermark(sourceBuffer, watermarkText)
 
     const basePath = (photo.storage_path || `${photo.gallery_id}/${photoId}`).replace(/\.[^/.]+$/, '')
     const previewKey = `${basePath}-preview.jpg`
@@ -69,9 +69,11 @@ export async function POST(request) {
 
     const previewUrl = `${R2_PUBLIC_URL}/${previewKey}`
 
+    // width/height let the gallery grid reserve the correct space before the
+    // image loads, instead of reflowing every column as each photo arrives.
     await supabaseAdmin
       .from('photos')
-      .update({ preview_url: previewUrl })
+      .update({ preview_url: previewUrl, width, height })
       .eq('id', photoId)
 
     return NextResponse.json({ ok: true, previewUrl })

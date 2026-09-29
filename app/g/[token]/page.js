@@ -1046,6 +1046,7 @@ function PublicGalleryPageInner() {
                     <video
                       src={photo.video_url}
                       className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                      style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
                       muted
                       playsInline
                       preload="metadata"
@@ -1064,6 +1065,7 @@ function PublicGalleryPageInner() {
                     src={getDisplayUrl(photo)}
                     alt={photo.file_name || `Frame ${index + 1}`}
                     className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
+                    style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
                     loading="lazy"
                     draggable={false}
                     onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
