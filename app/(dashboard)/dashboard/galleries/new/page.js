@@ -46,6 +46,10 @@ export default function NewGalleryWizard() {
   const [galleryId, setGalleryId] = useState(editGalleryId || null)
   const [photos, setPhotos] = useState([])
   const [isUploading, setIsUploading] = useState(false)
+  // Local blob URLs for instant thumbnails during upload — avoids re-downloading
+  // the full original from R2 just to render a 128px preview while uploads
+  // for other files are still competing for the same bandwidth.
+  const [localPreviews, setLocalPreviews] = useState({})
   const [folders, setFolders] = useState([])
   const [coverImageUrl, setCoverImageUrl] = useState(null)
   const [coverModalOpen, setCoverModalOpen] = useState(false)
@@ -83,6 +87,16 @@ export default function NewGalleryWizard() {
     { number: 3, name:  'Settings & Publish', icon: Lock },
     { number: 4, name: 'Review', icon: Eye }
   ]
+
+  // Local blob URLs hold a reference to the underlying file in memory until
+  // revoked — release them on unmount so a big multi-gallery session doesn't
+  // slowly accumulate uncollected blobs.
+  useEffect(() => {
+    return () => {
+      Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Fetch once whether this photographer can receive payouts — gates the
   // "Sell individual photos" toggle
@@ -355,6 +369,15 @@ const createDefaultFolders = async (galleryId) => {
         const fileExt = file.name.split('.').pop()
         const fileName = `${user.id}/${galleryId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
         const isVideo = file.type.startsWith('video/')
+
+        // Free, instant, zero-network thumbnail from the file already sitting
+        // in memory — the alternative (photo.image_url) would re-download the
+        // full original from R2 just to render a 128px preview, right while
+        // other files in this same batch are still uploading.
+        if (!isVideo) {
+          const blobUrl = URL.createObjectURL(file)
+          setLocalPreviews(prev => ({ ...prev, [fileName]: blobUrl }))
+        }
 
         // 1. Get presigned URL from server (fast — no file transfer)
         const presignRes = await fetch('/api/upload/presign', {
@@ -819,7 +842,7 @@ const handlePublish = async () => {
                               </div>
                             ) : (
                               <img
-                                src={photo.image_url}
+                                src={localPreviews[photo.storage_path] || photo.image_url}
                                 alt=""
                                 className="w-full h-32 object-cover rounded-sm"
                               />
@@ -1268,7 +1291,7 @@ const handlePublish = async () => {
                           ) : (
                             <img
                               key={photo.id}
-                              src={photo.image_url}
+                              src={localPreviews[photo.storage_path] || photo.image_url}
                               alt=""
                               className="w-full h-24 object-cover rounded-sm"
                             />
