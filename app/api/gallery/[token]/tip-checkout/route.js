@@ -64,7 +64,7 @@ export async function POST(request, { params }) {
       ],
       payment_intent_data: {
         transfer_data: { destination: photographer.stripe_connect_account_id },
-        description: `Tip — ${gallery.title}`,
+        description: `Tip for ${gallery.title}`,
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/g/${token}?tipped=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/g/${token}`,

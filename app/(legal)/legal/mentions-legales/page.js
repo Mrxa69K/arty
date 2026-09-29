@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Legal Notice — ArtyDrop',
+  title: 'Legal Notice | ArtyDrop',
 }
 
 export default function MentionsLegalesPage() {
@@ -23,9 +23,9 @@ export default function MentionsLegalesPage() {
       </Section>
 
       <Section title="Hosting">
-        <Row label="Host" value="Netlify, Inc." />
-        <Row label="Address" value="512 2nd Street, Suite 200, San Francisco, CA 94107, USA" />
-        <Row label="Website" value="netlify.com" />
+        <Row label="Host" value="Vercel Inc." />
+        <Row label="Address" value="340 S Lemon Ave #4133, Walnut, CA 91789, USA" />
+        <Row label="Website" value="vercel.com" />
         <p className="mt-3">Media storage:</p>
         <Row label="Provider" value="Cloudflare, Inc. (R2 Storage)" />
         <Row label="Address" value="101 Townsend St, San Francisco, CA 94107, USA" />
@@ -39,7 +39,7 @@ export default function MentionsLegalesPage() {
       <Section title="Personal data">
         <p>How personal data is processed through ArtyDrop is described in our <a href="/legal/privacy" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">Privacy Policy</a>.</p>
         <p>Under the GDPR (EU Regulation 2016/679), you can exercise your rights by contacting the Publisher at the email address listed above.</p>
-        <p>You can also file a complaint with the French data protection authority (CNIL) — <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">www.cnil.fr</a>.</p>
+        <p>You can also file a complaint with the French data protection authority (CNIL): <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">www.cnil.fr</a>.</p>
       </Section>
 
       <Section title="Cookies">

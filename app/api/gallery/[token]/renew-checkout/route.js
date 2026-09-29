@@ -39,7 +39,7 @@ export async function POST(request, { params }) {
         link_id: linkData.id,
       },
       payment_intent_data: {
-        description: `Gallery access renewal${galleryData?.client_name ? ` — ${galleryData.client_name}` : ''}`,
+        description: `Gallery access renewal${galleryData?.client_name ? ` (${galleryData.client_name})` : ''}`,
       },
     })
 

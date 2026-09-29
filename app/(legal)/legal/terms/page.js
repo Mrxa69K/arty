@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Terms of Service — ArtyDrop",
+  title: "Terms of Service | ArtyDrop",
 }
 
 export default function TermsPage() {

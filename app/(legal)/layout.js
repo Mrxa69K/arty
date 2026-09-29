@@ -23,7 +23,7 @@ export default function LegalLayout({ children }) {
         {children}
       </main>
       <footer className="border-t border-white/5 px-8 md:px-16 py-8 text-center">
-        <p className="text-[9px] tracking-[0.3em] uppercase text-white/15 font-body">ArtyDrop — {new Date().getFullYear()}</p>
+        <p className="text-[9px] tracking-[0.3em] uppercase text-white/15 font-body">ArtyDrop © {new Date().getFullYear()}</p>
       </footer>
     </div>
   )

@@ -180,7 +180,7 @@ function PurchaseSuccessInner() {
             </div>
 
             <p className="text-xs text-white/25 font-body mt-10">
-              We also emailed you this link — bookmark it if you want to come back later.
+              We also emailed you this link. Bookmark it if you want to come back later.
             </p>
           </motion.div>
         )}

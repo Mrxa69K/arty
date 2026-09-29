@@ -145,7 +145,7 @@ export default function GalleriesPage() {
 
   const handleCopyLink = (gallery) => {
     const token = gallery.gallery_links?.[0]?.token
-    if (!token) { toast.error('No share link yet — publish the gallery first'); return }
+    if (!token) { toast.error('No share link yet. Publish the gallery first'); return }
     navigator.clipboard.writeText(`${window.location.origin}/g/${token}`)
     setCopiedId(gallery.id)
     toast.success('Link copied')

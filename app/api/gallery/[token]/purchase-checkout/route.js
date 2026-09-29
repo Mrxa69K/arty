@@ -101,7 +101,7 @@ export async function POST(request, { params }) {
             currency: 'eur',
             unit_amount: pricePerPhotoCents,
             product_data: {
-              name: `${validIds.length} photo${validIds.length > 1 ? 's' : ''} — ${gallery.title || 'Gallery'}`,
+              name: `${gallery.title || 'Gallery'} (${validIds.length} photo${validIds.length > 1 ? 's' : ''})`,
             },
           },
           quantity: validIds.length,
@@ -110,7 +110,7 @@ export async function POST(request, { params }) {
       payment_intent_data: {
         application_fee_amount: applicationFeeCents,
         transfer_data: { destination: photographer.stripe_connect_account_id },
-        description: `Photo purchase — ${gallery.title || 'Gallery'}`,
+        description: `Photo purchase: ${gallery.title || 'Gallery'}`,
       },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/g/${token}/purchase-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/g/${token}`,

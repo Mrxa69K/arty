@@ -198,7 +198,7 @@ export default function GalleryDetailPage() {
         <StatCard
           icon={Clock}
           label="Expires"
-          value={gallery.expires_at ? format(new Date(gallery.expires_at), 'MMM d, yyyy') : '—'}
+          value={gallery.expires_at ? format(new Date(gallery.expires_at), 'MMM d, yyyy') : 'No expiry'}
           small
         />
       </div>
@@ -215,7 +215,7 @@ export default function GalleryDetailPage() {
 
         {totalViews === 0 ? (
           <div className="h-28 flex items-center justify-center">
-            <p className="text-xs text-white/20 font-body">No views yet — share your gallery link to start tracking</p>
+            <p className="text-xs text-white/20 font-body">No views yet. Share your gallery link to start tracking</p>
           </div>
         ) : (
           <div className="flex items-end gap-2 h-28">

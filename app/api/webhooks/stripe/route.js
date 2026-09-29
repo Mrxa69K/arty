@@ -172,7 +172,7 @@ export async function POST(req) {
           await supabaseAdmin.from('notifications').insert({
             user_id: pending.photographer_id,
             type: 'photo_sale',
-            title: `${pending.photo_ids.length} photo${pending.photo_ids.length > 1 ? 's' : ''} sold — €${(pending.subtotal_cents / 100).toFixed(2)}`,
+            title: `${pending.photo_ids.length} photo${pending.photo_ids.length > 1 ? 's' : ''} sold for €${(pending.subtotal_cents / 100).toFixed(2)}`,
             body: buyerEmail ? `Bought by ${buyerEmail}` : null,
             link_url: `/dashboard/galleries/${pending.gallery_id}`,
           })

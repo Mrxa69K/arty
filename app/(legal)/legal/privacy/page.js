@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Privacy Policy — ArtyDrop',
+  title: 'Privacy Policy | ArtyDrop',
 }
 
 export default function PrivacyPage() {
@@ -7,7 +7,7 @@ export default function PrivacyPage() {
     <article className="prose prose-invert prose-sm max-w-none">
       <p className="text-[10px] tracking-[0.35em] uppercase text-white/25 font-body mb-4">Privacy</p>
       <h1 className="font-display text-3xl text-white mb-2">Privacy Policy</h1>
-      <p className="text-xs text-white/25 font-body mb-12">Last updated: April 2026 — GDPR compliant</p>
+      <p className="text-xs text-white/25 font-body mb-12">Last updated: April 2026 (GDPR compliant)</p>
 
       <Section title="1. Data controller">
         <p>The data controller for personal data collected through ArtyDrop is the Publisher of the service (the independent photographer operating the platform). To exercise your rights, contact us using the details in the <a href="/legal/mentions-legales" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">Legal Notice</a>.</p>
@@ -54,21 +54,21 @@ export default function PrivacyPage() {
       <Section title="6. Subprocessors">
         <p>ArtyDrop relies on the following subprocessors, each bound by GDPR-compliant safeguards:</p>
         <ul>
-          <li><strong>Supabase</strong> (database and authentication) — USA/EU, DPA available</li>
-          <li><strong>Cloudflare R2</strong> (file storage) — USA/EU, DPA available</li>
-          <li><strong>Stripe</strong> (payments) — USA/EU, DPA available</li>
-          <li><strong>Netlify</strong> (hosting) — USA, DPA available</li>
+          <li><strong>Supabase</strong> (database and authentication): USA/EU, DPA available</li>
+          <li><strong>Cloudflare R2</strong> (file storage): USA/EU, DPA available</li>
+          <li><strong>Stripe</strong> (payments): USA/EU, DPA available</li>
+          <li><strong>Vercel</strong> (hosting): USA, DPA available</li>
         </ul>
       </Section>
 
       <Section title="7. Your rights">
         <p>Under the GDPR, you have the right to:</p>
         <ul>
-          <li><strong>Access</strong> — obtain a copy of your data</li>
-          <li><strong>Rectification</strong> — correct inaccurate data</li>
-          <li><strong>Erasure</strong> — request that your data be deleted</li>
-          <li><strong>Portability</strong> — receive your data in a structured format</li>
-          <li><strong>Object</strong> — object to certain uses of your data</li>
+          <li><strong>Access</strong>: obtain a copy of your data</li>
+          <li><strong>Rectification</strong>: correct inaccurate data</li>
+          <li><strong>Erasure</strong>: request that your data be deleted</li>
+          <li><strong>Portability</strong>: receive your data in a structured format</li>
+          <li><strong>Object</strong>: object to certain uses of your data</li>
         </ul>
         <p>To exercise these rights, contact us using the details in the Legal Notice. You can also file a complaint with <strong>CNIL</strong>, the French data protection authority (cnil.fr).</p>
       </Section>

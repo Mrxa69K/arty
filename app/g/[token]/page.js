@@ -588,6 +588,16 @@ function PublicGalleryPageInner() {
 
         {/* Right: actions */}
         <div className="flex items-center gap-5">
+          {allowDownload && photographerProfile?.tips_enabled && !loading && photos.length > 0 && (
+            <button
+              onClick={() => setTipModalOpen(true)}
+              data-testid="open-tip-modal"
+              className="flex items-center gap-1.5 text-xs text-white/40 hover:text-[#7AB8CB] font-body transition-colors"
+            >
+              <Heart className="w-3 h-3" strokeWidth={1.5} />
+              <span className="hidden sm:inline">Leave a tip</span>
+            </button>
+          )}
           {allowDownload && !loading && photos.length > 0 && (
             <button
               onClick={handleDownloadAllZip}
@@ -624,7 +634,7 @@ function PublicGalleryPageInner() {
             {/* Top bar */}
             <div className="flex items-center justify-between px-6 py-4 flex-shrink-0">
               <span className="text-white/30 text-xs font-body tracking-widest">
-                {String(currentPhotoIndex + 1).padStart(2, '0')} — {String(photos.length).padStart(2, '0')}
+                {String(currentPhotoIndex + 1).padStart(2, '0')} / {String(photos.length).padStart(2, '0')}
               </span>
               <div className="flex items-center gap-4">
                 {allowDownload && (
@@ -785,7 +795,7 @@ function PublicGalleryPageInner() {
                 className="w-full h-11 bg-white/[0.03] border border-white/10 px-4 text-sm text-white placeholder:text-white/20 font-body focus:outline-none focus:border-[#7AB8CB] transition-colors mb-2"
               />
               <p className="text-[11px] text-white/20 font-body mb-6">
-                100% goes to {photographerName || 'the photographer'} — Stripe's small processing fee applies.
+                100% goes to {photographerName || 'the photographer'}. Stripe's small processing fee applies.
               </p>
 
               <div className="flex gap-3">
@@ -922,6 +932,29 @@ function PublicGalleryPageInner() {
         </div>
       </section>
 
+      {/* ── SALE MODE NOTICE ── */}
+      {gallery?.sale_mode_enabled && !loading && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="px-6 md:px-16 pt-6 max-w-7xl mx-auto w-full"
+        >
+          <div className="px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border border-[#7AB8CB]/25 bg-[#7AB8CB]/[0.06]">
+            <div className="flex items-start gap-3">
+              <ShoppingBag className="w-4 h-4 text-[#7AB8CB] mt-0.5 flex-shrink-0" strokeWidth={1.5} />
+              <div>
+                <p className="text-sm text-white font-body font-medium">Choose your favorites</p>
+                <p className="text-sm text-white/50 font-body leading-relaxed mt-1">
+                  This gallery is free to browse. When you find photos you love, tap the circle in the corner to select them, then check out.
+                  Each photo is <span className="text-white">€{((gallery?.price_per_photo_cents || 0) / 100).toFixed(2)}</span>, full resolution, no watermark once purchased.
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
       {/* ── EXPIRATION NOTICE ── */}
       {(daysUntilExpiry !== null || gallery) && (
         <motion.div
@@ -946,12 +979,12 @@ function PublicGalleryPageInner() {
                   : 'text-white/55'
               }`}>
                 {daysUntilExpiry === null
-                  ? 'This gallery is available for a limited time — download your photos to keep them.'
+                  ? 'This gallery is available for a limited time. Download your photos to keep them.'
                   : daysUntilExpiry <= 0
                   ? `This gallery has expired. Contact your photographer to recover your photos.`
                   : daysUntilExpiry === 1
-                  ? `Your gallery expires tomorrow (${format(new Date(gallery.expires_at), 'MMMM d, yyyy')}) — download everything before it's gone.`
-                  : `Your gallery expires in ${daysUntilExpiry} days, on ${format(new Date(gallery.expires_at), 'MMMM d, yyyy')} — make sure to download everything before then.`
+                  ? `Your gallery expires tomorrow (${format(new Date(gallery.expires_at), 'MMMM d, yyyy')}). Download everything before it's gone.`
+                  : `Your gallery expires in ${daysUntilExpiry} days, on ${format(new Date(gallery.expires_at), 'MMMM d, yyyy')}. Make sure to download everything before then.`
                 }
               </p>
               <p className="text-[11px] text-white/20 font-body">
@@ -986,7 +1019,7 @@ function PublicGalleryPageInner() {
             &ldquo;{galleryMessage}&rdquo;
           </p>
           {photographerName && (
-            <p className="mt-6 text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">— {photographerName}</p>
+            <p className="mt-6 text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">{photographerName}</p>
           )}
           <div className="w-px h-8 bg-white/10 mx-auto mt-8" />
         </motion.section>
@@ -1211,42 +1244,6 @@ function PublicGalleryPageInner() {
                   : <ArrowDownToLine className="w-4 h-4" strokeWidth={1} />
                 }
               </div>
-            </button>
-          </div>
-        </motion.section>
-      )}
-
-      {/* ── TIP CTA ── */}
-      {allowDownload && photographerProfile?.tips_enabled && !loading && (
-        <motion.section
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          className="px-8 md:px-16 mb-24"
-        >
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => setTipModalOpen(true)}
-              data-testid="open-tip-modal"
-              className="group w-full flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 hover:border-[#7AB8CB]/40 bg-white/[0.02] hover:bg-[#7AB8CB]/[0.04] px-8 py-10 md:py-8 transition-colors text-left"
-            >
-              <div className="flex items-center gap-5">
-                <div className="w-12 h-12 rounded-full border border-white/10 group-hover:border-[#7AB8CB]/40 flex items-center justify-center flex-shrink-0 transition-colors">
-                  <Heart className="w-5 h-5 text-white/50 group-hover:text-[#7AB8CB] transition-colors" strokeWidth={1.5} />
-                </div>
-                <div>
-                  <h3 className="font-display text-xl md:text-2xl text-white leading-tight">
-                    Love your photos?
-                  </h3>
-                  <p className="text-sm text-white/40 font-body mt-1">
-                    Send {photographerName || 'the photographer'} a tip — it goes straight to them, no cut taken.
-                  </p>
-                </div>
-              </div>
-              <span className="flex-shrink-0 flex items-center gap-2 h-11 px-6 bg-white text-black text-sm font-body font-semibold group-hover:bg-[#7AB8CB] transition-colors">
-                Leave a tip
-              </span>
             </button>
           </div>
         </motion.section>

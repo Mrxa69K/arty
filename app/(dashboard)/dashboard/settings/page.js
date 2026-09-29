@@ -302,14 +302,14 @@ export default function SettingsPage() {
             <div className="px-4 py-4 bg-white/[0.02] border border-white/5 rounded-sm">
               <p className="text-sm text-white/60 font-body">Verification pending</p>
               <p className="text-[11px] text-white/30 font-body mt-1">
-                Stripe is reviewing your details — this usually finishes within a few minutes.
+                Stripe is reviewing your details. This usually finishes within a few minutes.
               </p>
             </div>
           ) : (
             <div className="px-4 py-5 bg-white/[0.02] border border-white/5 rounded-sm">
               <p className="text-sm text-white/60 font-body mb-1">Not connected</p>
               <p className="text-[11px] text-white/30 font-body mb-4">
-                Connect Stripe to sell individual photos and accept tips from clients. Takes about 5 minutes — Stripe handles identity verification and payouts.
+                Connect Stripe to sell individual photos and accept tips from clients. Takes about 5 minutes. Stripe handles identity verification and payouts.
               </p>
               <button
                 type="button"

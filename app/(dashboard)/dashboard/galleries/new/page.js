@@ -1128,7 +1128,7 @@ const handlePublish = async () => {
                       <textarea
                         value={sharing.message}
                         onChange={(e) => setSharing({ ...sharing, message: e.target.value })}
-                        placeholder="e.g. It was a pleasure capturing your day — enjoy every frame."
+                        placeholder="e.g. It was a pleasure capturing your day. Enjoy every frame."
                         rows={3}
                         maxLength={300}
                         className="w-full px-4 py-3 rounded-sm border border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold/30 resize-none text-sm"
