@@ -140,12 +140,29 @@ export async function POST(req) {
         .update({ expires_at: newExpiresAt })
         .eq('id', link_id)
 
-      await supabaseAdmin
+      const { data: renewedGallery } = await supabaseAdmin
         .from('galleries')
         .update({ expires_at: newExpiresAt })
         .eq('id', gallery_id)
+        .select('title, owner_id')
+        .single()
 
       console.log(`Gallery ${gallery_id} (token ${token}) renewed until ${newExpiresAt}`)
+
+      if (renewedGallery?.owner_id) {
+        try {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: renewedGallery.owner_id,
+            type: 'gallery_renewed',
+            title: `"${renewedGallery.title || 'A gallery'}" was renewed`,
+            body: `Access extended for another ${days} days.`,
+            link_url: `/dashboard/galleries/${gallery_id}`,
+          })
+        } catch (notifError) {
+          console.error('Failed to create renewal notification (non-critical):', notifError)
+        }
+      }
+
       return new Response('ok')
     }
 
@@ -222,6 +239,47 @@ export async function POST(req) {
         .eq('id', profile.id)
 
       console.log(`Studio plan cancelled for user ${profile.id}`)
+
+      try {
+        await supabaseAdmin.from('notifications').insert({
+          user_id: profile.id,
+          type: 'subscription_cancelled',
+          title: 'Your Studio plan was cancelled',
+          body: 'Your subscription has ended and your plan is now inactive.',
+          link_url: '/dashboard/settings',
+        })
+      } catch (notifError) {
+        console.error('Failed to create cancellation notification (non-critical):', notifError)
+      }
+    }
+  }
+
+  if (event.type === 'invoice.payment_failed') {
+    const invoice = event.data.object
+
+    // Only subscription renewal failures are relevant here — this app has no
+    // other invoice-based billing (one-time plans/tips/sales go through
+    // Checkout Sessions directly, not invoices).
+    if (invoice.subscription) {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('id')
+        .eq('stripe_customer_id', invoice.customer)
+        .single()
+
+      if (profile) {
+        try {
+          await supabaseAdmin.from('notifications').insert({
+            user_id: profile.id,
+            type: 'payment_failed',
+            title: 'Your subscription payment failed',
+            body: 'Update your payment method to keep your Studio plan active.',
+            link_url: '/dashboard/settings',
+          })
+        } catch (notifError) {
+          console.error('Failed to create payment-failed notification (non-critical):', notifError)
+        }
+      }
     }
   }
 
