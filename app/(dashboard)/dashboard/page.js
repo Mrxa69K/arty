@@ -24,8 +24,17 @@ import {
   Pencil,
   ExternalLink,
   Image as ImageIcon,
+  Heart,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
+import { format } from 'date-fns'
 
 export default function DashboardPage() {
   const { user } = useAuth()
@@ -34,7 +43,9 @@ export default function DashboardPage() {
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [userProfile, setUserProfile] = useState(null)
   const [galleries, setGalleries] = useState([])
-  const [stats, setStats] = useState({ galleries: 0, photos: 0, views: 0, downloads: 0 })
+  const [stats, setStats] = useState({ galleries: 0, photos: 0, views: 0, downloads: 0, tipsCents: 0 })
+  const [tips, setTips] = useState([])
+  const [tipsModalOpen, setTipsModalOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
   const [openMenu, setOpenMenu] = useState(null)
@@ -210,11 +221,20 @@ export default function DashboardPage() {
         downloadsCount = downloads || 0
       }
 
+      const { data: tipsData } = await supabase
+        .from('tips')
+        .select('id, amount_cents, buyer_email, created_at, galleries(title)')
+        .eq('photographer_id', user.id)
+        .order('created_at', { ascending: false })
+
+      setTips(tipsData || [])
+
       setStats({
         galleries: galleriesCount || 0,
         photos: photosCount,
         views: viewsCount,
-        downloads: downloadsCount
+        downloads: downloadsCount,
+        tipsCents: (tipsData || []).reduce((sum, t) => sum + t.amount_cents, 0),
       })
     } catch (error) {
       console.error('Error fetching stats:', error)
@@ -340,14 +360,14 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         {[
           { label: 'Total Galleries', value: stats.galleries, icon: Images, limit: getPlanLimit() < 999999 ? getPlanLimit() : null },
           { label: 'Total Photos', value: stats.photos, icon: Camera },
           { label: 'Total Views', value: stats.views, icon: Eye },
           { label: 'Downloads', value: stats.downloads, icon: Download },
         ].map((stat, i) => (
-          <div 
+          <div
             key={i}
             className="p-6 bg-[#121212] border border-white/5 rounded-sm"
             data-testid={`stat-${stat.label.toLowerCase().replace(' ', '-')}`}
@@ -362,7 +382,55 @@ export default function DashboardPage() {
             <p className="text-sm text-white/50 font-body mt-1">{stat.label}</p>
           </div>
         ))}
+        <button
+          onClick={() => setTipsModalOpen(true)}
+          disabled={tips.length === 0}
+          className="p-6 bg-[#121212] border border-white/5 hover:border-[#7AB8CB]/40 rounded-sm text-left transition-colors disabled:cursor-default disabled:hover:border-white/5"
+          data-testid="stat-tips-received"
+        >
+          <Heart className="w-5 h-5 text-[#7AB8CB] mb-4" strokeWidth={1.5} />
+          <div className="flex items-baseline gap-2">
+            <span className="font-display text-3xl text-white">€{(stats.tipsCents / 100).toFixed(2)}</span>
+          </div>
+          <p className="text-sm text-white/50 font-body mt-1">
+            Tips received{tips.length > 0 ? ` · ${tips.length} tip${tips.length > 1 ? 's' : ''}` : ''}
+          </p>
+        </button>
       </div>
+
+      {/* Tips detail modal */}
+      <Dialog open={tipsModalOpen} onOpenChange={setTipsModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Tips received</DialogTitle>
+            <DialogDescription>
+              €{(stats.tipsCents / 100).toFixed(2)} total, 100% paid directly to your account.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto -mx-2 px-2">
+            {tips.length === 0 ? (
+              <p className="text-sm text-white/40 font-body py-6 text-center">No tips yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {tips.map((tip) => (
+                  <div key={tip.id} className="flex items-center justify-between gap-4 p-3 bg-white/[0.02] border border-white/5 rounded-sm">
+                    <div className="min-w-0">
+                      <p className="text-sm text-white truncate">{tip.galleries?.title || 'Untitled gallery'}</p>
+                      <p className="text-xs text-white/30 font-body mt-0.5">
+                        {format(new Date(tip.created_at), 'MMM d, yyyy · HH:mm')}
+                        {tip.buyer_email ? ` · ${tip.buyer_email}` : ''}
+                      </p>
+                    </div>
+                    <span className="flex-shrink-0 text-sm font-semibold text-[#7AB8CB]">
+                      €{(tip.amount_cents / 100).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Quick Actions */}
       <div className="grid sm:grid-cols-2 gap-4">
