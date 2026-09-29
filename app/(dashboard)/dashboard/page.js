@@ -400,10 +400,10 @@ export default function DashboardPage() {
 
       {/* Tips detail modal */}
       <Dialog open={tipsModalOpen} onOpenChange={setTipsModalOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md bg-[#121212] border-white/10 rounded-sm">
           <DialogHeader>
-            <DialogTitle className="font-display">Tips received</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="font-display text-white">Tips received</DialogTitle>
+            <DialogDescription className="text-white/50">
               €{(stats.tipsCents / 100).toFixed(2)} total, 100% paid directly to your account.
             </DialogDescription>
           </DialogHeader>
