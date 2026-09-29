@@ -7,7 +7,7 @@ import { FolderCard } from '@/components/FolderCard'
 import {
   Lock, Loader2, Download, X,
   ChevronLeft, ChevronRight, Eye, EyeOff,
-  ArrowLeft, ArrowDownToLine, CreditCard
+  ArrowLeft, ArrowDownToLine, CreditCard, Heart
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -74,7 +74,7 @@ function PublicGalleryPageInner() {
   }, [token])
 
   useEffect(() => {
-    if (justTipped) toast.success('Thank you for the tip! ☕')
+    if (justTipped) toast.success('Thank you for the tip!')
   }, [justTipped])
 
   // After returning from Stripe, poll briefly for the webhook to lift the expiry
@@ -725,9 +725,9 @@ function PublicGalleryPageInner() {
               onClick={(e) => e.stopPropagation()}
               className="w-full max-w-sm bg-[#0B0B0C] border border-white/10 p-8"
             >
-              <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-2">Buy a coffee</p>
+              <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-2">Leave a tip</p>
               <h3 className="font-display text-2xl text-white mb-6">
-                Tip {photographerName || 'the photographer'}
+                For {photographerName || 'the photographer'}
               </h3>
 
               <div className="grid grid-cols-3 gap-2 mb-4">
@@ -1129,17 +1129,42 @@ function PublicGalleryPageInner() {
               </div>
             </button>
           </div>
-          {photographerProfile?.tips_enabled && (
-            <div className="max-w-7xl mx-auto mt-6 flex justify-end">
-              <button
-                onClick={() => setTipModalOpen(true)}
-                className="text-xs text-white/30 hover:text-[#7AB8CB] font-body transition-colors underline underline-offset-4 decoration-white/10 hover:decoration-[#7AB8CB]"
-                data-testid="open-tip-modal"
-              >
-                Like these photos? Buy {photographerName || 'the photographer'} a coffee ☕
-              </button>
-            </div>
-          )}
+        </motion.section>
+      )}
+
+      {/* ── TIP CTA ── */}
+      {allowDownload && photographerProfile?.tips_enabled && !loading && (
+        <motion.section
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+          className="px-8 md:px-16 mb-24"
+        >
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={() => setTipModalOpen(true)}
+              data-testid="open-tip-modal"
+              className="group w-full flex flex-col md:flex-row items-center justify-between gap-6 border border-white/10 hover:border-[#7AB8CB]/40 bg-white/[0.02] hover:bg-[#7AB8CB]/[0.04] px-8 py-10 md:py-8 transition-colors text-left"
+            >
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-full border border-white/10 group-hover:border-[#7AB8CB]/40 flex items-center justify-center flex-shrink-0 transition-colors">
+                  <Heart className="w-5 h-5 text-white/50 group-hover:text-[#7AB8CB] transition-colors" strokeWidth={1.5} />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl md:text-2xl text-white leading-tight">
+                    Love your photos?
+                  </h3>
+                  <p className="text-sm text-white/40 font-body mt-1">
+                    Send {photographerName || 'the photographer'} a tip — it goes straight to them, no cut taken.
+                  </p>
+                </div>
+              </div>
+              <span className="flex-shrink-0 flex items-center gap-2 h-11 px-6 bg-white text-black text-sm font-body font-semibold group-hover:bg-[#7AB8CB] transition-colors">
+                Leave a tip
+              </span>
+            </button>
+          </div>
         </motion.section>
       )}
 
