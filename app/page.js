@@ -20,6 +20,7 @@ import {
   Users
 } from 'lucide-react'
 import { useAuth } from './providers'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 // Intersection Observer hook for scroll animations
 function useInView(options = {}) {
@@ -55,6 +56,7 @@ export default function HomePage() {
   const [openFaq, setOpenFaq] = useState(null)
   const router = useRouter()
   const { user, loading } = useAuth()
+  const { lang, setLang, t, tList } = useLanguage()
 
   // Animation refs
   const [whatRef, whatInView] = useInView()
@@ -116,28 +118,7 @@ export default function HomePage() {
     }
   }
 
-  const faqs = [
-    {
-      q: "How long are my photos stored?",
-      a: "Free trial: 7 days. Pay-as-you-go: 6 months. Studio: 12 months. All plans can be extended anytime."
-    },
-    {
-      q: "What quality do my clients receive?",
-      a: "Clients view optimized previews for faster loading, but downloads are always full resolution originals."
-    },
-    {
-      q: "Can I cancel my Studio plan anytime?",
-      a: "Yes, absolutely. No contracts, no questions asked. Your galleries remain accessible for 30 days after cancellation."
-    },
-    {
-      q: "Do you offer refunds?",
-      a: "Yes. If you're not satisfied within 14 days, we'll refund you in full."
-    },
-    {
-      q: "Is there a setup fee?",
-      a: "No. You can start uploading immediately after signup. No hidden costs."
-    }
-  ]
+  const faqs = tList('home.faqs')
 
   return (
     <main className="min-h-screen bg-[#0B0B0C] text-[#ededed] relative overflow-hidden">
@@ -154,29 +135,36 @@ export default function HomePage() {
           </Link>
           
           <nav className="hidden md:flex items-center gap-8 text-sm font-body">
-            <a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">Features</a>
-            <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">Pricing</a>
-            <a href="#faq" onClick={(e) => { e.preventDefault(); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">FAQ</a>
+            <a href="#features" onClick={(e) => { e.preventDefault(); document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">{t('home.navFeatures')}</a>
+            <a href="#pricing" onClick={(e) => { e.preventDefault(); document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">{t('home.navPricing')}</a>
+            <a href="#faq" onClick={(e) => { e.preventDefault(); document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' }) }} className="text-white/50 hover:text-white transition-colors">{t('home.navFaq')}</a>
           </nav>
 
           <div className="flex items-center gap-4">
+            <button
+              onClick={() => setLang(lang === 'en' ? 'fr' : 'en')}
+              className="text-[10px] tracking-[0.2em] uppercase text-white/30 hover:text-white font-body transition-colors"
+              data-testid="language-toggle"
+            >
+              {lang === 'en' ? 'FR' : 'EN'}
+            </button>
             {loading ? (
               <div className="w-20 h-9 bg-white/5 rounded animate-pulse" />
             ) : user ? (
               <Link href="/dashboard" data-testid="dashboard-link">
                 <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-none font-body text-sm font-medium">
-                  Dashboard
+                  {t('home.navDashboard')}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </Link>
             ) : (
               <>
                 <Link href="/login" className="text-sm text-white/60 hover:text-white transition-colors font-body" data-testid="login-link">
-                  Log in
+                  {t('home.navLogin')}
                 </Link>
                 <Link href="/signup" data-testid="signup-link">
                   <Button className="h-10 px-6 bg-white text-black hover:bg-white/90 rounded-none font-body text-sm font-medium">
-                    Get started
+                    {t('home.navGetStarted')}
                   </Button>
                 </Link>
               </>
@@ -200,17 +188,17 @@ export default function HomePage() {
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
           <span className="inline-block mb-8 px-4 py-2 text-xs tracking-[0.2em] uppercase text-gold font-body font-medium border border-gold/30 rounded-chip">
-            For Professional Photographers
+            {t('home.heroBadge')}
           </span>
 
           <h1 className="font-display text-5xl sm:text-6xl md:text-7xl lg:text-8xl leading-[1.05] tracking-tight mb-8">
-            Deliver your work
+            {t('home.heroTitleLine1')}
             <br />
-            <span className="italic text-gold">the way it deserves</span>
+            <span className="italic text-gold">{t('home.heroTitleLine2')}</span>
           </h1>
 
           <p className="font-body text-lg md:text-xl text-white/60 max-w-2xl mx-auto mb-12 leading-relaxed">
-            Stop sending WeTransfer links. ArtyDrop gives your galleries a premium home that matches the quality of your photography. Pay only for what you use.
+            {t('home.heroSubtitle')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -226,7 +214,7 @@ export default function HomePage() {
               className="h-14 px-10 bg-white text-black font-body font-semibold text-sm rounded-none hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-3 btn-press"
               data-testid="cta-payg"
             >
-              Start for 4.90 / gallery
+              {t('home.heroCtaPayg')}
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -235,22 +223,22 @@ export default function HomePage() {
               className="h-14 px-10 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all flex items-center gap-3"
               data-testid="cta-demo"
             >
-              See a live gallery
+              {t('home.heroCtaDemo')}
             </a>
           </div>
 
           <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-white/40 font-body">
             <span className="flex items-center gap-2">
               <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              No subscription required
+              {t('home.heroTrustNoSub')}
             </span>
             <span className="flex items-center gap-2">
               <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              14-day money back
+              {t('home.heroTrustMoneyBack')}
             </span>
             <span className="flex items-center gap-2">
               <Check className="w-4 h-4 text-gold" strokeWidth={1.5} />
-              1,200+ galleries delivered
+              {t('home.heroTrustGalleries')}
             </span>
           </div>
         </div>
@@ -264,17 +252,17 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className={whatInView ? 'animate-slideInLeft' : 'opacity-0'}>
               <p className="text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6">
-                What is ArtyDrop?
+                {t('home.whatEyebrow')}
               </p>
               <h2 className="font-display text-4xl md:text-5xl leading-tight mb-8">
-                A premium delivery platform built for photographers
+                {t('home.whatTitle')}
               </h2>
               <div className="space-y-6 text-white/60 font-body leading-relaxed">
                 <p>
-                  ArtyDrop is how professional photographers deliver their work to clients. Instead of generic file-sharing services, you get beautiful, password-protected galleries that reflect the quality of your craft.
+                  {t('home.whatBody1')}
                 </p>
                 <p>
-                  <span className="text-white font-medium">Pay-as-you-go pricing</span> means you only pay when you deliver. No monthly fees eating into your margins during slow months. Create a gallery, upload your photos, share the link. That's it.
+                  <span className="text-white font-medium">{t('home.whatBody2Bold')}</span> {t('home.whatBody2Rest')}
                 </p>
               </div>
             </div>
@@ -298,13 +286,13 @@ export default function HomePage() {
               {/* Floating price card */}
               <div className="absolute -bottom-6 -left-6 bg-[#161618] border border-white/10 p-6 rounded-lg card-lift">
                 <p className="text-3xl font-display text-gold mb-1">4.90€</p>
-                <p className="text-sm text-white/50 font-body">per gallery, no subscription</p>
+                <p className="text-sm text-white/50 font-body">{t('home.whatPriceCard')}</p>
               </div>
 
               {/* Floating trust badge */}
               <div className="absolute -top-5 -right-5 hidden sm:flex items-center gap-2 bg-[#161618] border border-white/10 px-4 py-2.5 rounded-chip card-lift">
                 <Lock className="w-3.5 h-3.5 text-gold" strokeWidth={1.5} />
-                <span className="text-xs text-white/70 font-body">Password protected</span>
+                <span className="text-xs text-white/70 font-body">{t('home.whatBadge')}</span>
               </div>
             </div>
           </div>
@@ -322,10 +310,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className={`text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6 ${demoInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-              See it in action
+              {t('home.demoEyebrow')}
             </p>
             <h2 className={`font-display text-4xl md:text-5xl leading-tight ${demoInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-              What your clients see
+              {t('home.demoTitle')}
             </h2>
           </div>
 
@@ -336,26 +324,26 @@ export default function HomePage() {
               {/* Mini nav */}
               <div className="h-14 flex items-center justify-between px-5 md:px-8 border-b border-white/5">
                 <span className="font-display text-white/50 text-sm">Artydrop</span>
-                <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Melissa Photography Paris</span>
+                <span className="hidden md:block text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">{t('home.demoPhotographerLabel')}</span>
                 <span className="flex items-center gap-1.5 text-xs text-white/40 font-body">
                   <Download className="w-3 h-3" strokeWidth={1.5} />
-                  Download all
+                  {t('home.demoDownloadAll')}
                 </span>
               </div>
 
               {/* Mini hero */}
               <div className="px-6 md:px-10 pt-10 pb-8 text-center md:text-left">
-                <p className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-4">A collection for</p>
+                <p className="text-[10px] tracking-[0.4em] uppercase text-white/30 font-body mb-4">{t('home.demoCollectionFor')}</p>
                 <h3 className="font-display text-3xl sm:text-4xl md:text-5xl text-white leading-[0.95] mb-4">
-                  Sarah &amp; James
+                  {t('home.demoCoupleNames')}
                 </h3>
                 <div className="flex items-center justify-center md:justify-start gap-3 text-xs text-white/30 font-body">
                   <span className="flex items-center gap-1.5">
                     <Camera className="w-3.5 h-3.5" strokeWidth={1.5} />
-                    247 photos
+                    {t('home.demoPhotosCount')}
                   </span>
                   <span className="w-1 h-1 rounded-full bg-white/20" />
-                  <span>June 15, 2025</span>
+                  <span>{t('home.demoDate')}</span>
                 </div>
               </div>
 
@@ -392,7 +380,7 @@ export default function HomePage() {
               <div className="flex justify-center p-8 border-t border-white/5">
                 <button className="h-12 px-8 bg-white text-black font-body font-medium text-sm rounded-none flex items-center gap-3">
                   <Download className="w-4 h-4" strokeWidth={1.5} />
-                  Download All Photos
+                  {t('home.demoDownloadAllPhotos')}
                 </button>
               </div>
             </div>
@@ -401,9 +389,9 @@ export default function HomePage() {
           {/* Feature badges */}
           <div className="mt-16 flex flex-wrap justify-center gap-6">
             {[
-              { icon: Lock, text: 'Password protected' },
-              { icon: Download, text: 'Full resolution downloads' },
-              { icon: Eye, text: 'View tracking' },
+              { icon: Lock, text: t('home.demoBadgePassword') },
+              { icon: Download, text: t('home.demoBadgeDownloads') },
+              { icon: Eye, text: t('home.demoBadgeTracking') },
             ].map((item, i) => (
               <div 
                 key={i}
@@ -429,10 +417,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
             <p className={`text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6 ${featuresInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-              Built for photographers
+              {t('home.featuresEyebrow')}
             </p>
             <h2 className={`font-display text-4xl md:text-5xl leading-tight max-w-3xl mx-auto ${featuresInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-              Everything you need to deliver professionally
+              {t('home.featuresTitle')}
             </h2>
           </div>
 
@@ -440,23 +428,23 @@ export default function HomePage() {
             {[
               {
                 icon: Shield,
-                title: 'Secure by default',
-                description: 'Every gallery can be password-protected with customizable expiration dates. Your work stays private until you decide otherwise.'
+                title: t('home.feature1Title'),
+                description: t('home.feature1Desc')
               },
               {
                 icon: BarChart3,
-                title: 'Know when they view',
-                description: 'Real-time analytics show you exactly when clients open their gallery, which photos they favorite, and what they download.'
+                title: t('home.feature2Title'),
+                description: t('home.feature2Desc')
               },
               {
                 icon: Layers,
-                title: 'Curated themes',
-                description: 'Choose from gallery themes designed for different shoots - weddings, portraits, concerts, architecture. Each theme changes layout, not just colors.'
+                title: t('home.feature3Title'),
+                description: t('home.feature3Desc')
               },
               {
                 icon: Clock,
-                title: 'Pay only when you deliver',
-                description: 'No monthly fees during slow months. Create a gallery when you have photos to deliver, pay per gallery. Simple.'
+                title: t('home.feature4Title'),
+                description: t('home.feature4Desc')
               },
             ].map((feature, i) => (
               <div 
@@ -484,13 +472,13 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className={`text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6 ${pricingInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-              Simple pricing
+              {t('home.pricingEyebrow')}
             </p>
             <h2 className={`font-display text-4xl md:text-5xl leading-tight mb-6 ${pricingInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-              Pay for what you use
+              {t('home.pricingTitle')}
             </h2>
             <p className={`text-white/50 font-body max-w-xl mx-auto ${pricingInView ? 'animate-fadeInUp delay-200' : 'opacity-0'}`}>
-              No monthly commitment. Start with pay-as-you-go, upgrade when your volume grows.
+              {t('home.pricingSubtitle')}
             </p>
           </div>
 
@@ -501,28 +489,28 @@ export default function HomePage() {
               <div className="relative bg-[#161618] border border-gold/30 rounded-lg p-8 md:p-10 h-full">
                 <div className="flex items-center gap-3 mb-6">
                   <span className="px-3 py-1 text-xs tracking-wider uppercase bg-coral/20 text-coral rounded-chip font-body font-medium">
-                    Most Popular
+                    {t('home.pricingMostPopular')}
                   </span>
                 </div>
-                
-                <h3 className="font-display text-2xl mb-2">Pay as you go</h3>
-                
+
+                <h3 className="font-display text-2xl mb-2">{t('home.paygTitle')}</h3>
+
                 <div className="flex items-baseline gap-2 mb-6">
                   <span className="font-display text-5xl text-gold">4.90€</span>
-                  <span className="text-white/50 font-body">/ gallery</span>
+                  <span className="text-white/50 font-body">{t('home.paygPerGallery')}</span>
                 </div>
-                
+
                 <p className="text-white/50 font-body mb-8 leading-relaxed">
-                  Perfect for photographers who deliver occasionally. No subscription, no extrafees. Pay only when you have photos to share.
+                  {t('home.paygDesc')}
                 </p>
-                
+
                 <ul className="space-y-4 mb-10">
                   {[
-                    'Up to 200 photos per gallery',
-                    'Password & expiration control',
-                    'Full resolution downloads',
-                    '3 months storage included',
-                    'Basic view analytics',
+                    t('home.paygFeature1'),
+                    t('home.paygFeature2'),
+                    t('home.paygFeature3'),
+                    t('home.paygFeature4'),
+                    t('home.paygFeature5'),
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm font-body">
                       <Check className="w-4 h-4 text-gold flex-shrink-0" strokeWidth={1.5} />
@@ -537,7 +525,7 @@ export default function HomePage() {
   className="w-full h-14 bg-white text-black border border-gray-300 font-body font-semibold text-sm rounded-none hover:bg-gray-100 transition-all disabled:opacity-50 btn-press"
   data-testid="pricing-payg-btn"
 >
-  Get started
+  {t('home.getStarted')}
 </button>
               </div>
             </div>
@@ -545,24 +533,24 @@ export default function HomePage() {
             {/* Studio Plan */}
             <div className={`${pricingInView ? 'animate-fadeInUp delay-400' : 'opacity-0'}`}>
               <div className="bg-[#161618] border border-white/10 rounded-lg p-8 h-full flex flex-col">
-                <h3 className="font-display text-2xl mb-2">Studio</h3>
-                
+                <h3 className="font-display text-2xl mb-2">{t('home.studioTitle')}</h3>
+
                 <div className="flex items-baseline gap-2 mb-6">
                   <span className="font-display text-4xl">19€</span>
-                  <span className="text-white/50 font-body">/ month</span>
+                  <span className="text-white/50 font-body">{t('home.studioPerMonth')}</span>
                 </div>
-                
+
                 <p className="text-white/50 font-body mb-8 leading-relaxed text-sm">
-                  For busy photographers delivering 4+ galleries monthly.
+                  {t('home.studioDesc')}
                 </p>
-                
+
                 <ul className="space-y-3 mb-10 flex-1">
                   {[
-                    'Unlimited galleries',
-                    '100 GB storage',
-                    'Advanced analytics',
-                    '6 months hosting',
-                    'Priority support',
+                    t('home.studioFeature1'),
+                    t('home.studioFeature2'),
+                    t('home.studioFeature3'),
+                    t('home.studioFeature4'),
+                    t('home.studioFeature5'),
                   ].map((item, i) => (
                     <li key={i} className="flex items-center gap-3 text-sm font-body">
                       <Check className="w-4 h-4 text-white/40 flex-shrink-0" strokeWidth={1.5} />
@@ -577,7 +565,7 @@ export default function HomePage() {
                   className="w-full h-12 border border-white/20 text-white font-body font-medium text-sm rounded-none hover:bg-white/5 transition-all disabled:opacity-50"
                   data-testid="pricing-studio-btn"
                 >
-                  Subscribe
+                  {t('home.subscribe')}
                 </button>
               </div>
             </div>
@@ -587,9 +575,9 @@ export default function HomePage() {
           <div className={`mt-8 ${pricingInView ? 'animate-fadeInUp delay-500' : 'opacity-0'}`}>
             <div className="bg-[#161618] border border-white/5 rounded-lg p-6 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
-                <h4 className="font-display text-lg mb-2">Not sure yet?</h4>
+                <h4 className="font-display text-lg mb-2">{t('home.notSureTitle')}</h4>
                 <p className="text-sm text-white/50 font-body">
-                  Test with one real gallery for 1€. Limited to 20 photos, expires in 7 days.
+                  {t('home.notSureDesc')}
                 </p>
               </div>
               <button
@@ -598,7 +586,7 @@ export default function HomePage() {
   className="h-11 px-6 bg-white text-black border border-gray-300 font-body text-sm rounded-none hover:bg-gray-100 transition-all whitespace-nowrap disabled:opacity-50"
   data-testid="pricing-trial-btn"
 >
-  Try for 1€
+  {t('home.tryFor1')}
 </button>
             </div>
           </div>
@@ -616,10 +604,10 @@ export default function HomePage() {
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-16">
             <p className={`text-xs tracking-[0.2em] uppercase text-gold font-body font-medium mb-6 ${faqInView ? 'animate-fadeInUp' : 'opacity-0'}`}>
-              Questions
+              {t('home.faqEyebrow')}
             </p>
             <h2 className={`font-display text-4xl md:text-5xl leading-tight ${faqInView ? 'animate-fadeInUp delay-100' : 'opacity-0'}`}>
-              Frequently asked
+              {t('home.faqTitle')}
             </h2>
           </div>
 
@@ -663,26 +651,26 @@ export default function HomePage() {
             <div>
               <span className="font-display text-xl text-white/80">ArtyDrop</span>
               <p className="text-sm text-white/40 font-body mt-2">
-                Premium photo delivery for photographers
+                {t('home.footerTagline')}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-8 text-sm font-body">
               <Link href="/legal/terms" className="text-white/40 hover:text-white transition-colors">
-                Terms
+                {t('home.footerTerms')}
               </Link>
               <Link href="/legal/privacy" className="text-white/40 hover:text-white transition-colors">
-                Privacy
+                {t('home.footerPrivacy')}
               </Link>
               <Link href="/legal/mentions-legales" className="text-white/40 hover:text-white transition-colors">
-                Legal Notice
+                {t('home.footerLegal')}
               </Link>
             </div>
           </div>
-          
+
           <div className="mt-12 pt-8 border-t border-white/5 text-center">
             <p className="text-xs text-white/30 font-body">
-              2026 ArtyDrop. All rights reserved.
+              {t('home.footerCopyright')}
             </p>
           </div>
         </div>
