@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
+import { track } from '@vercel/analytics'
 import { saveFileToDevice } from '@/lib/downloadFile'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 
@@ -1361,7 +1362,15 @@ function PublicGalleryPageInner() {
               </a>
             )}
 
-            <p className="text-[9px] tracking-[0.3em] uppercase text-white/10 font-body mt-4">{t('gallery.deliveredVia')}</p>
+            <a
+              href="/?utm_source=client_gallery&utm_medium=footer&utm_campaign=delivered_via"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => track('delivered_via_click', { galleryToken: token })}
+              className="inline-block text-[9px] tracking-[0.3em] uppercase text-white/10 hover:text-white/40 font-body mt-4 transition-colors"
+            >
+              {t('gallery.deliveredVia')}
+            </a>
           </div>
         </motion.div>
       </footer>

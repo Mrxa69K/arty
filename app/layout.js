@@ -1,4 +1,5 @@
 import './globals.css'
+import { Analytics } from '@vercel/analytics/next'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from './providers'
 import { LanguageProvider } from '@/lib/i18n/LanguageContext'
@@ -36,8 +37,8 @@ export default function RootLayout({ children }) {
             {children}
           </AuthProvider>
         </LanguageProvider>
-        <Toaster 
-          position="top-right" 
+        <Toaster
+          position="top-right"
           toastOptions={{
             style: {
               background: '#161618',
@@ -46,6 +47,7 @@ export default function RootLayout({ children }) {
             },
           }}
         />
+        <Analytics />
       </body>
     </html>
   )
