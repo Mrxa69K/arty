@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from 'sonner'
+import { NotificationBell } from '@/app/(dashboard)/_components/NotificationBell'
 
 export default function ClientDashboard() {
   const { user } = useAuth()
@@ -89,6 +90,8 @@ export default function ClientDashboard() {
             </span>
           </Link>
 
+          <div className="flex items-center gap-3">
+          {user?.id && <NotificationBell userId={user.id} />}
           {/* Profile Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -135,6 +138,7 @@ export default function ClientDashboard() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </header>
 

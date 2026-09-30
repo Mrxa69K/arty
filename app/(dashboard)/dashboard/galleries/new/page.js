@@ -708,6 +708,19 @@ const handlePublish = async () => {
       }
     }
 
+    // Best-effort: if this client email already has an account, nudge their
+    // notification bell too — not just the (currently unreliable) email.
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        fetch('/api/galleries/notify-client', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+          body: JSON.stringify({ galleryId }),
+        }).catch(() => {})
+      }
+    } catch { /* non-critical */ }
+
     // ✅ Success!  Show modal
     console.log('✅ Publish complete!')
     setShowSuccessModal(true)
