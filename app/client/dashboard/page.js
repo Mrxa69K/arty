@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers'
 import Link from 'next/link'
-import { Loader2, ArrowUpRight, Image as ImageIcon, User, Settings, LogOut } from 'lucide-react'
+import { Loader2, ArrowUpRight, Image as ImageIcon, User, Settings, LogOut, Lock, Clock } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import {
   DropdownMenu,
@@ -45,7 +45,14 @@ export default function ClientDashboard() {
 
   const fetchSharedGalleries = async () => {
     try {
-      setSharedGalleries([])
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const res = await fetch('/api/client/shared-galleries', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (res.ok) setSharedGalleries(data.galleries || [])
     } catch (error) {
       console.error('Error fetching galleries:', error)
     } finally {
@@ -173,10 +180,68 @@ export default function ClientDashboard() {
                   No galleries yet
                 </h3>
                 <p className="text-sm text-black/50 leading-relaxed">
-                  When a photographer shares a gallery with you, it will appear here. 
+                  When a photographer shares a gallery with you, it will appear here.
                   You'll receive an email notification with the link.
                 </p>
               </div>
+            </div>
+          )}
+
+          {/* Gallery grid */}
+          {sharedGalleries.length > 0 && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {sharedGalleries.map((gallery) => (
+                <Link
+                  key={gallery.id}
+                  href={gallery.expired ? '#' : `/g/${gallery.token}`}
+                  className={`group block bg-white/70 backdrop-blur-sm border border-black/8 rounded-2xl overflow-hidden transition-all ${
+                    gallery.expired ? 'opacity-60 pointer-events-none' : 'hover:shadow-lg hover:-translate-y-0.5'
+                  }`}
+                >
+                  <div className="aspect-[4/3] bg-black/5 relative overflow-hidden">
+                    {gallery.coverImageUrl ? (
+                      <img
+                        src={gallery.coverImageUrl}
+                        alt=""
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageIcon className="w-10 h-10 text-black/15" />
+                      </div>
+                    )}
+                    {gallery.expired && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 text-white text-[11px] px-2.5 py-1 rounded-full">
+                        <Clock className="w-3 h-3" />
+                        Expired
+                      </div>
+                    )}
+                    {!gallery.expired && gallery.hasPassword && (
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 text-white text-[11px] px-2.5 py-1 rounded-full">
+                        <Lock className="w-3 h-3" />
+                        Protected
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-5">
+                    <h3 className="font-serif text-lg text-black/90 mb-1 truncate">{gallery.title}</h3>
+                    {gallery.photographerName && (
+                      <p className="text-xs text-black/40 mb-1">by {gallery.photographerName}</p>
+                    )}
+                    {gallery.eventDate && (
+                      <p className="text-xs text-black/40">
+                        {new Date(gallery.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                      </p>
+                    )}
+                    {!gallery.expired && (
+                      <div className="mt-3 flex items-center gap-1 text-xs text-black/60 group-hover:text-black transition-colors">
+                        View gallery
+                        <ArrowUpRight className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </section>
