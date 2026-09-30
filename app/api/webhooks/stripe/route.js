@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { headers } from 'next/headers'
 import { resend } from '@/lib/resend'
 import { emailTemplates } from '@/lib/emailTemplates'
+import { rewardReferrerIfApplicable } from '@/lib/referral'
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -308,6 +309,13 @@ export async function POST(req) {
         .eq('id', userId)
     }
 
+    if (plan === 'payg' || plan === 'studio') {
+      try {
+        await rewardReferrerIfApplicable(userId)
+      } catch (referralError) {
+        console.error('Referral reward failed (non-critical):', referralError)
+      }
+    }
 
     console.log(`Plan "${plan}" activated for user ${userId}`)
   }

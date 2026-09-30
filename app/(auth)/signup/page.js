@@ -64,6 +64,15 @@ export default function SignupPage() {
         if (profileError) {
           console.error('Profile upsert error:', profileError)
         }
+
+        const refCode = new URLSearchParams(window.location.search).get('ref')
+        if (refCode) {
+          fetch('/api/referral/attach', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code: refCode, referredUserId: authData.user.id }),
+          }).catch(() => {})
+        }
       }
 
       toast.success('Account created successfully!')

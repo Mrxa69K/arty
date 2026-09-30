@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers'
 import { toast } from 'sonner'
-import { Loader2, Instagram, Globe, Facebook, Save, User, Link2, CreditCard, CheckCircle2 } from 'lucide-react'
+import { Loader2, Instagram, Globe, Facebook, Save, User, Link2, CreditCard, CheckCircle2, Gift, Copy, Check } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -16,6 +16,10 @@ export default function SettingsPage() {
   const [connectStatus, setConnectStatus] = useState(null)
   const [isLoadingConnect, setIsLoadingConnect] = useState(true)
   const [isConnecting, setIsConnecting] = useState(false)
+
+  const [referral, setReferral] = useState(null)
+  const [isLoadingReferral, setIsLoadingReferral] = useState(true)
+  const [copied, setCopied] = useState(false)
 
   const [form, setForm] = useState({
     full_name: '',
@@ -34,6 +38,35 @@ export default function SettingsPage() {
   useEffect(() => {
     if (user) fetchConnectStatus()
   }, [user, searchParams])
+
+  useEffect(() => {
+    if (user) fetchReferral()
+  }, [user])
+
+  const fetchReferral = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+
+      const res = await fetch('/api/referral', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      const data = await res.json()
+      if (res.ok) setReferral(data)
+    } catch (err) {
+      console.error('Failed to load referral info', err)
+    } finally {
+      setIsLoadingReferral(false)
+    }
+  }
+
+  const handleCopyReferralLink = async () => {
+    if (!referral?.link) return
+    await navigator.clipboard.writeText(referral.link)
+    setCopied(true)
+    toast.success('Link copied')
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   const fetchConnectStatus = async () => {
     try {
@@ -323,6 +356,50 @@ export default function SettingsPage() {
                 }
                 {isConnecting ? 'Redirecting...' : 'Connect Stripe'}
               </button>
+            </div>
+          )}
+        </section>
+
+        <div className="border-t border-white/5" />
+
+        {/* ── Referral ── */}
+        <section>
+          <div className="flex items-center gap-2 mb-6">
+            <Gift className="w-3.5 h-3.5 text-white/25" strokeWidth={1.5} />
+            <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body">Refer a photographer</p>
+          </div>
+
+          {isLoadingReferral ? (
+            <div className="flex items-center gap-2 px-4 py-4 bg-white/[0.02] border border-white/5 rounded-sm">
+              <Loader2 className="w-4 h-4 text-white/20 animate-spin" strokeWidth={1.5} />
+              <p className="text-xs text-white/30 font-body">Loading...</p>
+            </div>
+          ) : (
+            <div className="px-4 py-5 bg-white/[0.02] border border-white/5 rounded-sm">
+              <p className="text-[11px] text-white/30 font-body mb-4 leading-relaxed">
+                Share your link. When someone signs up and becomes a paying customer, you get a reward &mdash; a free gallery credit, or 20% off your next payment if you're already on Studio.
+              </p>
+              <div className="flex items-center gap-2 mb-4">
+                <input
+                  type="text"
+                  readOnly
+                  value={referral?.link || ''}
+                  onClick={(e) => e.target.select()}
+                  className="flex-1 h-11 bg-white/[0.03] border border-white/8 px-4 text-sm text-white/70 font-body focus:outline-none rounded-sm truncate"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyReferralLink}
+                  className="flex items-center gap-2 h-11 px-4 bg-white/[0.06] border border-white/10 text-white text-sm font-body font-medium hover:bg-white/10 transition-colors rounded-sm flex-shrink-0"
+                >
+                  {copied ? <Check className="w-4 h-4" strokeWidth={2} /> : <Copy className="w-4 h-4" strokeWidth={2} />}
+                  {copied ? 'Copied' : 'Copy'}
+                </button>
+              </div>
+              <div className="flex items-center gap-6 text-xs text-white/40 font-body">
+                <span>{referral?.invited ?? 0} invited</span>
+                <span>{referral?.rewarded ?? 0} rewarded</span>
+              </div>
             </div>
           )}
         </section>
