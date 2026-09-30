@@ -37,27 +37,44 @@ export async function GET(request) {
     if (error) throw error
 
     const now = new Date()
-    const shared = (galleries || [])
-      .map((gallery) => {
-        const link = gallery.gallery_links?.[0]
-        if (!link) return null
+    const withLinks = (galleries || []).filter((gallery) => gallery.gallery_links?.[0])
+
+    // Not every gallery has an explicitly chosen cover_image_url — fall back to
+    // its first photo's watermarked preview (never the clean original, since a
+    // sale-mode gallery's full-res image shouldn't be visible before purchase).
+    const shared = await Promise.all(
+      withLinks.map(async (gallery) => {
+        const link = gallery.gallery_links[0]
 
         const linkExpiry = link.expires_at ? new Date(link.expires_at) : null
         const galleryExpiry = gallery.expires_at ? new Date(gallery.expires_at) : null
         const expired = (linkExpiry && linkExpiry < now) || (galleryExpiry && galleryExpiry < now)
+
+        let coverImageUrl = gallery.cover_image_url
+        if (!coverImageUrl) {
+          const { data: photos } = await supabaseAdmin
+            .from('photos')
+            .select('preview_url, image_url, media_type')
+            .eq('gallery_id', gallery.id)
+            .order('sort_order', { ascending: true })
+            .limit(1)
+
+          const first = photos?.[0]
+          coverImageUrl = first?.preview_url || (first?.media_type !== 'video' ? first?.image_url : null) || null
+        }
 
         return {
           id: gallery.id,
           title: gallery.title,
           photographerName: gallery.profiles?.business_name || gallery.profiles?.full_name || null,
           eventDate: gallery.event_date,
-          coverImageUrl: gallery.cover_image_url,
+          coverImageUrl,
           token: link.token,
           hasPassword: !!link.password_hash,
           expired,
         }
       })
-      .filter(Boolean)
+    )
 
     return NextResponse.json({ galleries: shared })
   } catch (error) {
