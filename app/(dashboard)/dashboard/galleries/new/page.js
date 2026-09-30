@@ -682,10 +682,14 @@ const handlePublish = async () => {
       console.log('🔵 Sending email to:', details.clientEmail)
       try {
         const galleryUrl = `${window.location.origin}/g/${galleryLink.token}`
-        
+        const { data: { session: emailSession } } = await supabase.auth.getSession()
+
         const emailResponse = await fetch('/api/send-email', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(emailSession ? { Authorization: `Bearer ${emailSession.access_token}` } : {}),
+          },
           body: JSON.stringify({
             type: 'galleryShared',
             to: details.clientEmail,

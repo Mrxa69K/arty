@@ -1,11 +1,38 @@
 import { resend } from '@/lib/resend'
 import { emailTemplates } from '@/lib/emailTemplates'
 import { NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request) {
   console.log('📧 Email API called')
-  
+
   try {
+    // This was a fully open, unauthenticated email relay — anyone could POST
+    // an arbitrary "to" address + template type and have a real email sent
+    // from our domain. Only one legitimate caller exists (the gallery
+    // publish flow, already authenticated) — require the same Bearer auth
+    // here instead of trusting any caller.
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Not authenticated. Please log in.' }, { status: 401 })
+    }
+
+    const supabaseAuth = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+      { global: { headers: { Authorization: authHeader } } }
+    )
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser()
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Not authenticated. Please log in.' }, { status: 401 })
+    }
+
+    const { allowed } = await checkRateLimit(`send-email:${user.id}`, { maxAttempts: 20, windowMinutes: 60 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many emails sent. Please try again later.' }, { status: 429 })
+    }
+
     const { type, to, data } = await request.json()
     console.log('📧 Request:', { type, to })
 

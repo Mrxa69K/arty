@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createPurchaseToken } from '@/lib/purchaseAccess'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 export async function POST(request, { params }) {
   const { sessionId } = await params
 
   try {
+    const { allowed } = await checkRateLimit(`verify-email:${sessionId}`, { maxAttempts: 10, windowMinutes: 15 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many attempts. Please try again later.' }, { status: 429 })
+    }
+
     const { email } = await request.json()
     if (!email) {
       return NextResponse.json({ error: 'Email is required' }, { status: 400 })

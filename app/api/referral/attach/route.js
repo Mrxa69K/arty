@@ -1,11 +1,17 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 // Called once right after signup completes. Public/unauthenticated by design —
 // the new user's own session isn't fully established client-side yet at this
 // point, and the payload only ever links two ids that already exist.
 export async function POST(request) {
   try {
+    const { allowed } = await checkRateLimit(`referral-attach:${getClientIp(request)}`, { maxAttempts: 20, windowMinutes: 10 })
+    if (!allowed) {
+      return NextResponse.json({ ok: false })
+    }
+
     const { code, referredUserId } = await request.json()
     if (!code || !referredUserId) {
       return NextResponse.json({ ok: false })

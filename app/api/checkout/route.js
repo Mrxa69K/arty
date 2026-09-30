@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { hasUsedTestPlan } from '@/lib/planValidation'
+import { checkRateLimit } from '@/lib/rateLimit'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 const supabase = createClient(
@@ -47,6 +48,11 @@ export async function POST(request) {
     }
 
     console.log('✅ Authenticated user:', user.id, user.email)
+
+    const { allowed } = await checkRateLimit(`checkout:${user.id}`, { maxAttempts: 15, windowMinutes: 10 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
 
     // Get plan from request body
     const { plan } = await request.json()

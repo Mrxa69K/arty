@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 const MIN_TIP_CENTS = 100 // €1
 
@@ -8,6 +9,11 @@ export async function POST(request, { params }) {
   const { token } = await params
 
   try {
+    const { allowed } = await checkRateLimit(`tip-checkout:${getClientIp(request)}`, { maxAttempts: 15, windowMinutes: 10 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const { amountCents } = await request.json()
 
     if (!Number.isInteger(amountCents) || amountCents < MIN_TIP_CENTS) {

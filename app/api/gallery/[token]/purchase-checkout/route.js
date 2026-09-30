@@ -2,11 +2,17 @@ import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { computeApplicationFeeCents } from '@/lib/stripeConnect'
+import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 
 export async function POST(request, { params }) {
   const { token } = await params
 
   try {
+    const { allowed } = await checkRateLimit(`purchase-checkout:${getClientIp(request)}`, { maxAttempts: 15, windowMinutes: 10 })
+    if (!allowed) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
+    }
+
     const { photoIds } = await request.json()
 
     if (!Array.isArray(photoIds) || photoIds.length === 0) {
