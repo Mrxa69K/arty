@@ -265,6 +265,26 @@ export async function POST(req) {
       return new Response('Missing metadata', { status: 400 })
     }
 
+    // Stripe delivers webhooks at-least-once — the tip/photo_purchase branches
+    // above are already idempotent via unique constraints on their own rows,
+    // but plan activation (payg credits, studio/test status) was just a plain
+    // UPDATE with no dedup at all. A retried event would grant a second free
+    // PAYG credit, or re-run the referral reward, for one payment. Claiming
+    // the session id here once, atomically, makes the whole plan-activation
+    // path idempotent in one place instead of patching each branch.
+    const { error: claimError } = await supabaseAdmin
+      .from('processed_checkout_sessions')
+      .insert({ session_id: session.id })
+
+    if (claimError) {
+      if (claimError.code === '23505') {
+        console.log(`Checkout session ${session.id} already processed, skipping`)
+        return new Response('ok')
+      }
+      console.error('Failed to claim checkout session as processed:', claimError)
+      return new Response('Server error', { status: 500 })
+    }
+
     let planExpiresAt = null
     if (plan === 'test') {
       planExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()

@@ -49,15 +49,22 @@ export async function POST(request) {
     }, { status: 403 })
   }
 
-  // Get photo to delete from R2
+  // Get photo to delete from R2 — always scoped to galleryId too (already
+  // verified above to belong to this user), never trust photoId alone. A
+  // photoId belonging to a different gallery simply won't match here.
   const { data: photo } = await supabaseAdmin
     .from('photos')
     .select('storage_path')
     .eq('id', photoId)
+    .eq('gallery_id', galleryId)
     .single()
 
+  if (!photo) {
+    return NextResponse.json({ error: 'Photo not found in this gallery' }, { status: 404 })
+  }
+
   // Delete from R2
-  if (photo?.storage_path) {
+  if (photo.storage_path) {
     try {
       await r2Client.send(new DeleteObjectCommand({
         Bucket: R2_BUCKET,
@@ -69,7 +76,7 @@ export async function POST(request) {
   }
 
   // Delete from DB
-  await supabaseAdmin.from('photos').delete().eq('id', photoId)
+  await supabaseAdmin.from('photos').delete().eq('id', photoId).eq('gallery_id', galleryId)
 
   return NextResponse.json({ success: true })
 }

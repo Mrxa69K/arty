@@ -98,10 +98,27 @@ export async function POST(request) {
 
     // First real paid checkout for a referred signup gets 20% off automatically —
     // no code to enter. Never for the €1 test plan, and only once per account.
-    const applyReferralDiscount =
-      (normalizedPlan === 'payg' || normalizedPlan === 'studio') &&
-      !!profileForCheckout?.referred_by &&
-      !profileForCheckout?.used_referral_discount
+    //
+    // Claimed atomically right here at session-creation time (not read-only —
+    // an actual conditional UPDATE), not left for the webhook to flag after
+    // payment. A plain read-then-decide here let someone open two checkout
+    // sessions concurrently before either completed payment and have both
+    // honor the discount. The trade-off: if this exact session is abandoned
+    // without ever being paid, the discount is still spent — an accepted,
+    // minor cost for closing the concurrent-claim race without needing a
+    // second Stripe webhook subscription (checkout.session.expired) to
+    // release it back.
+    let applyReferralDiscount = false
+    if ((normalizedPlan === 'payg' || normalizedPlan === 'studio') && profileForCheckout?.referred_by) {
+      const { data: claimed } = await supabase
+        .from('profiles')
+        .update({ used_referral_discount: true })
+        .eq('id', user.id)
+        .eq('used_referral_discount', false)
+        .select()
+
+      applyReferralDiscount = !!claimed && claimed.length > 0
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({

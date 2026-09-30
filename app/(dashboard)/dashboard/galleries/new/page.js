@@ -164,11 +164,20 @@ export default function NewGalleryWizard() {
 
       const userPlan = profile?.plan_type || 'none'
 
-      // PAYG: check credits
+      // PAYG: atomically reserve a credit server-side BEFORE creating the
+      // gallery — profiles.gallery_credits can't be written from the client
+      // at all anymore (locked down by a DB trigger), and doing this first
+      // means a failed/raced reservation never leaves an orphaned gallery
+      // with no credit actually consumed for it.
       if (userPlan === 'payg') {
-        const credits = profile?.gallery_credits || 0
-        if (credits <= 0) {
-          toast.error('No gallery credits remaining. Purchase a new gallery to continue.')
+        const { data: { session } } = await supabase.auth.getSession()
+        const creditRes = await fetch('/api/galleries/consume-credit', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        if (!creditRes.ok) {
+          const creditData = await creditRes.json().catch(() => ({}))
+          toast.error(creditData.error || 'No gallery credits remaining. Purchase a new gallery to continue.')
           setTimeout(() => router.push('/dashboard'), 2000)
           return
         }
@@ -208,14 +217,6 @@ export default function NewGalleryWizard() {
       
       console.log('✅ Gallery created:', data.id)
       setGalleryId(data.id)
-
-      // PAYG: deduct 1 credit
-      if (userPlan === 'payg') {
-        await supabase
-          .from('profiles')
-          .update({ gallery_credits: Math.max(0, (profile?.gallery_credits || 1) - 1) })
-          .eq('id', user.id)
-      }
 
       await createDefaultFolders(data.id)
 

@@ -71,6 +71,18 @@ export async function GET(request, { params }) {
       ))
     }
 
+    // When downloads aren't allowed (sale-mode galleries, or any gallery the
+    // photographer simply hasn't opened up yet), never send the clean
+    // full-resolution original in this public listing — only the watermarked
+    // preview. Downloads are still allowed to include it: that flag means
+    // "this content is free to take" by definition, so there's nothing to
+    // protect there. Without this, the raw image_url/video_url sat in every
+    // response regardless of allow_download, fully bypassing the per-photo
+    // paywall for anyone reading the network response.
+    const photos = link.allow_download === false
+      ? (photosData || []).map(({ image_url, video_url, ...rest }) => rest)
+      : (photosData || [])
+
     // 🆕 Récupérer les folders
     const { data: folders, error: foldersError } = await supabaseAdmin
       .from('folders')
@@ -83,7 +95,7 @@ export async function GET(request, { params }) {
     }
 
     return handleCORS(NextResponse.json({
-      photos: photosData || [],
+      photos,
       folders: folders || [],
       allow_download: link.allow_download !== false
     }))
