@@ -8,7 +8,6 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Loader2, ArrowLeft, User } from 'lucide-react'
 
@@ -85,137 +84,112 @@ export default function ClientProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F0EA]">
-        <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="w-8 h-8 animate-spin text-gold" strokeWidth={1.5} />
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
-      {/* Background */}
-      <div
-        className="fixed inset-0"
-        style={{
-          backgroundImage: "url('/cover.webp')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      <div className="fixed inset-0 bg-[#F5F0EA]/80" />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.12] mix-blend-multiply"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-          backgroundSize: 'cover',
-        }}
-      />
+    <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
+      {/* Header */}
+      <header className="pt-8 px-6 sm:px-12 max-w-4xl mx-auto">
+        <Link
+          href="/client/dashboard"
+          className="inline-flex items-center gap-2 text-sm font-body text-white/50 hover:text-white transition-colors mb-8"
+        >
+          <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
+          Back to dashboard
+        </Link>
+      </header>
 
-      <div className="relative z-10 min-h-screen">
-        {/* Header */}
-        <header className="pt-8 px-6 sm:px-12 max-w-4xl mx-auto">
-          <Link 
-            href="/client/dashboard"
-            className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors mb-8"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to dashboard
-          </Link>
-        </header>
+      {/* Main Content */}
+      <section className="py-6 px-6 sm:px-12 max-w-2xl mx-auto">
+        <div className="mb-10">
+          <h1 className="font-display text-3xl sm:text-4xl text-white mb-2">
+            Profile
+          </h1>
+          <p className="text-sm text-white/50 font-body">
+            Manage your personal information
+          </p>
+        </div>
 
-        {/* Main Content */}
-        <section className="py-6 px-6 sm:px-12 max-w-2xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl sm:text-4xl font-serif text-black/90 mb-2">
-              Profile
-            </h1>
-            <p className="text-sm text-black/60">
-              Manage your personal information
-            </p>
+        <div className="bg-[#121212] border border-white/5 rounded-sm p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center">
+              <User className="w-5 h-5 text-white/50" strokeWidth={1.5} />
+            </div>
+            <h2 className="font-display text-lg text-white">Personal Information</h2>
           </div>
 
-          <Card className="border border-black/10 bg-[#F8F3EB]/95 shadow-xl rounded-3xl">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                <div className="w-10 h-10 rounded-full bg-black/10 flex items-center justify-center">
-                  <User className="w-5 h-5 text-black/60" />
-                </div>
-                Personal Information
-              </CardTitle>
-            </CardHeader>
+          <form onSubmit={handleSave} className="space-y-5">
+            {/* Full Name */}
+            <div>
+              <Label htmlFor="fullName" className="block text-xs text-white/40 font-body mb-2">
+                Full Name
+              </Label>
+              <Input
+                id="fullName"
+                type="text"
+                placeholder="John Doe"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                required
+                disabled={isSaving}
+                className="h-11 rounded-sm border-white/8 bg-white/[0.03] text-sm text-white placeholder:text-white/20 font-body focus-visible:ring-0 focus-visible:border-white/20"
+              />
+            </div>
 
-            <form onSubmit={handleSave}>
-              <CardContent className="space-y-5">
-                {/* Full Name */}
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="text-xs text-black/70">
-                    Full Name
-                  </Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="John Doe"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                    disabled={isSaving}
-                    className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                  />
-                </div>
+            {/* Email */}
+            <div>
+              <Label htmlFor="email" className="block text-xs text-white/40 font-body mb-2">
+                Email Address
+              </Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                disabled={isSaving}
+                className="h-11 rounded-sm border-white/8 bg-white/[0.03] text-sm text-white placeholder:text-white/20 font-body focus-visible:ring-0 focus-visible:border-white/20"
+              />
+              <p className="text-[11px] text-white/25 font-body mt-1.5">
+                Changing your email will require verification
+              </p>
+            </div>
 
-                {/* Email */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-xs text-black/70">
-                    Email Address
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={isSaving}
-                    className="h-10 rounded-full border-black/10 bg-[#FDF9F3] text-sm"
-                  />
-                  <p className="text-[10px] text-black/50">
-                    Changing your email will require verification
-                  </p>
-                </div>
+            {/* Account Type */}
+            <div>
+              <Label className="block text-xs text-white/40 font-body mb-2">
+                Account Type
+              </Label>
+              <div className="h-11 flex items-center px-4 rounded-sm border border-white/8 bg-white/[0.02] text-sm text-white/60 font-body">
+                Client
+              </div>
+            </div>
 
-                {/* Account Type */}
-                <div className="space-y-2">
-                  <Label className="text-xs text-black/70">
-                    Account Type
-                  </Label>
-                  <div className="px-4 py-2.5 rounded-full border border-black/10 bg-white/60 text-sm text-black/70">
-                    Client
-                  </div>
-                </div>
-
-                {/* Save Button */}
-                <div className="pt-4">
-                  <Button
-                    type="submit"
-                    className="w-full h-10 rounded-full bg-black text-white hover:bg-black/90 text-sm"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving changes...
-                      </>
-                    ) : (
-                      'Save changes'
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </form>
-          </Card>
-        </section>
-      </div>
+            {/* Save Button */}
+            <div className="pt-2">
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-sm bg-gold text-black hover:bg-gold-light text-sm font-body font-semibold"
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving changes...
+                  </>
+                ) : (
+                  'Save changes'
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+      </section>
     </main>
   )
 }

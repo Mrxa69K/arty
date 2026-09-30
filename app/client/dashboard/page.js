@@ -24,7 +24,7 @@ export default function ClientDashboard() {
 
   useEffect(() => {
     if (!user) return
-    
+
     checkUserType()
     fetchSharedGalleries()
   }, [user])
@@ -72,180 +72,159 @@ export default function ClientDashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F5F0EA]">
-        <Loader2 className="w-8 h-8 animate-spin text-black/20" />
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a]">
+        <Loader2 className="w-8 h-8 animate-spin text-gold" strokeWidth={1.5} />
       </div>
     )
   }
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
-      {/* Background */}
-      <div
-        className="fixed inset-0"
-        style={{
-          backgroundImage: "url('/cover.webp')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
-      <div className="fixed inset-0 bg-[#F5F0EA]/80" />
-      <div
-        className="pointer-events-none fixed inset-0 opacity-[0.12] mix-blend-multiply"
-        style={{
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg viewBox='0 0 1600 900' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4' stitchTiles='noStitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E\")",
-          backgroundSize: 'cover',
-        }}
-      />
+    <main className="min-h-screen bg-[#0a0a0a] text-[#ededed]">
+      {/* Header with Profile Menu */}
+      <header className="pt-8 px-6 sm:px-12 max-w-7xl mx-auto">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="group">
+            <span className="font-display text-2xl text-white/90 tracking-tight group-hover:text-white transition-colors">
+              Artydrop
+            </span>
+          </Link>
 
-      <div className="relative z-10 min-h-screen">
-        {/* Header with Profile Menu */}
-        <header className="pt-8 px-6 sm:px-12 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <Link href="/" className="group">
-              <span className="text-2xl font-serif text-black/90 tracking-tight group-hover:text-black transition-colors">
-                Artydrop
-              </span>
-            </Link>
-            
-            {/* Profile Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="w-10 h-10 rounded-full bg-black/10 hover:bg-black/20 backdrop-blur-sm border border-black/10 flex items-center justify-center transition-all duration-300 hover:scale-105">
-                  <User className="w-5 h-5 text-black/70" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56 bg-white/95 backdrop-blur-xl border-black/10 rounded-2xl p-2">
-                <div className="px-3 py-2 mb-2">
-                  <p className="text-sm font-medium text-black/90">
-                    {userProfile?.full_name || 'Client'}
-                  </p>
-                  <p className="text-xs text-black/50">
-                    {user?.email}
-                  </p>
-                </div>
-                
-                <DropdownMenuSeparator className="bg-black/10" />
-                
-                <DropdownMenuItem 
-                  onClick={() => router.push('/client/profile')}
-                  className="rounded-xl cursor-pointer hover:bg-black/5 transition-colors"
-                >
-                  <User className="w-4 h-4 mr-2 text-black/50" />
-                  <span className="text-sm">Profile</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuItem 
-                  onClick={() => router.push('/client/settings')}
-                  className="rounded-xl cursor-pointer hover:bg-black/5 transition-colors"
-                >
-                  <Settings className="w-4 h-4 mr-2 text-black/50" />
-                  <span className="text-sm">Settings</span>
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator className="bg-black/10" />
-                
-                <DropdownMenuItem 
-                  onClick={handleSignOut}
-                  className="rounded-xl cursor-pointer hover:bg-red-50 transition-colors text-red-600"
-                >
-                  <LogOut className="w-4 h-4 mr-2" />
-                  <span className="text-sm">Sign out</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </header>
-
-        {/* Main Content */}
-        <section className="py-12 sm:py-20 px-6 sm:px-12 max-w-7xl mx-auto">
-          <div className="mb-12">
-            <h1 className="text-4xl sm:text-6xl font-serif text-black/90 mb-4">
-              Your galleries
-            </h1>
-            <p className="text-sm text-black/60">
-              View photos shared with you by photographers
-            </p>
-          </div>
-
-          {/* Empty state */}
-          {sharedGalleries.length === 0 && (
-            <div className="text-center py-20">
-              <div className="space-y-4 max-w-md mx-auto">
-                <div className="w-20 h-20 rounded-full bg-black/5 flex items-center justify-center mx-auto mb-6">
-                  <ImageIcon className="w-10 h-10 text-black/20" />
-                </div>
-                <h3 className="text-2xl font-serif text-black/90">
-                  No galleries yet
-                </h3>
-                <p className="text-sm text-black/50 leading-relaxed">
-                  When a photographer shares a gallery with you, it will appear here.
-                  You'll receive an email notification with the link.
+          {/* Profile Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="w-10 h-10 rounded-sm bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center transition-colors">
+                <User className="w-5 h-5 text-white/60" strokeWidth={1.5} />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 bg-[#121212] backdrop-blur-xl border-white/10 rounded-sm p-2">
+              <div className="px-3 py-2 mb-2">
+                <p className="text-sm font-body font-medium text-white/90">
+                  {userProfile?.full_name || 'Client'}
+                </p>
+                <p className="text-xs font-body text-white/40">
+                  {user?.email}
                 </p>
               </div>
-            </div>
-          )}
 
-          {/* Gallery grid */}
-          {sharedGalleries.length > 0 && (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sharedGalleries.map((gallery) => (
-                <Link
-                  key={gallery.id}
-                  href={gallery.expired ? '#' : `/g/${gallery.token}`}
-                  className={`group block bg-white/70 backdrop-blur-sm border border-black/8 rounded-2xl overflow-hidden transition-all ${
-                    gallery.expired ? 'opacity-60 pointer-events-none' : 'hover:shadow-lg hover:-translate-y-0.5'
-                  }`}
-                >
-                  <div className="aspect-[4/3] bg-black/5 relative overflow-hidden">
-                    {gallery.coverImageUrl ? (
-                      <img
-                        src={gallery.coverImageUrl}
-                        alt=""
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <ImageIcon className="w-10 h-10 text-black/15" />
-                      </div>
-                    )}
-                    {gallery.expired && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 text-white text-[11px] px-2.5 py-1 rounded-full">
-                        <Clock className="w-3 h-3" />
-                        Expired
-                      </div>
-                    )}
-                    {!gallery.expired && gallery.hasPassword && (
-                      <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 text-white text-[11px] px-2.5 py-1 rounded-full">
-                        <Lock className="w-3 h-3" />
-                        Protected
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-5">
-                    <h3 className="font-serif text-lg text-black/90 mb-1 truncate">{gallery.title}</h3>
-                    {gallery.photographerName && (
-                      <p className="text-xs text-black/40 mb-1">by {gallery.photographerName}</p>
-                    )}
-                    {gallery.eventDate && (
-                      <p className="text-xs text-black/40">
-                        {new Date(gallery.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
-                      </p>
-                    )}
-                    {!gallery.expired && (
-                      <div className="mt-3 flex items-center gap-1 text-xs text-black/60 group-hover:text-black transition-colors">
-                        View gallery
-                        <ArrowUpRight className="w-3.5 h-3.5" />
-                      </div>
-                    )}
-                  </div>
-                </Link>
-              ))}
+              <DropdownMenuSeparator className="bg-white/10" />
+
+              <DropdownMenuItem
+                onClick={() => router.push('/client/profile')}
+                className="rounded-sm cursor-pointer hover:bg-white/5 transition-colors"
+              >
+                <User className="w-4 h-4 mr-2 text-white/40" strokeWidth={1.5} />
+                <span className="text-sm font-body text-white/80">Profile</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={() => router.push('/client/settings')}
+                className="rounded-sm cursor-pointer hover:bg-white/5 transition-colors"
+              >
+                <Settings className="w-4 h-4 mr-2 text-white/40" strokeWidth={1.5} />
+                <span className="text-sm font-body text-white/80">Settings</span>
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="bg-white/10" />
+
+              <DropdownMenuItem
+                onClick={handleSignOut}
+                className="rounded-sm cursor-pointer hover:bg-red-500/10 transition-colors text-red-400"
+              >
+                <LogOut className="w-4 h-4 mr-2" strokeWidth={1.5} />
+                <span className="text-sm font-body">Sign out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <section className="py-12 sm:py-20 px-6 sm:px-12 max-w-7xl mx-auto">
+        <div className="mb-12 text-center">
+          <h1 className="font-display text-4xl sm:text-6xl text-white mb-4">
+            Your galleries
+          </h1>
+          <p className="text-lg sm:text-xl text-white/50 font-body">
+            View photos shared with you by photographers
+          </p>
+        </div>
+
+        {/* Empty state */}
+        {sharedGalleries.length === 0 && (
+          <div className="text-center py-20">
+            <div className="space-y-4 max-w-md mx-auto">
+              <div className="w-20 h-20 rounded-sm bg-white/5 border border-white/5 flex items-center justify-center mx-auto mb-6">
+                <ImageIcon className="w-10 h-10 text-white/15" strokeWidth={1.5} />
+              </div>
+              <h3 className="font-display text-2xl text-white">
+                No galleries yet
+              </h3>
+              <p className="text-sm text-white/40 font-body leading-relaxed">
+                When a photographer shares a gallery with you, it will appear here.
+                You'll receive an email notification with the link.
+              </p>
             </div>
-          )}
-        </section>
-      </div>
+          </div>
+        )}
+
+        {/* Gallery grid */}
+        {sharedGalleries.length > 0 && (
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sharedGalleries.map((gallery) => (
+              <Link
+                key={gallery.id}
+                href={gallery.expired ? '#' : `/g/${gallery.token}`}
+                className={`group block bg-[#121212] border border-white/5 rounded-sm overflow-hidden transition-colors ${
+                  gallery.expired ? 'opacity-50 pointer-events-none' : 'hover:border-white/10'
+                }`}
+              >
+                <div className="aspect-[4/3] bg-white/[0.02] relative overflow-hidden">
+                  {gallery.coverImageUrl ? (
+                    <img
+                      src={gallery.coverImageUrl}
+                      alt=""
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-10 h-10 text-white/10" strokeWidth={1.5} />
+                    </div>
+                  )}
+                  {gallery.expired && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/70 text-white text-[11px] font-body px-2.5 py-1 rounded-sm">
+                      <Clock className="w-3 h-3" strokeWidth={1.5} />
+                      Expired
+                    </div>
+                  )}
+                  {!gallery.expired && gallery.hasPassword && (
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5 bg-black/60 text-white text-[11px] font-body px-2.5 py-1 rounded-sm">
+                      <Lock className="w-3 h-3" strokeWidth={1.5} />
+                      Protected
+                    </div>
+                  )}
+                </div>
+                <div className="p-5">
+                  <h3 className="font-display text-lg text-white mb-1 truncate">{gallery.title}</h3>
+                  {gallery.photographerName && (
+                    <p className="text-xs text-white/40 font-body mb-1">by {gallery.photographerName}</p>
+                  )}
+                  {gallery.eventDate && (
+                    <p className="text-xs text-white/40 font-body">
+                      {new Date(gallery.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+                    </p>
+                  )}
+                  {!gallery.expired && (
+                    <div className="mt-3 flex items-center gap-1 text-xs text-gold font-body group-hover:text-gold-light transition-colors">
+                      View gallery
+                      <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={1.5} />
+                    </div>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
     </main>
   )
 }
