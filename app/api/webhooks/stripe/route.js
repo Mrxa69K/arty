@@ -276,7 +276,7 @@ export async function POST(req) {
       // PAYG: increment gallery credits by 1 per payment
       const { data: profile } = await supabaseAdmin
         .from('profiles')
-        .select('gallery_credits, plan_type')
+        .select('gallery_credits, plan_type, referred_by')
         .eq('id', userId)
         .single()
 
@@ -289,9 +289,16 @@ export async function POST(req) {
           plan_status: 'active',
           gallery_credits: currentCredits + 1,
           stripe_customer_id: session.customer || null,
+          ...(profile?.referred_by ? { used_referral_discount: true } : {}),
         })
         .eq('id', userId)
     } else {
+      const { data: profile } = await supabaseAdmin
+        .from('profiles')
+        .select('referred_by')
+        .eq('id', userId)
+        .single()
+
       const updates = {
         plan_type: plan,
         plan_status: 'active',
@@ -301,6 +308,9 @@ export async function POST(req) {
 
       if (plan === 'test') {
         updates.used_test_plan = true
+      }
+      if (plan === 'studio' && profile?.referred_by) {
+        updates.used_referral_discount = true
       }
 
       await supabaseAdmin

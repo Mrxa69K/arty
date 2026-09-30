@@ -83,18 +83,25 @@ export async function POST(request) {
     // Normalize plan name for metadata (use 'test' consistently)
     const normalizedPlan = plan === 'trial-gallery' ? 'test' : plan
 
-    if (normalizedPlan === 'test') {
-      const { data: existingProfile } = await supabase
-        .from('profiles')
-        .select('stripe_customer_id')
-        .eq('id', user.id)
-        .single()
+    const { data: profileForCheckout } = await supabase
+      .from('profiles')
+      .select('stripe_customer_id, referred_by, used_referral_discount')
+      .eq('id', user.id)
+      .single()
 
-      const { used, reason } = await hasUsedTestPlan(user.id, existingProfile?.stripe_customer_id)
+    if (normalizedPlan === 'test') {
+      const { used, reason } = await hasUsedTestPlan(user.id, profileForCheckout?.stripe_customer_id)
       if (used) {
         return NextResponse.json({ error: reason || 'Test plan already used' }, { status: 403 })
       }
     }
+
+    // First real paid checkout for a referred signup gets 20% off automatically —
+    // no code to enter. Never for the €1 test plan, and only once per account.
+    const applyReferralDiscount =
+      (normalizedPlan === 'payg' || normalizedPlan === 'studio') &&
+      !!profileForCheckout?.referred_by &&
+      !profileForCheckout?.used_referral_discount
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
@@ -109,6 +116,7 @@ export async function POST(request) {
       mode: normalizedPlan === 'studio' ? 'subscription' : 'payment',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
+      ...(applyReferralDiscount ? { discounts: [{ coupon: 'REFERRAL-STUDIO20' }] } : {}),
       metadata: {
         user_id: user.id,
         plan: normalizedPlan, // Store normalized plan name
