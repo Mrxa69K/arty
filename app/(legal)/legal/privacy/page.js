@@ -74,7 +74,12 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="8. Cookies">
-        <p>ArtyDrop only uses cookies that are strictly necessary for the service to work (session handling, authentication). These don't require consent under the ePrivacy directive. We never use advertising or third-party tracking cookies.</p>
+        <p>ArtyDrop uses two kinds of storage on your device:</p>
+        <ul>
+          <li><strong>Strictly necessary</strong> (no consent required): session and authentication, so you can stay logged in and access galleries you're entitled to. The service can't function without these.</li>
+          <li><strong>Analytics</strong> (only with your consent, via the cookie banner): anonymous, cookieless usage statistics (Vercel Analytics) to understand how the site is used. No persistent identifier, no cross-site tracking, and it's never active until you accept.</li>
+        </ul>
+        <p>We never use advertising or third-party tracking cookies. You can change your choice at any time via the "Cookie preferences" link in the footer.</p>
       </Section>
 
       <Section title="9. Security">

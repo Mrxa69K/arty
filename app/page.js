@@ -668,7 +668,13 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-white/5 text-center">
+          <div className="mt-12 pt-8 border-t border-white/5 text-center space-y-3">
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-cookie-preferences'))}
+              className="block mx-auto text-[10px] tracking-[0.2em] uppercase text-white/25 hover:text-white/50 font-body transition-colors"
+            >
+              {t('cookies.preferencesLink')}
+            </button>
             <p className="text-xs text-white/30 font-body">
               {t('home.footerCopyright')}
             </p>
