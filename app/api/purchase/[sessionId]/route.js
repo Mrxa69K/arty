@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { supabaseAdmin } from '@/lib/supabase-admin'
-import { createPurchaseToken } from '@/lib/purchaseAccess'
 
+function maskEmail(email) {
+  if (!email || !email.includes('@')) return null
+  const [local, domain] = email.split('@')
+  const masked = local.length <= 2 ? local[0] + '*' : local[0] + '*'.repeat(local.length - 2) + local.slice(-1)
+  return `${masked}@${domain}`
+}
+
+// Deliberately does NOT hand out the download access token or photo list here.
+// The Stripe checkout session_id lives in the browser URL/history indefinitely
+// (no expiry on this page) and is trivial to accidentally leak — a screenshot,
+// a pasted link, shared browser history. Requiring the buyer's own checkout
+// email (via the separate verify-email route) as a second factor means the
+// session_id alone isn't enough to unlock someone else's paid photos.
 export async function GET(request, { params }) {
   const { sessionId } = await params
 
@@ -15,8 +27,9 @@ export async function GET(request, { params }) {
 
     const { data: purchases, error } = await supabaseAdmin
       .from('photo_purchases')
-      .select('photo_id, photos(id, file_name, preview_url, image_url)')
+      .select('buyer_email')
       .eq('stripe_checkout_session_id', sessionId)
+      .limit(1)
 
     if (error) {
       console.error('Failed to resolve purchase:', error)
@@ -31,14 +44,8 @@ export async function GET(request, { params }) {
 
     return NextResponse.json({
       pending: false,
-      accessToken: createPurchaseToken(sessionId),
-      photos: purchases.map((p) => ({
-        id: p.photos.id,
-        file_name: p.photos.file_name,
-        // Preview only here — the clean original is only ever streamed
-        // through the download route itself, never exposed as a direct URL.
-        preview_url: p.photos.preview_url || p.photos.image_url,
-      })),
+      requiresEmail: true,
+      maskedEmail: maskEmail(purchases[0].buyer_email),
     })
   } catch (error) {
     console.error('Purchase resolve error:', error)

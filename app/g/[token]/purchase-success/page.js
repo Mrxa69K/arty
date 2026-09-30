@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
-import { Loader2, ArrowDownToLine, CheckCircle2 } from 'lucide-react'
+import { Loader2, ArrowDownToLine, CheckCircle2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import { saveFileToDevice } from '@/lib/downloadFile'
 
@@ -32,6 +32,16 @@ function PurchaseSuccessInner() {
   const [downloadingId, setDownloadingId] = useState(null)
   const [isDownloadingZip, setIsDownloadingZip] = useState(false)
 
+  // The checkout session_id in this page's URL has no expiry and can leak
+  // (screenshots, shared links, browser history) — the buyer's own checkout
+  // email is required as a second factor before any download access is
+  // granted, so the URL alone isn't a permanent bearer credential.
+  const [requiresEmail, setRequiresEmail] = useState(false)
+  const [maskedEmail, setMaskedEmail] = useState(null)
+  const [emailInput, setEmailInput] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verifyError, setVerifyError] = useState('')
+
   const resolve = useCallback(async () => {
     if (!sessionId) return
     try {
@@ -39,8 +49,8 @@ function PurchaseSuccessInner() {
       const data = await res.json()
       if (res.status === 202 && data.pending) return // keep polling
       if (!res.ok) { setError(data.error || 'Something went wrong'); setPending(false); return }
-      setPhotos(data.photos)
-      setAccessToken(data.accessToken)
+      setRequiresEmail(true)
+      setMaskedEmail(data.maskedEmail || null)
       setPending(false)
     } catch {
       setError('Something went wrong')
@@ -59,6 +69,31 @@ function PurchaseSuccessInner() {
     }, 2000)
     return () => clearInterval(interval)
   }, [sessionId, resolve])
+
+  const handleVerifyEmail = async (e) => {
+    e.preventDefault()
+    setIsVerifying(true)
+    setVerifyError('')
+    try {
+      const res = await fetch(`/api/purchase/${sessionId}/verify-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: emailInput }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setVerifyError(data.error || 'That email doesn\'t match this purchase')
+        return
+      }
+      setPhotos(data.photos)
+      setAccessToken(data.accessToken)
+      setRequiresEmail(false)
+    } catch {
+      setVerifyError('Something went wrong')
+    } finally {
+      setIsVerifying(false)
+    }
+  }
 
   const downloadPhoto = async (photo) => {
     setDownloadingId(photo.id)
@@ -132,7 +167,42 @@ function PurchaseSuccessInner() {
           </div>
         )}
 
-        {!pending && !error && (
+        {!pending && !error && requiresEmail && (
+          <div className="text-center py-16 max-w-sm mx-auto">
+            <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-6">
+              <Mail className="w-5 h-5 text-white/40" strokeWidth={1.5} />
+            </div>
+            <h1 className="font-display text-2xl text-white mb-3">Confirm it's you</h1>
+            <p className="text-sm text-white/40 font-body mb-8">
+              {maskedEmail
+                ? `Enter the email you used at checkout (${maskedEmail}) to unlock your photos.`
+                : 'Enter the email you used at checkout to unlock your photos.'}
+            </p>
+            <form onSubmit={handleVerifyEmail} className="space-y-3">
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full h-12 px-4 bg-white/5 border border-white/10 text-sm text-white placeholder:text-white/20 font-body text-center focus:outline-none focus:border-white/30 transition-colors"
+              />
+              {verifyError && (
+                <p className="text-xs text-red-400 font-body">{verifyError}</p>
+              )}
+              <button
+                type="submit"
+                disabled={isVerifying}
+                className="w-full h-12 bg-white text-black text-sm font-body font-semibold hover:bg-white/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {isVerifying && <Loader2 className="w-4 h-4 animate-spin" strokeWidth={2} />}
+                {isVerifying ? 'Checking...' : 'Unlock my photos'}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {!pending && !error && !requiresEmail && accessToken && (
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
             <div className="flex items-center gap-3 mb-2">
               <CheckCircle2 className="w-5 h-5 text-[#7AB8CB]" strokeWidth={1.5} />
