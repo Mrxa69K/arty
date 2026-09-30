@@ -14,6 +14,8 @@ import { format } from 'date-fns'
 import { track } from '@vercel/analytics'
 import { saveFileToDevice } from '@/lib/downloadFile'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import { useAuth } from '@/app/providers'
+import { supabase } from '@/lib/supabase'
 
 export default function PublicGalleryPage() {
   return (
@@ -31,6 +33,8 @@ function PublicGalleryPageInner() {
   const params = useParams()
   const searchParams = useSearchParams()
   const { lang, setLang, t } = useLanguage()
+  const { user: loggedInUser } = useAuth()
+  const [dashboardUrl, setDashboardUrl] = useState('/dashboard')
   const token = params.token
   const justRenewed = searchParams.get('renewed') === 'true'
   const justTipped = searchParams.get('tipped') === 'true'
@@ -78,6 +82,22 @@ function PublicGalleryPageInner() {
   useEffect(() => {
     if (token) fetchGalleryInfo()
   }, [token])
+
+  // Nav shows "Sign in" only for actual anonymous visitors — a logged-in
+  // client/photographer viewing a shared gallery link should see a way back
+  // to their own dashboard instead, not a login prompt for a session they
+  // already have.
+  useEffect(() => {
+    if (!loggedInUser) return
+    supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', loggedInUser.id)
+      .single()
+      .then(({ data }) => {
+        setDashboardUrl(data?.user_type === 'photographer' ? '/dashboard' : '/client/dashboard')
+      })
+  }, [loggedInUser])
 
   useEffect(() => {
     if (justTipped) toast.success(t('gallery.tipThanks'))
@@ -607,10 +627,10 @@ function PublicGalleryPageInner() {
             {lang === 'en' ? 'FR' : 'EN'}
           </button>
           <a
-            href="/login"
+            href={loggedInUser ? dashboardUrl : '/login'}
             className="text-[10px] tracking-[0.2em] uppercase text-white/30 hover:text-white font-body transition-colors"
           >
-            {t('gallery.signIn')}
+            {loggedInUser ? t('gallery.myDashboard') : t('gallery.signIn')}
           </a>
         </div>
       </header>
