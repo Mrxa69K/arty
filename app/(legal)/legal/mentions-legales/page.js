@@ -43,7 +43,7 @@ export default function MentionsLegalesPage() {
       </Section>
 
       <Section title="Cookies">
-        <p>This site only uses technical cookies necessary for it to function (session handling, authentication). For more details, see our <a href="/legal/privacy" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">Privacy Policy</a>.</p>
+        <p>This site uses cookies strictly necessary for it to function (session handling, authentication), plus optional, cookieless analytics only after you accept them via the cookie banner. For more details, see our <a href="/legal/privacy" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">Privacy Policy</a>.</p>
       </Section>
 
       <Section title="Mediation">
