@@ -1,17 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/app/providers'
 import { toast } from 'sonner'
-import { Loader2, Instagram, Globe, Facebook, Save, User, Link2, CreditCard, CheckCircle2, Gift, Copy, Check } from 'lucide-react'
+import { ConfirmDialog } from '@/components/ui/confirm-dialog'
+import { Loader2, Instagram, Globe, Facebook, Save, User, Link2, CreditCard, CheckCircle2, Gift, Copy, Check, Trash2 } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user } = useAuth()
   const searchParams = useSearchParams()
+  const router = useRouter()
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const [connectStatus, setConnectStatus] = useState(null)
   const [isLoadingConnect, setIsLoadingConnect] = useState(true)
@@ -175,6 +179,23 @@ export default function SettingsPage() {
   }
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  const handleDeleteAccount = async () => {
+    setDeleteDialogOpen(false)
+    setIsDeleting(true)
+    try {
+      const { error } = await supabase.from('profiles').delete().eq('id', user.id)
+      if (error) throw error
+
+      await supabase.auth.signOut()
+      toast.success('Account deleted')
+      router.push('/')
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      toast.error('Failed to delete account')
+      setIsDeleting(false)
+    }
+  }
 
   if (isLoading) {
     return (
@@ -416,7 +437,7 @@ export default function SettingsPage() {
         </section>
 
         {/* ── Save ── */}
-        <div className="pt-2 pb-8">
+        <div className="pt-2">
           <button
             type="submit"
             disabled={isSaving}
@@ -431,6 +452,35 @@ export default function SettingsPage() {
         </div>
 
       </form>
+
+      <div className="border-t border-white/5 mt-10 pt-10 pb-8">
+        <div className="flex items-center gap-2 mb-6">
+          <Trash2 className="w-3.5 h-3.5 text-red-400/60" strokeWidth={1.5} />
+          <p className="text-[10px] tracking-[0.3em] uppercase text-red-400/60 font-body">Danger zone</p>
+        </div>
+        <div className="px-4 py-5 bg-red-500/5 border border-red-500/20 rounded-sm">
+          <p className="text-sm text-white/60 font-body mb-4 leading-relaxed">
+            Deleting your account permanently removes your profile and all your galleries, photos, and links. This cannot be undone.
+          </p>
+          <button
+            onClick={() => setDeleteDialogOpen(true)}
+            disabled={isDeleting}
+            className="h-10 px-5 bg-red-600 text-white text-sm font-body font-semibold hover:bg-red-700 transition-colors rounded-sm disabled:opacity-50"
+          >
+            {isDeleting ? 'Deleting...' : 'Delete account'}
+          </button>
+        </div>
+      </div>
+
+      <ConfirmDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        title="Delete your account?"
+        description="This permanently removes your account, every gallery you've created, and all their photos. This action cannot be undone."
+        confirmText="Delete account"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteAccount}
+      />
     </div>
   )
 }
