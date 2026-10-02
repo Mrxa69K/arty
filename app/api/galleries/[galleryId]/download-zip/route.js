@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { isAllowedMediaUrl } from '@/lib/safeMediaFetch'
+import { sanitizeZipEntryName } from '@/lib/sanitizeFilename'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
     }
 
     const zip = new JSZip()
-    const galleryFolder = zip.folder(gallery.title || 'Gallery')
+    const galleryFolder = zip.folder(sanitizeZipEntryName(gallery.title || 'Gallery'))
     const BATCH_SIZE = 10
 
     for (let i = 0; i < photos.length; i += BATCH_SIZE) {
@@ -56,7 +57,7 @@ export async function POST(request, { params }) {
             const res = await fetch(url)
             if (!res.ok) return
             const buf = await res.arrayBuffer()
-            const filename = photo.file_name || `photo-${String(i + j + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
+            const filename = sanitizeZipEntryName(photo.file_name || `photo-${String(i + j + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`)
             galleryFolder.file(filename, buf)
           } catch { /* skip failed file */ }
         })

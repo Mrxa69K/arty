@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validateSession } from '@/lib/gallerySession'
 import { isAllowedMediaUrl } from '@/lib/safeMediaFetch'
+import { sanitizeZipEntryName, sanitizeFilename } from '@/lib/sanitizeFilename'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
@@ -53,7 +54,7 @@ export async function POST(request, { params }) {
             const res = await fetch(url)
             if (!res.ok) return
             const buf = await res.arrayBuffer()
-            const filename = photo.file_name || `photo-${String(i + j + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`
+            const filename = sanitizeZipEntryName(photo.file_name || `photo-${String(i + j + 1).padStart(3, '0')}.${photo.media_type === 'video' ? 'mp4' : 'jpg'}`)
             zip.file(filename, buf)
           } catch { /* skip failed file */ }
         })

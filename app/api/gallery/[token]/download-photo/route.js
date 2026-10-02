@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validateSession } from '@/lib/gallerySession'
 import { fetchMedia } from '@/lib/safeMediaFetch'
+import { sanitizeFilename } from '@/lib/sanitizeFilename'
 
 export async function POST(request, { params }) {
   try {
@@ -53,7 +54,7 @@ export async function POST(request, { params }) {
     }
 
     const arrayBuffer = await response.arrayBuffer()
-    const filename = photo.file_name || `photo-${photoId}.jpg`
+    const filename = sanitizeFilename(photo.file_name || `photo-${photoId}.jpg`)
 
     const forwarded = request.headers.get('x-forwarded-for')
     const ip = forwarded ? forwarded.split(',')[0].trim() : null

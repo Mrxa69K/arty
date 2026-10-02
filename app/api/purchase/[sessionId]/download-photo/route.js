@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validatePurchaseToken } from '@/lib/purchaseAccess'
 import { fetchMedia } from '@/lib/safeMediaFetch'
+import { sanitizeFilename } from '@/lib/sanitizeFilename'
 
 export async function POST(request, { params }) {
   const { sessionId } = await params
@@ -37,7 +38,7 @@ export async function POST(request, { params }) {
     }
 
     const arrayBuffer = await response.arrayBuffer()
-    const filename = purchase.photos.file_name || `photo-${photoId}.jpg`
+    const filename = sanitizeFilename(purchase.photos.file_name || `photo-${photoId}.jpg`)
 
     return new NextResponse(arrayBuffer, {
       status: 200,
