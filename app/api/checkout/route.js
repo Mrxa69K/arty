@@ -126,6 +126,13 @@ export async function POST(request) {
       applyReferralDiscount = !!claimed && claimed.length > 0
     }
 
+    // 2-week launch promo on Studio's first invoice, mutually exclusive with
+    // the referral discount (never stacked — same 20% either way). The coupon
+    // itself also expires in Stripe (redeem_by), this date check just keeps
+    // the checkout from even trying once the campaign is over.
+    const LAUNCH_PROMO_ENDS = new Date('2026-10-17T00:00:00Z')
+    const applyLaunchPromo = !applyReferralDiscount && normalizedPlan === 'studio' && Date.now() < LAUNCH_PROMO_ENDS.getTime()
+
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       customer_email: userEmail,
@@ -140,6 +147,7 @@ export async function POST(request) {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
       ...(applyReferralDiscount ? { discounts: [{ coupon: 'REFERRAL-STUDIO20' }] } : {}),
+      ...(applyLaunchPromo ? { discounts: [{ coupon: 'LAUNCH20' }] } : {}),
       metadata: {
         user_id: user.id,
         plan: normalizedPlan, // Store normalized plan name
