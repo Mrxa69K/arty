@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { isAllowedMediaUrl } from '@/lib/safeMediaFetch'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
@@ -50,7 +51,7 @@ export async function POST(request, { params }) {
       await Promise.all(
         photos.slice(i, i + BATCH_SIZE).map(async (photo, j) => {
           const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
-          if (!url) return
+          if (!url || !isAllowedMediaUrl(url)) return
           try {
             const res = await fetch(url)
             if (!res.ok) return

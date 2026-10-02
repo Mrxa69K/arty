@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validatePurchaseToken } from '@/lib/purchaseAccess'
+import { isAllowedMediaUrl } from '@/lib/safeMediaFetch'
 import JSZip from 'jszip'
 
 export async function POST(request, { params }) {
@@ -31,7 +32,7 @@ export async function POST(request, { params }) {
       await Promise.all(
         purchases.slice(i, i + BATCH_SIZE).map(async (purchase, j) => {
           const url = purchase.photos?.image_url
-          if (!url) return
+          if (!url || !isAllowedMediaUrl(url)) return
           try {
             const res = await fetch(url)
             if (!res.ok) return

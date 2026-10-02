@@ -115,7 +115,7 @@ export async function POST(req) {
               buyerEmail,
               dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
             })
-            await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: profile.email, subject, html })
+            await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: profile.email, subject, html, reply_to: 'support@artydrop.studio' })
           }
         } catch (emailError) {
           console.error('Failed to send tip notification email (non-critical):', emailError)
@@ -206,7 +206,7 @@ export async function POST(req) {
             amount: (pending.subtotal_cents / 100).toFixed(2),
             successUrl: `${process.env.NEXT_PUBLIC_APP_URL}/g/${session.metadata.token}/purchase-success?session_id=${session.id}`,
           })
-          await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: buyerEmail, subject, html })
+          await resend.emails.send({ from: process.env.RESEND_FROM_EMAIL, to: buyerEmail, subject, html, reply_to: 'support@artydrop.studio' })
         } catch (emailError) {
           console.error('Failed to send purchase confirmation email (non-critical):', emailError)
         }

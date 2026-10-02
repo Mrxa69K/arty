@@ -1391,6 +1391,13 @@ function PublicGalleryPageInner() {
             >
               {t('gallery.deliveredVia')}
             </a>
+
+            <a
+              href="mailto:support@artydrop.studio"
+              className="inline-block text-[9px] tracking-[0.3em] uppercase text-white/10 hover:text-white/40 font-body mt-2 transition-colors"
+            >
+              {t('gallery.needHelp')}
+            </a>
           </div>
         </motion.div>
       </footer>

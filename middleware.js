@@ -71,21 +71,12 @@ export async function middleware(request) {
   // Get session
   const { data: { session } } = await supabase. auth.getSession()
 
-  console.log('🔐 Middleware check:', {
-    pathname,
-    hasSession: !!session,
-    userId: session?.user?.id
-  })
-
   // Not logged in → redirect to login
   if (!session) {
-    console.log('❌ No session found - redirecting to login')
     const redirectUrl = new URL('/login', request.url)
     redirectUrl.searchParams.set('redirect', pathname)
     return NextResponse.redirect(redirectUrl)
   }
-
-  console.log('✅ Session found - continuing.. .')
 
   // Get user profile to check type
   const { data: profile } = await supabase
@@ -96,17 +87,13 @@ export async function middleware(request) {
 
   const userType = profile?.user_type || 'photographer'
 
-  console.log(`✅ User type: ${userType}`)
-
   // Photographers trying to access client routes → redirect
   if (pathname.startsWith('/client') && userType === 'photographer') {
-    console.log('⚠️ Photographer trying to access client area')
     return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
   // Clients trying to access photographer routes → redirect
   if (pathname.startsWith('/dashboard') && userType === 'client') {
-    console.log('⚠️ Client trying to access photographer area')
     return NextResponse.redirect(new URL('/client/dashboard', request.url))
   }
 

@@ -1,8 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useLanguage } from '@/lib/i18n/LanguageContext'
 
 export default function LegalLayout({ children }) {
+  const { t } = useLanguage()
+
   return (
     <div className="min-h-screen bg-[#0B0B0C] text-[#ededed]">
       <header className="border-b border-white/5 px-8 md:px-16 h-14 flex items-center justify-between">
@@ -11,13 +14,13 @@ export default function LegalLayout({ children }) {
         </Link>
         <nav className="flex items-center gap-6">
           <Link href="/legal/terms" className="text-[10px] tracking-[0.25em] uppercase text-white/20 hover:text-white/50 font-body transition-colors">
-            Terms
+            {t('home.footerTerms')}
           </Link>
           <Link href="/legal/privacy" className="text-[10px] tracking-[0.25em] uppercase text-white/20 hover:text-white/50 font-body transition-colors">
-            Privacy
+            {t('home.footerPrivacy')}
           </Link>
           <Link href="/legal/mentions-legales" className="text-[10px] tracking-[0.25em] uppercase text-white/20 hover:text-white/50 font-body transition-colors">
-            Legal Notice
+            {t('home.footerLegal')}
           </Link>
         </nav>
       </header>

@@ -5,6 +5,7 @@ import { PutObjectCommand } from '@aws-sdk/client-s3'
 import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { applyDiagonalWatermark } from '@/lib/watermark'
+import { fetchMedia } from '@/lib/safeMediaFetch'
 
 export async function POST(request) {
   const cookieStore = await cookies()
@@ -51,7 +52,7 @@ export async function POST(request) {
 
     const watermarkText = profile?.full_name || 'ArtyDrop'
 
-    const sourceRes = await fetch(photo.image_url)
+    const sourceRes = await fetchMedia(photo.image_url)
     if (!sourceRes.ok) throw new Error('Failed to fetch source image')
     const sourceBuffer = Buffer.from(await sourceRes.arrayBuffer())
 

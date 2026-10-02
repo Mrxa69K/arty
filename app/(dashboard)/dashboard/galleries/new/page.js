@@ -692,7 +692,7 @@ const handlePublish = async () => {
           },
           body: JSON.stringify({
             type: 'galleryShared',
-            to: details.clientEmail,
+            galleryId,
             data: {
               clientName: details.clientName || '',
               galleryTitle: details.title,

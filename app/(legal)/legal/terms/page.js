@@ -10,7 +10,7 @@ export default function TermsPage() {
       <p className="text-xs text-white/25 font-body mb-12">Last updated: April 2026</p>
 
       <Section title="1. Service overview">
-        <p>ArtyDrop is an online platform that lets professional photographers securely deliver photo galleries to their clients. The service is available at <strong>artydrop.netlify.app</strong> and is operated by an independent photographer (referred to below as "the Publisher").</p>
+        <p>ArtyDrop is an online platform that lets professional photographers securely deliver photo galleries to their clients. The service is available at <strong>artydrop.studio</strong> and is operated by an independent photographer (referred to below as "the Publisher").</p>
       </Section>
 
       <Section title="2. Acceptance of these terms">

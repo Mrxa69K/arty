@@ -277,7 +277,7 @@ export default function GalleryDetailPage() {
           <div className="flex items-center gap-3">
             <div className="flex-1 min-w-0 px-4 py-2.5 bg-white/[0.03] border border-white/8 rounded-sm">
               <p className="text-sm text-white/40 font-body truncate">
-                {typeof window !== 'undefined' ? window.location.origin : 'https://artydrop.netlify.app'}/g/{galleryLink.token}
+                {typeof window !== 'undefined' ? window.location.origin : 'https://artydrop.studio'}/g/{galleryLink.token}
               </p>
             </div>
             <button

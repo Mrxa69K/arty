@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validateSession } from '@/lib/gallerySession'
+import { fetchMedia } from '@/lib/safeMediaFetch'
 
 export async function POST(request, { params }) {
   try {
@@ -46,7 +47,7 @@ export async function POST(request, { params }) {
     }
 
     const url = photo.media_type === 'video' ? photo.video_url : photo.image_url
-    const response = await fetch(url)
+    const response = await fetchMedia(url)
     if (!response.ok) {
       return NextResponse.json({ error: 'Failed to fetch file' }, { status: 500 })
     }

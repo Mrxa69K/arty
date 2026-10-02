@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { PLAN_LIMITS } from '@/lib/planValidation'
 
 export async function POST(request) {
   try {
@@ -91,9 +92,10 @@ export async function POST(request) {
     }
 
     if (action === 'upload_photos') {
+      const limits = PLAN_LIMITS[userPlan] || PLAN_LIMITS.none
       const totalPhotos = (currentPhotoCount || 0) + (filesToUpload || 0)
 
-      if (totalPhotos > limits.maxPhotosPerGallery) {
+      if (limits.maxPhotosPerGallery !== null && totalPhotos > limits.maxPhotosPerGallery) {
         return NextResponse.json({
           allowed: false,
           reason: `This would exceed the ${limits.maxPhotosPerGallery} photos limit for the ${userPlan} plan.`

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin } from '@/lib/supabase-admin'
 import { validatePurchaseToken } from '@/lib/purchaseAccess'
+import { fetchMedia } from '@/lib/safeMediaFetch'
 
 export async function POST(request, { params }) {
   const { sessionId } = await params
@@ -30,7 +31,7 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: 'File unavailable' }, { status: 404 })
     }
 
-    const response = await fetch(url)
+    const response = await fetchMedia(url)
     if (!response.ok) {
       return NextResponse.json({ error: 'Failed to fetch file' }, { status: 500 })
     }
