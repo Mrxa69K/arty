@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Eye, EyeOff, Camera, Images } from 'lucide-react'
+import Turnstile from '@/components/Turnstile'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -21,10 +22,12 @@ export default function SignupPage() {
   const [acceptMarketing, setAcceptMarketing] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileRef = useRef(null)
 
   const handleSignup = async (e) => {
     e.preventDefault()
-    
+
     if (!acceptTerms) {
       toast.error('Please accept the terms and conditions')
       return
@@ -33,6 +36,19 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
+      const captchaRes = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      })
+      if (!captchaRes.ok) {
+        toast.error('Captcha verification failed. Please try again.')
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
+        setIsLoading(false)
+        return
+      }
+
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
@@ -46,6 +62,8 @@ export default function SignupPage() {
 
       if (authError) {
         toast.error(authError.message)
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
         setIsLoading(false)
         return
       }
@@ -85,6 +103,8 @@ export default function SignupPage() {
     } catch (error) {
       console.error('Signup error:', error)
       toast.error('An unexpected error occurred')
+      turnstileRef.current?.reset()
+      setTurnstileToken('')
       setIsLoading(false)
     }
   }
@@ -292,10 +312,12 @@ export default function SignupPage() {
               </div>
             </div>
 
+            <Turnstile ref={turnstileRef} onVerify={setTurnstileToken} />
+
             <Button
               type="submit"
               className="w-full h-12 bg-white text-black hover:bg-white/90 rounded-sm font-body font-semibold text-sm"
-              disabled={isLoading || !acceptTerms}
+              disabled={isLoading || !acceptTerms || !turnstileToken}
               data-testid="signup-btn"
             >
               {isLoading ? (

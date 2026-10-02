@@ -1,8 +1,7 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useSearchParams } from 'next/navigation'
-import Script from 'next/script'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +11,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Loader2, CheckCircle2 } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
+import Turnstile from '@/components/Turnstile'
 
 export default function SupportContent() {
   const { t } = useLanguage()
@@ -27,7 +27,6 @@ export default function SupportContent() {
   const [sent, setSent] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef(null)
-  const widgetIdRef = useRef(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -35,15 +34,6 @@ export default function SupportContent() {
         setEmail(session.user.email || '')
         setName(session.user.user_metadata?.full_name || '')
       }
-    })
-  }, [])
-
-  const renderTurnstile = useCallback(() => {
-    if (!window.turnstile || !turnstileRef.current || widgetIdRef.current) return
-    widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
-      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      callback: (token) => setTurnstileToken(token),
-      'expired-callback': () => setTurnstileToken(''),
     })
   }, [])
 
@@ -63,7 +53,7 @@ export default function SupportContent() {
       if (!res.ok) {
         setError(res.status === 429 ? t('support.errorRateLimit') : (data.error || t('support.errorGeneric')))
         setIsLoading(false)
-        if (window.turnstile && widgetIdRef.current) window.turnstile.reset(widgetIdRef.current)
+        turnstileRef.current?.reset()
         setTurnstileToken('')
         return
       }
@@ -86,11 +76,6 @@ export default function SupportContent() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#ededed] flex items-center justify-center px-6 py-16">
-      <Script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-        strategy="afterInteractive"
-        onLoad={renderTurnstile}
-      />
       <div className="w-full max-w-md">
         <Link href="/" className="font-display text-xl text-white/60 hover:text-white transition-colors">
           ArtyDrop
@@ -166,7 +151,7 @@ export default function SupportContent() {
                 />
               </div>
 
-              <div ref={turnstileRef} />
+              <Turnstile ref={turnstileRef} onVerify={setTurnstileToken} />
 
               {error && (
                 <p className="text-sm text-red-400 font-body">{error}</p>

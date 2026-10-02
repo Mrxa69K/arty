@@ -2,20 +2,10 @@ import { NextResponse } from 'next/server'
 import { resend } from '@/lib/resend'
 import { emailTemplates } from '@/lib/emailTemplates'
 import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
+import { verifyTurnstileToken } from '@/lib/turnstile'
 
 const VALID_CATEGORIES = ['bug', 'billing', 'account', 'gallery', 'other']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-async function verifyTurnstile(token, ip) {
-  if (!token) return false
-  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({ secret: process.env.TURNSTILE_SECRET_KEY, response: token, remoteip: ip }),
-  })
-  const data = await res.json()
-  return data.success === true
-}
 
 export async function POST(request) {
   try {
@@ -27,7 +17,7 @@ export async function POST(request) {
 
     const { name, email, category, context, message, turnstileToken } = await request.json()
 
-    const captchaOk = await verifyTurnstile(turnstileToken, ip)
+    const captchaOk = await verifyTurnstileToken(turnstileToken, ip)
     if (!captchaOk) {
       return NextResponse.json({ error: 'Captcha verification failed. Please try again.' }, { status: 400 })
     }

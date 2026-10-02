@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
+import Turnstile from '@/components/Turnstile'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -18,6 +19,8 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileRef = useRef(null)
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -25,6 +28,19 @@ export default function LoginPage() {
     setError('')
 
     try {
+      const captchaRes = await fetch('/api/captcha/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: turnstileToken }),
+      })
+      if (!captchaRes.ok) {
+        setError('Captcha verification failed. Please try again.')
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
+        setIsLoading(false)
+        return
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
         password,
@@ -36,12 +52,14 @@ export default function LoginPage() {
 
       const searchParams = new URLSearchParams(window.location.search)
       const redirect = searchParams.get('redirect') || '/dashboard'
-      
+
       window.location.replace(redirect)
-      
+
     } catch (error) {
       console.error('Login failed:', error)
       setError(error.message)
+      turnstileRef.current?.reset()
+      setTurnstileToken('')
       setIsLoading(false)
     }
   }
@@ -177,10 +195,12 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            <Turnstile ref={turnstileRef} onVerify={setTurnstileToken} />
+
             <Button
               type="submit"
               className="w-full h-12 bg-white text-black hover:bg-white/90 rounded-sm font-body font-semibold text-sm"
-              disabled={isLoading}
+              disabled={isLoading || !turnstileToken}
               data-testid="login-btn"
             >
               {isLoading ? (
