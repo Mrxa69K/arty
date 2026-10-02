@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Eye, EyeOff, Camera, Images } from 'lucide-react'
 import Turnstile from '@/components/Turnstile'
+import { GoogleIcon } from '@/components/icons/GoogleIcon'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -117,6 +118,18 @@ export default function SignupPage() {
       setTurnstileToken('')
       setIsLoading(false)
     }
+  }
+
+  const handleGoogleSignup = async () => {
+    if (!acceptTerms) {
+      toast.error('Please accept the terms and conditions')
+      return
+    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback?user_type=${userType}` },
+    })
+    if (error) toast.error(error.message)
   }
 
   return (
@@ -340,6 +353,24 @@ export default function SignupPage() {
               )}
             </Button>
           </form>
+
+          <div className="flex items-center gap-4 my-6">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-white/30 font-body">or</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleGoogleSignup}
+            disabled={!acceptTerms}
+            variant="outline"
+            className="w-full h-12 bg-transparent border-white/10 text-white hover:bg-white/5 rounded-sm font-body font-medium text-sm gap-3"
+            data-testid="google-signup-btn"
+          >
+            <GoogleIcon className="w-4 h-4" />
+            Continue with Google
+          </Button>
 
           {/* Mobile footer */}
           <div className="lg:hidden mt-12 text-xs text-white/30 font-body flex gap-6">

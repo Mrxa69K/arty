@@ -59,7 +59,7 @@ export async function middleware(request) {
 
   // Public routes - allow everyone
   const publicPaths = ['/', '/login', '/signup', '/faq', '/support', '/opengraph-image']
-  const isPublicPath = publicPaths.includes(pathname) || pathname.startsWith('/legal/')
+  const isPublicPath = publicPaths.includes(pathname) || pathname.startsWith('/legal/') || pathname.startsWith('/auth/')
   const isGalleryLink = pathname.startsWith('/g/')
   const isApiRoute = pathname.startsWith('/api/')
   const isNextInternal = pathname.startsWith('/_next') || pathname.includes('.')
