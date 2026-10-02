@@ -3,6 +3,7 @@ const nextConfig = {
   output: 'standalone',
   images: {
     domains: ['yspjuakdfukoawjjiulb. supabase.co'], // Your Supabase domain
+    qualities: [60, 75],
   },
   // Remove experimental. appDir - it's default now
 
