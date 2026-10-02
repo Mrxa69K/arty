@@ -22,14 +22,12 @@ export const metadata = {
     description: SITE_DESCRIPTION,
     url: SITE_URL,
     siteName: 'ArtyDrop',
-    images: [{ url: '/cover.webp', width: 1890, height: 1417 }],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    images: ['/cover.webp'],
   },
   robots: {
     index: true,

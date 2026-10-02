@@ -18,7 +18,6 @@ export default function MentionsLegalesContent() {
         <Row label={t('legal.labelAddress')} value={t('legal.addressValue')} />
         <Row label={t('legal.labelEmail')} value="support@artydrop.studio" />
         <Row label={t('legal.labelWebsite')} value="artydrop.studio" />
-        <p className="mt-4 text-white/30 italic text-xs">{t('legal.publisherNote')}</p>
       </Section>
 
       <Section title={t('legal.directorTitle')}>

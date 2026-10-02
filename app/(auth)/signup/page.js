@@ -136,7 +136,7 @@ export default function SignupPage() {
             <span className="italic text-gold">beautifully</span>
           </h2>
           <p className="text-sm text-white/40 font-body max-w-sm">
-            Join thousands of photographers who trust ArtyDrop to deliver their work professionally.
+            No subscription required. Pay only for the galleries you actually deliver.
           </p>
         </div>
 
