@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSearchParams } from 'next/navigation'
+import Script from 'next/script'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -24,6 +25,9 @@ export default function SupportContent() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState('')
+  const turnstileRef = useRef(null)
+  const widgetIdRef = useRef(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -31,6 +35,15 @@ export default function SupportContent() {
         setEmail(session.user.email || '')
         setName(session.user.user_metadata?.full_name || '')
       }
+    })
+  }, [])
+
+  const renderTurnstile = useCallback(() => {
+    if (!window.turnstile || !turnstileRef.current || widgetIdRef.current) return
+    widgetIdRef.current = window.turnstile.render(turnstileRef.current, {
+      sitekey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      callback: (token) => setTurnstileToken(token),
+      'expired-callback': () => setTurnstileToken(''),
     })
   }, [])
 
@@ -43,13 +56,15 @@ export default function SupportContent() {
       const res = await fetch('/api/support/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, category, context, message }),
+        body: JSON.stringify({ name, email, category, context, message, turnstileToken }),
       })
       const data = await res.json()
 
       if (!res.ok) {
         setError(res.status === 429 ? t('support.errorRateLimit') : (data.error || t('support.errorGeneric')))
         setIsLoading(false)
+        if (window.turnstile && widgetIdRef.current) window.turnstile.reset(widgetIdRef.current)
+        setTurnstileToken('')
         return
       }
 
@@ -71,6 +86,11 @@ export default function SupportContent() {
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-[#ededed] flex items-center justify-center px-6 py-16">
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="afterInteractive"
+        onLoad={renderTurnstile}
+      />
       <div className="w-full max-w-md">
         <Link href="/" className="font-display text-xl text-white/60 hover:text-white transition-colors">
           ArtyDrop
@@ -146,13 +166,15 @@ export default function SupportContent() {
                 />
               </div>
 
+              <div ref={turnstileRef} />
+
               {error && (
                 <p className="text-sm text-red-400 font-body">{error}</p>
               )}
 
               <Button
                 type="submit"
-                disabled={isLoading}
+                disabled={isLoading || !turnstileToken}
                 className="w-full h-11 bg-gold text-black hover:bg-gold-light rounded-sm font-body font-medium"
               >
                 {isLoading ? (

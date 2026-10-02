@@ -6,14 +6,31 @@ import { checkRateLimit, getClientIp } from '@/lib/rateLimit'
 const VALID_CATEGORIES = ['bug', 'billing', 'account', 'gallery', 'other']
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+async function verifyTurnstile(token, ip) {
+  if (!token) return false
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ secret: process.env.TURNSTILE_SECRET_KEY, response: token, remoteip: ip }),
+  })
+  const data = await res.json()
+  return data.success === true
+}
+
 export async function POST(request) {
   try {
-    const { allowed } = await checkRateLimit(`support-contact:${getClientIp(request)}`, { maxAttempts: 5, windowMinutes: 60 })
+    const ip = getClientIp(request)
+    const { allowed } = await checkRateLimit(`support-contact:${ip}`, { maxAttempts: 5, windowMinutes: 60 })
     if (!allowed) {
       return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 })
     }
 
-    const { name, email, category, context, message } = await request.json()
+    const { name, email, category, context, message, turnstileToken } = await request.json()
+
+    const captchaOk = await verifyTurnstile(turnstileToken, ip)
+    if (!captchaOk) {
+      return NextResponse.json({ error: 'Captcha verification failed. Please try again.' }, { status: 400 })
+    }
 
     if (!email || !EMAIL_RE.test(email)) {
       return NextResponse.json({ error: 'A valid email is required' }, { status: 400 })
