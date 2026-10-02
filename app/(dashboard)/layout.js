@@ -243,6 +243,18 @@ export default function DashboardLayout({ children }) {
       <main className="px-6 lg:px-12 py-8">
         <div className="max-w-7xl mx-auto">{children}</div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 px-6 lg:px-12 py-6">
+        <div className="max-w-7xl mx-auto flex justify-center">
+          <Link
+            href="/support?from=dashboard"
+            className="text-xs text-white/30 hover:text-white/60 font-body transition-colors"
+          >
+            Need help? Contact support
+          </Link>
+        </div>
+      </footer>
     </div>
   )
 }

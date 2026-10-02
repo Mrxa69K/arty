@@ -665,6 +665,9 @@ export default function HomePage() {
               <Link href="/legal/mentions-legales" className="text-white/40 hover:text-white transition-colors">
                 {t('home.footerLegal')}
               </Link>
+              <Link href="/support?from=homepage" className="text-white/40 hover:text-white transition-colors">
+                {t('home.footerContact')}
+              </Link>
             </div>
           </div>
 
