@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -178,10 +179,14 @@ export default function HomePage() {
           ============================================ */}
       <section className="relative min-h-screen w-full flex items-center justify-center px-6 lg:px-12 pt-24 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <img
+          <Image
             src="/cover.webp"
             alt=""
-            className="w-full h-full object-cover opacity-40"
+            fill
+            priority
+            sizes="100vw"
+            quality={60}
+            className="object-cover opacity-40"
           />
           <div className="absolute inset-0 bg-gradient-to-b from-[#0B0B0C] via-[#0B0B0C]/70 to-[#0B0B0C]" />
         </div>
@@ -350,21 +355,23 @@ export default function HomePage() {
               {/* Masonry grid, matching the real gallery page exactly */}
               <div className="px-1 pb-1 columns-2 md:columns-3 gap-1">
                 {[
-                  '/demo-vows.jpg',
-                  '/demo-family.jpg',
-                  '/demo-eiffel-night.jpg',
-                  '/demo-proposal.jpg',
-                  '/demo-garden.jpg',
-                ].map((src, i) => (
+                  { src: '/demo-vows.jpg', width: 1000, height: 667 },
+                  { src: '/demo-family.jpg', width: 1000, height: 667 },
+                  { src: '/demo-eiffel-night.jpg', width: 1000, height: 1500 },
+                  { src: '/demo-proposal.jpg', width: 1000, height: 742 },
+                  { src: '/demo-garden.jpg', width: 1000, height: 1500 },
+                ].map(({ src, width, height }, i) => (
                   <div
                     key={i}
                     className="break-inside-avoid mb-1 group relative overflow-hidden"
                   >
-                    <img
+                    <Image
                       src={src}
                       alt=""
-                      className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                      loading="lazy"
+                      width={width}
+                      height={height}
+                      sizes="(max-width: 768px) 50vw, 33vw"
+                      className="w-full h-auto block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-all duration-300" />
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
