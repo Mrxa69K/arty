@@ -29,7 +29,7 @@ export default function MentionsLegalesContent() {
         <Row label={t('legal.labelHost')} value="Vercel Inc." />
         <Row label={t('legal.labelAddress')} value="340 S Lemon Ave #4133, Walnut, CA 91789, USA" />
         <Row label={t('legal.labelWebsite')} value="vercel.com" />
-        <p className="mt-3">{t('legal.mediaStorageIntro')}</p>
+        <p className="mt-4 text-[10px] tracking-[0.25em] uppercase text-white/30">{t('legal.mediaStorageIntro')}</p>
         <Row label={t('legal.labelProvider')} value="Cloudflare, Inc. (R2 Storage)" />
         <Row label={t('legal.labelAddress')} value="101 Townsend St, San Francisco, CA 94107, USA" />
       </Section>
