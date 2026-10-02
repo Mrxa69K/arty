@@ -4,11 +4,37 @@ import { AuthProvider } from './providers'
 import { LanguageProvider } from '@/lib/i18n/LanguageContext'
 import CookieConsent from '@/components/CookieConsent'
 
+const SITE_URL = 'https://artydrop.studio'
+const SITE_TITLE = 'ArtyDrop — Premium Photo Gallery Delivery for Photographers'
+const SITE_DESCRIPTION =
+  'ArtyDrop lets professional photographers deliver secure, beautiful photo galleries to their clients. No monthly subscription required — pay-as-you-go pricing from €4.90 per gallery.'
+
 export const metadata = {
-  title: 'ArtyDrop - Premium Photo Gallery Delivery for Photographers',
-  description:
-    'ArtyDrop is the premium delivery platform for professional photographers. Share secure, beautiful photo galleries with your clients. Pay-as-you-go pricing starting at 4.90 per gallery.',
-  keywords: 'photo gallery, photographer, client delivery, photo sharing, professional photography',
+  metadataBase: new URL(SITE_URL),
+  title: SITE_TITLE,
+  description: SITE_DESCRIPTION,
+  keywords: 'photo gallery, photographer, client delivery, photo sharing, professional photography, galerie photo, livraison photo',
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    url: SITE_URL,
+    siteName: 'ArtyDrop',
+    images: [{ url: '/cover.webp', width: 1890, height: 1417 }],
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: ['/cover.webp'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 }
 
 export default function RootLayout({ children }) {
