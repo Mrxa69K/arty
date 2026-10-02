@@ -35,10 +35,29 @@ export default function DashboardLayout({ children }) {
 
       if (!session) {
         router.push('/login')
-      } else {
-        setUser(session.user)
-        setIsLoading(false)
+        return
       }
+
+      // Signup defers profile creation when email confirmation is pending
+      // (no session yet to satisfy RLS at that point) — catch up here on
+      // whichever session first has one, using the metadata set at signup.
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', session.user.id)
+        .maybeSingle()
+
+      if (!existingProfile) {
+        await supabase.from('profiles').insert({
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || '',
+          user_type: session.user.user_metadata?.user_type || 'photographer',
+        })
+      }
+
+      setUser(session.user)
+      setIsLoading(false)
     }
 
     checkAuth()

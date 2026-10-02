@@ -31,11 +31,27 @@ export default function ClientDashboard() {
   }, [user])
 
   const checkUserType = async () => {
-    const { data } = await supabase
+    let { data } = await supabase
       .from('profiles')
       .select('user_type, full_name')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
+
+    // Signup defers profile creation when email confirmation is pending —
+    // catch up here on whichever session first has one.
+    if (!data) {
+      const { data: inserted } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          email: user.email,
+          full_name: user.user_metadata?.full_name || '',
+          user_type: user.user_metadata?.user_type || 'client',
+        })
+        .select('user_type, full_name')
+        .single()
+      data = inserted
+    }
 
     setUserProfile(data)
 

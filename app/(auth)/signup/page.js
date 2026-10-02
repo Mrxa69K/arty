@@ -69,20 +69,6 @@ export default function SignupPage() {
       }
 
       if (authData.user) {
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .upsert({
-            id: authData.user.id,
-            email: authData.user.email,
-            full_name: fullName,
-            user_type: userType,
-            marketing_emails: acceptMarketing,
-          })
-
-        if (profileError) {
-          console.error('Profile upsert error:', profileError)
-        }
-
         const refCode = new URLSearchParams(window.location.search).get('ref')
         if (refCode) {
           fetch('/api/referral/attach', {
@@ -93,8 +79,32 @@ export default function SignupPage() {
         }
       }
 
+      // Without email confirmation, signUp() returns a session immediately.
+      // With it enabled, session is null until the user clicks the emailed
+      // link — there's no auth context yet to upsert a profile row under
+      // RLS, so that's deferred to first login (see (dashboard)/layout.js).
+      if (!authData.session) {
+        toast.success('Check your email to confirm your account')
+        setIsLoading(false)
+        return
+      }
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: authData.user.id,
+          email: authData.user.email,
+          full_name: fullName,
+          user_type: userType,
+          marketing_emails: acceptMarketing,
+        })
+
+      if (profileError) {
+        console.error('Profile upsert error:', profileError)
+      }
+
       toast.success('Account created successfully!')
-      
+
       if (userType === 'photographer') {
         router.push('/dashboard')
       } else {
