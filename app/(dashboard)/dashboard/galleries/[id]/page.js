@@ -24,6 +24,7 @@ export default function GalleryDetailPage() {
   const [photoCount, setPhotoCount] = useState(0)
   const [photos, setPhotos] = useState([])
   const [views, setViews] = useState([])
+  const [downloads, setDownloads] = useState([])
   const [copied, setCopied] = useState(false)
   const [coverModalOpen, setCoverModalOpen] = useState(false)
 
@@ -38,11 +39,13 @@ export default function GalleryDetailPage() {
         { data: linkData },
         { data: photosData },
         { data: viewsData },
+        { data: downloadsData },
       ] = await Promise.all([
         supabase.from('galleries').select('*').eq('id', id).eq('owner_id', user.id).single(),
         supabase.from('gallery_links').select('token, expires_at, allow_download, password_hash').eq('gallery_id', id).order('created_at', { ascending: false }).limit(1).single(),
-        supabase.from('photos').select('id, image_url, video_url, media_type').eq('gallery_id', id),
+        supabase.from('photos').select('id, image_url, video_url, media_type, file_name, preview_url, like_count').eq('gallery_id', id),
         supabase.from('gallery_views').select('viewed_at, device').eq('gallery_id', id).order('viewed_at', { ascending: false }),
+        supabase.from('gallery_downloads').select('created_at, type, photos(file_name, preview_url, image_url)').eq('gallery_id', id).order('created_at', { ascending: false }).limit(25),
       ])
 
       if (!galleryData) { router.push('/dashboard/galleries'); return }
@@ -52,6 +55,7 @@ export default function GalleryDetailPage() {
       setPhotos(photosData || [])
       setPhotoCount(photosData?.length || 0)
       setViews(viewsData || [])
+      setDownloads(downloadsData || [])
     } catch (err) {
       toast.error('Failed to load gallery')
     } finally {
@@ -266,6 +270,57 @@ export default function GalleryDetailPage() {
                 </div>
               )
             })}
+          </div>
+        </section>
+      )}
+
+      {/* ── Recent downloads ── */}
+      <section className="bg-[#121212] border border-white/5 rounded-sm p-6">
+        <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-6">Recent downloads</p>
+        {downloads.length === 0 ? (
+          <p className="text-xs text-white/20 font-body">No downloads yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {downloads.map((d, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="w-9 h-9 flex-shrink-0 rounded-sm overflow-hidden bg-white/[0.03] border border-white/5">
+                  {d.photos?.preview_url || d.photos?.image_url ? (
+                    <img src={d.photos.preview_url || d.photos.image_url} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <ImageIcon className="w-4 h-4 text-white/15" strokeWidth={1.5} />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm text-white/70 font-body truncate">
+                    {d.type === 'zip' ? 'Full gallery (.zip)' : (d.photos?.file_name || 'Photo')}
+                  </p>
+                  <p className="text-xs text-white/30 font-body">{format(new Date(d.created_at), 'MMM d, yyyy · HH:mm')}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ── Most liked photos ── */}
+      {photos.some((p) => p.like_count > 0) && (
+        <section className="bg-[#121212] border border-white/5 rounded-sm p-6">
+          <p className="text-[10px] tracking-[0.3em] uppercase text-white/25 font-body mb-6">Most liked photos</p>
+          <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+            {photos
+              .filter((p) => p.like_count > 0)
+              .sort((a, b) => b.like_count - a.like_count)
+              .slice(0, 12)
+              .map((p) => (
+                <div key={p.id} className="relative aspect-square rounded-sm overflow-hidden bg-white/[0.03] border border-white/5">
+                  <img src={p.preview_url || p.image_url} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute bottom-1 right-1 flex items-center gap-1 bg-black/70 px-1.5 py-0.5 rounded-sm">
+                    <span className="text-[10px] text-white font-body">♥ {p.like_count}</span>
+                  </div>
+                </div>
+              ))}
           </div>
         </section>
       )}

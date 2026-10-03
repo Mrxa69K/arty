@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
+import Image from 'next/image'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { FolderCard } from '@/components/FolderCard'
 import {
@@ -71,6 +72,7 @@ function PublicGalleryPageInner() {
   const [isTipping, setIsTipping] = useState(false)
   const [selectedForPurchase, setSelectedForPurchase] = useState(new Set())
   const [isCheckingOut, setIsCheckingOut] = useState(false)
+  const [likedPhotoIds, setLikedPhotoIds] = useState(new Set())
 
   const [heroSlide, setHeroSlide] = useState(0)
   const prefersReducedMotion = useReducedMotion()
@@ -81,6 +83,17 @@ function PublicGalleryPageInner() {
 
   useEffect(() => {
     if (token) fetchGalleryInfo()
+  }, [token])
+
+  // Likes are aggregated per-gallery, not per-visitor (no client accounts
+  // here) — localStorage is just so the same browser doesn't double-count
+  // its own repeated clicks on the same photo, not real visitor tracking.
+  useEffect(() => {
+    if (!token) return
+    try {
+      const stored = JSON.parse(localStorage.getItem(`artydrop_liked_${token}`) || '[]')
+      setLikedPhotoIds(new Set(stored))
+    } catch { /* ignore malformed/missing local state */ }
   }, [token])
 
   // Nav shows "Sign in" only for actual anonymous visitors — a logged-in
@@ -300,6 +313,47 @@ function PublicGalleryPageInner() {
       return false
     } finally {
       setDownloadingId(null)
+    }
+  }
+
+  const handleToggleLike = async (photo) => {
+    const wasLiked = likedPhotoIds.has(photo.id)
+    const nextLiked = !wasLiked
+
+    // Optimistic — the heart and count shouldn't wait on a round trip.
+    setLikedPhotoIds((prev) => {
+      const next = new Set(prev)
+      nextLiked ? next.add(photo.id) : next.delete(photo.id)
+      try {
+        localStorage.setItem(`artydrop_liked_${token}`, JSON.stringify([...next]))
+      } catch { /* localStorage unavailable (private mode etc) — in-memory state still works */ }
+      return next
+    })
+    setPhotos((prev) => prev.map((p) =>
+      p.id === photo.id ? { ...p, like_count: Math.max(0, (p.like_count || 0) + (nextLiked ? 1 : -1)) } : p
+    ))
+
+    try {
+      const res = await fetch(`/api/gallery/${token}/like-photo`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photoId: photo.id, session: sessionToken, liked: nextLiked }),
+      })
+      if (!res.ok) throw new Error('Failed to update like')
+    } catch {
+      // Roll back the optimistic update on failure
+      setLikedPhotoIds((prev) => {
+        const next = new Set(prev)
+        wasLiked ? next.add(photo.id) : next.delete(photo.id)
+        try {
+          localStorage.setItem(`artydrop_liked_${token}`, JSON.stringify([...next]))
+        } catch { /* ignore */ }
+        return next
+      })
+      setPhotos((prev) => prev.map((p) =>
+        p.id === photo.id ? { ...p, like_count: Math.max(0, (p.like_count || 0) + (wasLiked ? 1 : -1)) } : p
+      ))
+      toast.error(t('gallery.genericError'))
     }
   }
 
@@ -721,10 +775,15 @@ function PublicGalleryPageInner() {
                       className="max-w-full max-h-full object-contain"
                     />
                   ) : (
-                    <img
+                    <Image
                       src={getDisplayUrl(currentPhoto)}
                       alt={currentPhoto.file_name}
-                      className="max-w-full max-h-full object-contain select-none"
+                      width={currentPhoto.width || 1600}
+                      height={currentPhoto.height || 1600}
+                      sizes="100vw"
+                      quality={85}
+                      priority
+                      className="max-w-full max-h-full w-auto h-auto object-contain select-none"
                       draggable={false}
                       onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
                     />
@@ -746,9 +805,13 @@ function PublicGalleryPageInner() {
                         : 'opacity-30 hover:opacity-60'
                     }`}
                   >
-                    <img
+                    <Image
                       src={getDisplayUrl(photo)}
                       alt=""
+                      width={48}
+                      height={48}
+                      sizes="48px"
+                      quality={60}
                       className="w-full h-full object-cover"
                     />
                   </button>
@@ -1169,11 +1232,14 @@ function PublicGalleryPageInner() {
                     </div>
                   </div>
                 ) : (
-                  <img
+                  <Image
                     src={getDisplayUrl(photo)}
                     alt={photo.file_name || `Frame ${index + 1}`}
-                    className="w-full block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
-                    style={photo.width && photo.height ? { aspectRatio: `${photo.width} / ${photo.height}` } : undefined}
+                    width={photo.width || 1200}
+                    height={photo.height || 1200}
+                    sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                    quality={75}
+                    className="w-full h-auto block transition-transform duration-500 ease-out group-hover:scale-[1.03]"
                     loading="lazy"
                     draggable={false}
                     onContextMenu={(e) => { if (!allowDownload) e.preventDefault() }}
@@ -1193,6 +1259,27 @@ function PublicGalleryPageInner() {
                         : <Download className="w-3.5 h-3.5 text-white" strokeWidth={1.5} />
                       }
                     </div>
+                  </div>
+                )}
+                {photo.media_type !== 'video' && (
+                  <div
+                    className="absolute bottom-3 left-3 flex items-center gap-1.5 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all duration-200"
+                    onClick={(e) => { e.stopPropagation(); handleToggleLike(photo) }}
+                    data-testid={`like-photo-${photo.id}`}
+                  >
+                    <div className={`w-8 h-8 backdrop-blur-sm flex items-center justify-center transition-colors ${
+                      likedPhotoIds.has(photo.id) ? 'bg-[#7AB8CB]' : 'bg-black/60 hover:bg-black/80'
+                    }`}>
+                      <Heart
+                        className={`w-3.5 h-3.5 ${likedPhotoIds.has(photo.id) ? 'text-black fill-black' : 'text-white'}`}
+                        strokeWidth={1.5}
+                      />
+                    </div>
+                    {photo.like_count > 0 && (
+                      <span className="text-xs text-white font-body bg-black/60 backdrop-blur-sm px-2 py-1">
+                        {photo.like_count}
+                      </span>
+                    )}
                   </div>
                 )}
                 {gallery?.sale_mode_enabled && photo.media_type !== 'video' && (

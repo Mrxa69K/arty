@@ -2,8 +2,10 @@
 const nextConfig = {
   output: 'standalone',
   images: {
-    domains: ['yspjuakdfukoawjjiulb. supabase.co'], // Your Supabase domain
-    qualities: [60, 75],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'pub-12ab73d1bfd94d778d1f9a9272006528.r2.dev' },
+    ],
+    qualities: [60, 75, 85],
   },
   // Remove experimental. appDir - it's default now
 
