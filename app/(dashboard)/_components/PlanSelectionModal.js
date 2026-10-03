@@ -1,21 +1,34 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '@/lib/supabase'  
-import { 
-  Dialog, 
-  DialogContent, 
+import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import {
+  Dialog,
+  DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
-import { Loader2, Check } from 'lucide-react'
+import { Loader2, Check, LogOut } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function PlanSelectionModal({ open, onClose, userEmail }) {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState(null)
   const [hoveredPlan, setHoveredPlan] = useState(null)
+  const [isSigningOut, setIsSigningOut] = useState(false)
+
+  // This modal is deliberately non-dismissible until a plan is active (see
+  // onClose in the parent) — intentional, to stop unpaid use of the
+  // dashboard. But that previously left no way out at all: no close button
+  // works, and there was no sign-out control anywhere else on this screen.
+  const handleSignOut = async () => {
+    setIsSigningOut(true)
+    await supabase.auth.signOut()
+    router.push('/')
+  }
 
   const handleSelectPlan = async (planType) => {
     setIsLoading(true)
@@ -180,7 +193,7 @@ export function PlanSelectionModal({ open, onClose, userEmail }) {
                   <div className="space-y-2 text-xs text-white/60 font-body border-t border-white/10 pt-4">
                     <div className="flex items-center gap-2">
                       <Check className="w-3 h-3 text-gold" strokeWidth={1.5} />
-                      <p>Up to 200 photos</p>
+                      <p>Unlimited photos</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <Check className="w-3 h-3 text-gold" strokeWidth={1.5} />
@@ -264,10 +277,22 @@ export function PlanSelectionModal({ open, onClose, userEmail }) {
           </div>
 
           {/* Footer */}
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <p className="text-[11px] text-white/30 font-body tracking-wide">
               Secure payment via Stripe
             </p>
+            <button
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+              className="inline-flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 font-body transition-colors"
+            >
+              {isSigningOut ? (
+                <Loader2 className="w-3 h-3 animate-spin" strokeWidth={1.5} />
+              ) : (
+                <LogOut className="w-3 h-3" strokeWidth={1.5} />
+              )}
+              Sign out
+            </button>
           </div>
         </div>
       </DialogContent>
