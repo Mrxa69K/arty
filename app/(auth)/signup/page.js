@@ -69,6 +69,20 @@ export default function SignupPage() {
         return
       }
 
+      // Supabase deliberately returns a user object with no error here when
+      // the email is already registered (anti-enumeration: it won't say
+      // outright "this email is taken"), but identities comes back empty
+      // instead of containing the new identity — that's the only signal. No
+      // confirmation email is sent in this case either, so showing our
+      // normal "check your email" message would be actively misleading.
+      if (authData.user && authData.user.identities?.length === 0) {
+        toast.error('An account with this email already exists. Try logging in instead.')
+        turnstileRef.current?.reset()
+        setTurnstileToken('')
+        setIsLoading(false)
+        return
+      }
+
       if (authData.user) {
         const refCode = new URLSearchParams(window.location.search).get('ref')
         if (refCode) {
