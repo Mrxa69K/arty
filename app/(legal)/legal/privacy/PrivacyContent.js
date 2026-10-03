@@ -80,6 +80,10 @@ export default function PrivacyContent() {
         </ul>
         <p>
           {t('privacy.s7OutroPre')}
+          <a href="mailto:support@artydrop.studio" className="text-white/60 hover:text-white underline underline-offset-2 transition-colors">
+            {t('privacy.s7OutroEmail')}
+          </a>
+          {t('privacy.s7OutroMid')}
           <strong>{t('privacy.s7OutroStrong')}</strong>
           {t('privacy.s7OutroPost')}
         </p>

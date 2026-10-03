@@ -56,6 +56,14 @@ export default function TermsContent() {
       <Section title={t('terms.s9Title')}>
         <p>{t('terms.s9Body')}</p>
       </Section>
+
+      <Section title={t('terms.s10Title')}>
+        <p>{t('terms.s10Body')}</p>
+      </Section>
+
+      <Section title={t('terms.s11Title')}>
+        <p>{t('terms.s11Body')}</p>
+      </Section>
     </article>
   )
 }
