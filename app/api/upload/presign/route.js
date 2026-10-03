@@ -4,6 +4,8 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { r2Client, R2_BUCKET, R2_PUBLIC_URL } from '@/lib/r2'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { supabaseAdmin } from '@/lib/supabase-admin'
+import { PLAN_LIMITS } from '@/lib/planValidation'
 
 // Client fully controls contentType — without an allowlist, an authenticated
 // user could upload arbitrary content (e.g. text/html) and get back a public
@@ -45,6 +47,36 @@ export async function POST(request) {
 
   if (!ALLOWED_CONTENT_TYPES.has(contentType)) {
     return NextResponse.json({ error: 'Unsupported file type' }, { status: 400 })
+  }
+
+  // fileName is always `${userId}/${galleryId}/...` (see galleries/new and
+  // GalleryCoverModal) — the plan's maxPhotosPerGallery cap only mattered
+  // for the UI, since this presign endpoint is the actual gate to R2 and had
+  // no limit of its own. A caller could keep requesting signed URLs past the
+  // cap by hitting this route directly, skipping the client-side check
+  // entirely.
+  const galleryId = fileName.split('/')[1]
+  if (galleryId) {
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('plan_type, plan_expires_at')
+      .eq('id', user.id)
+      .single()
+
+    const planExpired = profile?.plan_expires_at && new Date(profile.plan_expires_at) < new Date()
+    const planType = planExpired ? 'none' : (profile?.plan_type || 'none')
+    const limit = PLAN_LIMITS[planType]?.maxPhotosPerGallery
+
+    if (limit !== null && limit !== undefined) {
+      const { count } = await supabaseAdmin
+        .from('photos')
+        .select('*', { count: 'exact', head: true })
+        .eq('gallery_id', galleryId)
+
+      if ((count || 0) >= limit) {
+        return NextResponse.json({ error: `This would exceed the ${limit}-photo limit for your plan. Upgrade to add more.` }, { status: 403 })
+      }
+    }
   }
 
   const command = new PutObjectCommand({

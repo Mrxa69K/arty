@@ -63,6 +63,8 @@ export default function NewGalleryWizard() {
     notes: ''
   })
 
+  const [userPlan, setUserPlan] = useState(null)
+
   // Sharing state
   const [sharing, setSharing] = useState({
     hasPassword: false,
@@ -96,6 +98,24 @@ export default function NewGalleryWizard() {
       Object.values(localPreviews).forEach((url) => URL.revokeObjectURL(url))
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Needed to know whether the expiration field below is actually editable —
+  // test/payg are forced server-side (see the gallery_links DB trigger) so
+  // showing an editable date picker there would silently lie about what the
+  // save does.
+  useEffect(() => {
+    const fetchPlan = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('plan_type')
+        .eq('id', user.id)
+        .single()
+      setUserPlan(profile?.plan_type || 'none')
+    }
+    fetchPlan()
   }, [])
 
   // Fetch once whether this photographer can receive payouts — gates the
@@ -163,6 +183,7 @@ export default function NewGalleryWizard() {
         .single()
 
       const userPlan = profile?.plan_type || 'none'
+      setUserPlan(userPlan)
 
       // PAYG: atomically reserve a credit server-side BEFORE creating the
       // gallery — profiles.gallery_credits can't be written from the client
@@ -615,23 +636,13 @@ const handlePublish = async () => {
   setIsPublishing(true)
 
   try {
-    // Get plan to set expiration
-    const { data: { user: currentUser } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('plan_type')
-      .eq('id', currentUser.id)
-      .single()
-
     const now = new Date()
-    let expiresAt = null
-    if (profile?.plan_type === 'payg') {
-      expiresAt = new Date(now.getTime() + 180 * 24 * 60 * 60 * 1000).toISOString() // 6 months
-    } else if (profile?.plan_type === 'test') {
-      expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
-    }
 
     // 1. Update gallery
+    // expires_at isn't set here — a DB trigger on gallery_links derives it
+    // from the owner's plan (forced for test/payg, free choice for studio)
+    // and mirrors it onto this row whenever gallery_links is written, which
+    // happens right after this call.
     const { error: galleryError } = await supabase
       .from('galleries')
       .update({
@@ -642,7 +653,6 @@ const handlePublish = async () => {
         event_date: details.eventDate || null,
         notes: details.notes,
         published_at: now.toISOString(),
-        expires_at: expiresAt,
       })
       .eq('id', galleryId)
 
@@ -1076,21 +1086,33 @@ const handlePublish = async () => {
 
                     {/* Expiration Date */}
                     <div className="border border-white/10 rounded-sm p-4">
-                      <label className="block">
-                        <div className="flex items-center gap-3 mb-3">
-                          <Clock className="w-5 h-5 text-white/60" />
-                          <div>
-                            <p className="font-medium text-white/80">Expiration Date</p>
-                            <p className="text-xs text-white/50">Gallery will expire after this date</p>
-                          </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <Clock className="w-5 h-5 text-white/60" />
+                        <div>
+                          <p className="font-medium text-white/80">Expiration Date</p>
+                          <p className="text-xs text-white/50">
+                            {userPlan === 'test'
+                              ? 'Fixed at 7 days after publishing on the Trial plan'
+                              : userPlan === 'payg'
+                              ? 'Fixed at 6 months after publishing on Pay-as-you-go'
+                              : 'Gallery will expire after this date'}
+                          </p>
                         </div>
-                        <input
-                          type="date"
-                          value={sharing.expiresAt}
-                          onChange={(e) => setSharing({ ...sharing, expiresAt: e. target.value })}
-                          className="w-full px-4 py-2 rounded-sm border border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold/30"
-                        />
-                      </label>
+                      </div>
+                      {(userPlan === 'test' || userPlan === 'payg') ? (
+                        <p className="text-sm text-white/40 font-body">
+                          Upgrade to Studio to choose your own expiration date.
+                        </p>
+                      ) : (
+                        <label className="block">
+                          <input
+                            type="date"
+                            value={sharing.expiresAt}
+                            onChange={(e) => setSharing({ ...sharing, expiresAt: e. target.value })}
+                            className="w-full px-4 py-2 rounded-sm border border-white/10 bg-white/5 text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-gold/30"
+                          />
+                        </label>
+                      )}
                     </div>
 
                     {/* Allow Downloads */}
