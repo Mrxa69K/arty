@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { Analytics } from '@vercel/analytics/next'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
 import { getCookieConsent, setCookieConsent } from '@/lib/cookieConsent'
+import { initPostHog, shutdownPostHog } from '@/lib/posthog'
 
 export default function CookieConsent() {
   const { t } = useLanguage()
@@ -11,8 +12,10 @@ export default function CookieConsent() {
   const [showBanner, setShowBanner] = useState(false)
 
   useEffect(() => {
-    setConsent(getCookieConsent())
-    setShowBanner(!getCookieConsent())
+    const current = getCookieConsent()
+    setConsent(current)
+    setShowBanner(!current)
+    if (current === 'accepted') initPostHog()
 
     const reopen = () => setShowBanner(true)
     window.addEventListener('open-cookie-preferences', reopen)
@@ -23,6 +26,8 @@ export default function CookieConsent() {
     setCookieConsent(value)
     setConsent(value)
     setShowBanner(false)
+    if (value === 'accepted') initPostHog()
+    else shutdownPostHog()
   }
 
   return (
