@@ -146,6 +146,10 @@ export async function POST(request) {
       mode: normalizedPlan === 'studio' ? 'subscription' : 'payment',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?session_id={CHECKOUT_SESSION_ID}&success=true`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/?canceled=true`,
+      // Lets customers type a manual promotion code (e.g. collab/influencer
+      // codes) at Stripe's hosted checkout. Disabled whenever we're already
+      // auto-applying a discount — Stripe forbids combining the two.
+      ...(!applyReferralDiscount && !applyLaunchPromo ? { allow_promotion_codes: true } : {}),
       ...(applyReferralDiscount ? { discounts: [{ coupon: 'REFERRAL-STUDIO20' }] } : {}),
       ...(applyLaunchPromo ? { discounts: [{ coupon: 'LAUNCH20' }] } : {}),
       metadata: {
