@@ -18,7 +18,8 @@ import {
   Layers,
   Shield,
   Clock,
-  Users
+  Users,
+  X
 } from 'lucide-react'
 import { useAuth } from './providers'
 import { useLanguage } from '@/lib/i18n/LanguageContext'
@@ -51,13 +52,28 @@ function useInView(options = {}) {
   return [ref, isInView]
 }
 
+const PROMO_ENDS = new Date('2026-10-17T00:00:00Z')
+const PROMO_DISMISS_KEY = 'artydrop_promo_launch20_dismissed'
+
 export default function HomePage() {
   const [isRedirecting, setIsRedirecting] = useState(false)
   const [billingCycle, setBillingCycle] = useState('monthly')
   const [openFaq, setOpenFaq] = useState(null)
+  const [showPromo, setShowPromo] = useState(false)
   const router = useRouter()
   const { user, loading } = useAuth()
   const { lang, setLang, t, tList } = useLanguage()
+
+  useEffect(() => {
+    if (Date.now() > PROMO_ENDS.getTime()) return
+    if (localStorage.getItem(PROMO_DISMISS_KEY)) return
+    setShowPromo(true)
+  }, [])
+
+  const dismissPromo = () => {
+    localStorage.setItem(PROMO_DISMISS_KEY, '1')
+    setShowPromo(false)
+  }
 
   // Animation refs
   const [whatRef, whatInView] = useInView()
@@ -127,7 +143,25 @@ export default function HomePage() {
       {/* ============================================
           HEADER
           ============================================ */}
-      <header className="fixed top-0 left-0 right-0 z-50 px-6 lg:px-12 py-6">
+      <header className="fixed top-0 left-0 right-0 z-50">
+        {showPromo && (
+          <div className="relative bg-gradient-to-r from-gold-dark via-gold to-gold-dark bg-[length:200%_100%] animate-[shimmer_6s_linear_infinite] text-black">
+            <div className="max-w-7xl mx-auto px-6 lg:px-12 py-2 flex items-center justify-center gap-2 text-xs sm:text-sm font-body font-medium text-center">
+              <span>{t('home.promoBannerText')}</span>
+              <Link href="/signup" className="underline underline-offset-2 hover:no-underline whitespace-nowrap">
+                {t('home.promoBannerCta')}
+              </Link>
+            </div>
+            <button
+              onClick={dismissPromo}
+              aria-label="Dismiss"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-black/50 hover:text-black transition-colors"
+            >
+              <X className="w-4 h-4" strokeWidth={2} />
+            </button>
+          </div>
+        )}
+        <div className="px-6 lg:px-12 py-6">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="group" data-testid="logo-link">
             <span className="font-display text-xl tracking-tight text-white/90 group-hover:text-white transition-colors">
@@ -172,12 +206,13 @@ export default function HomePage() {
             )}
           </div>
         </div>
+        </div>
       </header>
 
       {/* ============================================
           HERO SECTION
           ============================================ */}
-      <section className="relative min-h-screen w-full flex items-center justify-center px-6 lg:px-12 pt-24 overflow-hidden">
+      <section className={`relative min-h-screen w-full flex items-center justify-center px-6 lg:px-12 overflow-hidden transition-[padding] ${showPromo ? 'pt-36' : 'pt-24'}`}>
         <div className="absolute inset-0 z-0">
           <Image
             src="/cover.webp"
