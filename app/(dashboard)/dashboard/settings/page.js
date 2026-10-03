@@ -398,7 +398,7 @@ export default function SettingsPage() {
           ) : (
             <div className="px-4 py-5 bg-white/[0.02] border border-white/5 rounded-sm">
               <p className="text-[11px] text-white/30 font-body mb-4 leading-relaxed">
-                Share your link. When someone signs up and becomes a paying customer, you get a reward &mdash; a free gallery credit, or 20% off your next payment if you're already on Studio. They get 20% off their first payment too.
+                Share your link. When someone signs up and becomes a paying customer, you get a reward: a free gallery credit, or 20% off your next payment if you're already on Studio. They get 20% off their first payment too.
               </p>
               <div className="flex items-center gap-2 mb-4">
                 <input
