@@ -10,7 +10,6 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { supabase } from '@/lib/supabase'
 import { Loader2, Eye, EyeOff } from 'lucide-react'
 import Turnstile from '@/components/Turnstile'
-import { GoogleIcon } from '@/components/icons/GoogleIcon'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -65,14 +64,6 @@ export default function LoginPage() {
     }
   }
 
-  const handleGoogleLogin = async () => {
-    setError('')
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (error) setError(error.message)
-  }
 
   return (
     <div className="min-h-screen bg-[#0a0a0a] flex">
@@ -223,23 +214,6 @@ export default function LoginPage() {
               )}
             </Button>
           </form>
-
-          <div className="flex items-center gap-4 my-6">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-xs text-white/30 font-body">or</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          <Button
-            type="button"
-            onClick={handleGoogleLogin}
-            variant="outline"
-            className="w-full h-12 bg-transparent border-white/10 text-white hover:bg-white/5 rounded-sm font-body font-medium text-sm gap-3"
-            data-testid="google-login-btn"
-          >
-            <GoogleIcon className="w-4 h-4" />
-            Continue with Google
-          </Button>
 
           {/* Mobile footer */}
           <div className="lg:hidden mt-12 text-xs text-white/30 font-body flex gap-6">
