@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useCallback, useImperativeHandle, forwardRef } from 'react'
+import { useRef, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react'
 import Script from 'next/script'
 
 const Turnstile = forwardRef(function Turnstile({ onVerify }, ref) {
@@ -15,6 +15,26 @@ const Turnstile = forwardRef(function Turnstile({ onVerify }, ref) {
       'expired-callback': () => onVerify(''),
     })
   }, [onVerify])
+
+  // next/script dedupes by src across the app, so onLoad only fires for
+  // whichever page's mount happened to load it first — a client-side nav
+  // to a second page using this component (e.g. login -> signup) never
+  // gets its own onLoad call, leaving that page's widget permanently
+  // unrendered and its submit button permanently disabled. Poll for
+  // window.turnstile on mount as a fallback for exactly that case.
+  useEffect(() => {
+    if (window.turnstile) {
+      renderWidget()
+      return
+    }
+    const interval = setInterval(() => {
+      if (window.turnstile) {
+        renderWidget()
+        clearInterval(interval)
+      }
+    }, 150)
+    return () => clearInterval(interval)
+  }, [renderWidget])
 
   useImperativeHandle(ref, () => ({
     reset: () => {
