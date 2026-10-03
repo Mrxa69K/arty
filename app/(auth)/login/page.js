@@ -112,6 +112,10 @@ export default function LoginPage() {
             </Link>
           </div>
 
+          <div className="mb-6 px-4 py-2.5 bg-gradient-to-r from-gold-dark via-gold to-gold-dark bg-[length:200%_100%] animate-[shimmer_6s_linear_infinite] text-black text-sm font-body font-medium rounded-sm text-center">
+            Launch offer: 20% off your first month on Studio
+          </div>
+
           <div className="mb-10">
             <h1 className="font-display text-3xl text-white mb-3">
               Welcome back
