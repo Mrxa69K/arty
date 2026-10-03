@@ -30,6 +30,29 @@ import {
   CreditCard
 } from 'lucide-react'
 
+// Mobile browsers — Chrome on Android especially — sometimes report an
+// empty file.type for photos/videos taken directly with the camera, which
+// then fails the server's strict content-type allowlist. Fall back to the
+// file extension so those uploads still go through.
+const EXTENSION_CONTENT_TYPES = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  gif: 'image/gif',
+  mp4: 'video/mp4',
+  mov: 'video/quicktime',
+  webm: 'video/webm',
+}
+
+function resolveContentType(file) {
+  if (file.type) return file.type
+  const ext = file.name.split('.').pop()?.toLowerCase()
+  return EXTENSION_CONTENT_TYPES[ext] || file.type
+}
+
 export default function NewGalleryWizard() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -390,7 +413,8 @@ const createDefaultFolders = async (galleryId) => {
       const uploadOne = async (file) => {
         const fileExt = file.name.split('.').pop()
         const fileName = `${user.id}/${galleryId}/${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
-        const isVideo = file.type.startsWith('video/')
+        const contentType = resolveContentType(file)
+        const isVideo = contentType.startsWith('video/')
 
         // Free, instant, zero-network thumbnail from the file already sitting
         // in memory — the alternative (photo.image_url) would re-download the
@@ -405,15 +429,18 @@ const createDefaultFolders = async (galleryId) => {
         const presignRes = await fetch('/api/upload/presign', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName, contentType: file.type }),
+          body: JSON.stringify({ fileName, contentType }),
         })
-        if (!presignRes.ok) throw new Error('Failed to get upload URL')
+        if (!presignRes.ok) {
+          const { error } = await presignRes.json().catch(() => ({}))
+          throw new Error(error || 'Failed to get upload URL')
+        }
         const { uploadUrl, publicUrl } = await presignRes.json()
 
         // 2. Upload directly to R2 — bypasses Netlify entirely
         const r2Res = await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
+          headers: { 'Content-Type': contentType },
           body: file,
         })
         if (!r2Res.ok) throw new Error('Upload to storage failed')
@@ -456,7 +483,7 @@ const createDefaultFolders = async (galleryId) => {
       toast.success(`${files.length} file(s) uploaded`)
     } catch (error) {
       console.error('Upload error:', error)
-      toast.error('Failed to upload files')
+      toast.error(error?.message || 'Failed to upload files')
     } finally {
       setIsUploading(false)
     }
