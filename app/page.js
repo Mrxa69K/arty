@@ -15,7 +15,7 @@ import {
   ChevronDown,
   Eye,
   Camera,
-  Layers,
+  Wallet,
   Shield,
   Clock,
   Users,
@@ -479,7 +479,7 @@ export default function HomePage() {
                 description: t('home.feature2Desc')
               },
               {
-                icon: Layers,
+                icon: Wallet,
                 title: t('home.feature3Title'),
                 description: t('home.feature3Desc')
               },
