@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import { toast } from 'sonner'
-import { Loader2, ArrowLeft, Bell, Lock, Trash2 } from 'lucide-react'
+import { Loader2, ArrowLeft, Bell, Lock, Trash2, Camera } from 'lucide-react'
 
 export default function ClientSettingsPage() {
   const { user } = useAuth()
@@ -20,6 +20,7 @@ export default function ClientSettingsPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [isBecomingPhotographer, setIsBecomingPhotographer] = useState(false)
 
   // Settings
   const [marketingEmails, setMarketingEmails] = useState(false)
@@ -123,6 +124,25 @@ export default function ClientSettingsPage() {
     }
   }
 
+  const handleBecomePhotographer = async () => {
+    setIsBecomingPhotographer(true)
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ user_type: 'photographer' })
+        .eq('id', user.id)
+
+      if (error) throw error
+
+      toast.success('Welcome aboard! Taking you to your new dashboard...')
+      router.push('/dashboard')
+    } catch (error) {
+      console.error('Error switching account type:', error)
+      toast.error('Failed to switch account type')
+      setIsBecomingPhotographer(false)
+    }
+  }
+
   const handleDeleteAccount = async () => {
     setDeleteDialogOpen(false)
     setIsDeleting(true)
@@ -180,6 +200,34 @@ export default function ClientSettingsPage() {
         </div>
 
         <div className="space-y-6">
+          {/* Become a photographer */}
+          <div className="bg-gold/5 border border-gold/20 rounded-sm p-6 sm:p-8">
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-sm bg-gold/10 border border-gold/20 flex items-center justify-center">
+                <Camera className="w-5 h-5 text-gold" strokeWidth={1.5} />
+              </div>
+              <h2 className="font-display text-lg text-white">Are you a photographer?</h2>
+            </div>
+            <p className="text-xs text-white/30 font-body mb-6 ml-[52px]">
+              Switch to a photographer account to create and deliver your own galleries
+            </p>
+
+            <Button
+              onClick={handleBecomePhotographer}
+              disabled={isBecomingPhotographer}
+              className="w-full h-11 rounded-sm bg-gold text-black hover:bg-gold-light text-sm font-body font-semibold"
+            >
+              {isBecomingPhotographer ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Switching...
+                </>
+              ) : (
+                'Switch to a photographer account'
+              )}
+            </Button>
+          </div>
+
           {/* Notification Settings */}
           <div className="bg-[#121212] border border-white/5 rounded-sm p-6 sm:p-8">
             <div className="flex items-center gap-3 mb-1">
