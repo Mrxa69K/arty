@@ -10,6 +10,7 @@ import { NotificationBell } from './_components/NotificationBell'
 import {
   LayoutDashboard,
   Images,
+  Inbox,
   LogOut,
   Plus,
   Menu,
@@ -92,6 +93,7 @@ export default function DashboardLayout({ children }) {
   const navItems = [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/dashboard/galleries', label: 'Galleries', icon: Images },
+    { href: '/dashboard/received', label: 'Received', icon: Inbox },
   ]
 
   const getInitials = (email) => email?.substring(0, 2).toUpperCase() || 'U'
