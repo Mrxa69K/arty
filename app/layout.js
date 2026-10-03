@@ -5,9 +5,9 @@ import { LanguageProvider } from '@/lib/i18n/LanguageContext'
 import CookieConsent from '@/components/CookieConsent'
 
 const SITE_URL = 'https://artydrop.studio'
-const SITE_TITLE = 'ArtyDrop — Premium Photo Gallery Delivery for Photographers'
+const SITE_TITLE = 'ArtyDrop: Premium Photo Gallery Delivery for Photographers'
 const SITE_DESCRIPTION =
-  'ArtyDrop lets professional photographers deliver secure, beautiful photo galleries to their clients. No monthly subscription required — pay-as-you-go pricing from €4.90 per gallery.'
+  'ArtyDrop lets professional photographers deliver secure, beautiful photo galleries to their clients. No monthly subscription required, pay-as-you-go pricing from €4.90 per gallery.'
 
 export const metadata = {
   metadataBase: new URL(SITE_URL),
